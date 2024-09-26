@@ -1,0 +1,127 @@
+---
+  space1:
+    name: Space 1
+    x: 60
+    y: 650
+    kind: city
+    size: small
+  space2:
+    name: Space 2
+    x: 33
+    y: 537
+    kind: sea
+    size: small
+  space3:
+    name: Space 3
+    x: 107
+    y: 292
+    kind: city
+    size: small
+  space4:
+    name: Space 4
+    x: 161
+    y: 652
+    kind: wilderness
+    size: small
+  space5:
+    name: Space 1
+    x: 182
+    y: 601
+    kind: city
+    size: small
+  space6:
+    name: Space 6
+    x: 152
+    y: 543
+    kind: city
+    size: small
+  space7:
+    name: Space 7
+    x: 201
+    y: 468
+    kind: city
+    size: small
+  space8:
+    name: Space 8
+    x: 266
+    y: 525
+    kind: sea
+    size: small
+  space9:
+    name: Space 9
+    x: 345
+    y: 693
+    kind: wilderness
+    size: small
+  space10:
+    name: Space 10
+    x: 442
+    y: 448
+    kind: wilderness
+    size: small
+  space11:
+    name: Space 11
+    x: 440
+    y: 292
+    kind: sea
+    size: small
+  space12:
+    name: Space 12
+    x: 391
+    y: 225
+    kind: sea
+    size: small
+  space13:
+    name: Space 13
+    x: 580
+    y: 713
+    kind: sea
+    size: small
+  space14:
+    name: Space 14
+    x: 549
+    y: 631
+    kind: city
+    size: small
+  space15:
+    name: Space 15
+    x: 538
+    y: 282
+    kind: city
+    size: small
+  space16:
+    name: Space 16
+    x: 673
+    y: 624
+    kind: city
+    size: small
+  space17:
+    name: Space 17
+    x: 706
+    y: 458
+    kind: city
+    size: small
+  space18:
+    name: Space 18
+    x: 689
+    y: 255
+    kind: sea
+    size: small
+  space19:
+    name: Space 19
+    x: 918
+    y: 624
+    kind: wilderness
+    size: small
+  space20:
+    name: Space 20
+    x: 846
+    y: 384
+    kind: city
+    size: small
+  space21:
+    name: Space 21
+    x: 60
+    y: 650
+    kind: wilderness
+    size: small

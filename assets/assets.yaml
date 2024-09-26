@@ -1,0 +1,6 @@
+---
+  .18_derringer:
+    expansion: 0
+    tags: "trinket weapon"
+    cost: 1
+    effect: "add 1 strength combat"

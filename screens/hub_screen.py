@@ -70,6 +70,7 @@ class HubScreen(arcade.View):
                 if self.zoom == 1:
                     self.map.scale(2)
                     self.zoom = 2
+                    self.map_layout.children[0].move(500 - (x * 2), 471 - (y * 2))
                 else:
                     self.map.scale(0.5)
                     self.zoom = 1

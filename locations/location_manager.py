@@ -17,10 +17,9 @@ class LocationManager():
         except:
             self.locations = []
 
-    def get_closest_location(self, point, distance=25):
-        print(point)
+    def get_closest_location(self, point, zoom, map_location):
         for location in self.locations:
-            print(location.coordinates)
-            if get_distance(location.coordinates, point) < (25 if location.size == 'small' else 80):
+            scaled_location = (location.x, location.y) if zoom == 1 else (location.x * 2 + map_location[0], (location.y + 200) * 2 + map_location[1])
+            if get_distance(scaled_location, point) < (25 if location.size == 'small' else 50):
                 return location
         return None

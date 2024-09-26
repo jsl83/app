@@ -21,6 +21,8 @@ class HubScreen(arcade.View):
         self.zoom = 1
         self.click_time = 0
         self.holding = False
+        self.slow_move = (0, 0)
+        self.slow_move_count = 0
         
         self.map_manager = arcade.gui.UIManager()
         self.ui_manager = arcade.gui.UIManager()
@@ -45,12 +47,20 @@ class HubScreen(arcade.View):
         self.map_manager.draw()
         self.ui_manager.draw()
         self.click_time += 1
+        if self.slow_move[0] != 0 or self.slow_move[1] != 0:
+            self.map_layout.children[0].move(self.slow_move[0], self.slow_move[1])
+            self.check_map_boundaries()
+            self.slow_move_count += 1
+            if self.slow_move_count == 10:
+                self.slow_move = (0,0)
+                self.slow_move_count = 0
     
     def on_mouse_release(self, x, y, button, modifiers):
         self.holding = False
         if x < 1080 and y > 200:
-            location = self.location_manager.get_closest_location((x,y))
-            print(location)
+            location = self.location_manager.get_closest_location((x,y), self.zoom, (self.map.x, self.map.y))
+            if location != None and self.zoom == 2:
+                self.slow_move = ((500 - x) / 10, (471 - y) / 10)
 
     def on_mouse_press(self, x, y, button, modifiers):
         map = list(self.map_manager.get_widgets_at((x,y)))

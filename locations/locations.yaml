@@ -1,127 +1,406 @@
 ---
-  space1:
+  space_1:
     name: Space 1
+    subtitle: Alaskan Coast
     x: 60
     y: 650
     kind: city
     size: small
-  space2:
+    routes:
+      - san_francisco: ship
+      - space_4: uncharted
+      - space_19: ship
+  space_2:
     name: Space 2
+    subtitle: Hawaii, United States
     x: 33
     y: 537
     kind: sea
     size: small
-  space3:
+    routes:
+      - san_francisco: ship
+      - tokyo: ship
+  space_3:
     name: Space 3
+    subtitle: Oceanic Pole of Inacessibility
     x: 107
     y: 292
     kind: city
     size: small
-  space4:
+    routes:
+      - buenos_aires: ship
+      - sydney: ship
+  space_4:
     name: Space 4
+    subtitle: Fort Providence, Canada
     x: 161
     y: 652
     kind: wilderness
     size: small
-  space5:
-    name: Space 1
+    routes:
+      - space_1: uncharted
+      - space_5: uncharted
+  space_5:
+    name: Space 5
+    subtitle: American Metropolis
     x: 182
     y: 601
     kind: city
     size: small
-  space6:
+    routes:
+      - arkham: rail
+      - san_francisco: rail
+  space_6:
     name: Space 6
+    subtitle: Dallas, United States
     x: 152
     y: 543
     kind: city
     size: small
-  space7:
+    routes:
+      - san_francisco: rail
+      - arkham: rail
+      - space_7: rail
+  space_7:
     name: Space 7
+    subtitle: Central America
     x: 201
     y: 468
     kind: city
     size: small
-  space8:
+    routes:
+      - space_6: rail
+      - space_8: ship
+      - san_francisco: ship
+      - buenos_aires: ship
+      - the_amazon: uncharted
+  space_8:
     name: Space 8
+    subtitle: The Caribbean
     x: 266
     y: 525
     kind: sea
     size: small
-  space9:
+    routes:
+      - space_7: ship
+      - arkham: ship
+      - buenos_aires: ship
+      - space_10: ship
+  space_9:
     name: Space 9
+    subtitle: Disko Island, Greenland
     x: 345
     y: 693
     kind: wilderness
     size: small
-  space10:
+    routes:
+      - arkham: ship
+  space_10:
     name: Space 10
-    x: 442
+    subtitle: Dakar, Senegal
+    x: 422
     y: 448
     kind: wilderness
     size: small
-  space11:
+    routes:
+      - space_8: ship
+      - rome: ship
+      - the_pyramids: uncharted
+      - space_15: ship
+  space_11:
     name: Space 11
+    subtitle: Tristan de Cunha
     x: 440
     y: 292
     kind: sea
     size: small
-  space12:
+    routes:
+      - buenos_aires: ship
+      - space_15: ship
+  space_12:
     name: Space 12
+    subtitle: South Georgia
     x: 391
     y: 225
     kind: sea
     size: small
-  space13:
+    routes:
+      - buenos_aires: ship
+      - antarctica: ship
+  space_13:
     name: Space 13
+    subtitle: Arkhangelsk, Russia
     x: 580
     y: 713
     kind: sea
     size: small
-  space14:
+    routes:
+      - london: ship
+  space_14:
     name: Space 14
+    subtitle: Scandinavia
     x: 549
     y: 631
     kind: city
     size: small
-  space15:
+    routes:
+      - rome: rail
+      - space_16: rail
+  space_15:
     name: Space 15
+    subtitle: South Africa
     x: 538
     y: 282
     kind: city
     size: small
-  space16:
+    routes:
+      - space_10: ship
+      - space_11: ship
+      - space_17: ship
+      - space_18: ship
+      - the_heart_of_africa: uncharted
+  space_16:
     name: Space 16
+    subtitle: Central Russia
     x: 673
     y: 624
     kind: city
     size: small
-  space17:
+    routes:
+      - space_14: rail
+      - istanbul: rail
+      - tunguska: rail
+  space_17:
     name: Space 17
+    subtitle: Urban India
     x: 706
     y: 458
     kind: city
     size: small
-  space18:
+    routes:
+      - istanbul: rail
+      - the_himalayas: uncharted
+      - space_15: ship
+      - space_20: ship
+      - shanghai: rail
+  space_18:
     name: Space 18
+    subtitle: Port-aux-Francais
     x: 689
     y: 255
     kind: sea
     size: small
-  space19:
+    routes:
+      - space_15: ship
+      - sydney: shpi
+  space_19:
     name: Space 19
+    subtitle: Beringovsky, Russia
     x: 918
     y: 624
     kind: wilderness
     size: small
-  space20:
+    routes:
+      - space_1: ship
+      - shanghai: rail
+      - tunguska: rail
+  space_20:
     name: Space 20
+    subtitle: Jakarta, Indonesia
     x: 846
     y: 384
     kind: city
     size: small
-  space21:
+    routes:
+      - space_17: ship
+      - shanghai: ship
+      - tokyo: ship
+      - sydney: ship
+  space_21:
     name: Space 21
-    x: 60
-    y: 650
+    subtitle: Uluru, Australia
+    x: 881
+    y: 328
     kind: wilderness
     size: small
+    routes:
+      - sydney: uncharted
+  san_francisco:
+    name: San Francisco
+    subtitle: Improve Observation
+    x: 98
+    y: 597
+    kind: city
+    size: large
+    color: green
+    routes:
+      - space_1: ship
+      - space_2: ship
+      - space_7: ship
+      - space_5: rail
+      - space_6: rail
+  arkham:
+    name: Arkham
+    subtitle: Gain Incantation Spells
+    x: 270
+    y: 590
+    kind: city
+    size: large
+    color: green
+    routes:
+      - space_5: rail
+      - space_6: rail
+      - space_9: ship
+      - london: ship
+      - space_8: ship
+  the_amazon:
+    name: The Amazon
+    x: 274
+    y: 419
+    kind: wilderness
+    size: square
+    routes:
+      - space_7: uncharted
+      - buenos_aires: uncharted
+  buenos_aires:
+    name: Buenos Aires
+    subtitle: Gain Ritual Spells
+    x: 265
+    y: 320
+    kind: city
+    size: large
+    color: green
+    routes:
+      - space_7: ship
+      - space_3: ship
+      - space_8: ship
+      - space_11: ship
+      - space_12: ship
+      - the_amazon: uncharted
+  london:
+    name: London
+    subtitle: Spawn Clue Tokens
+    x: 441
+    y: 627
+    kind: city
+    size: large
+    color: orange
+    routes:
+      - space_13: ship
+      - arkham: ship
+      - rome: ship
+  rome:
+    name: Rome
+    subtitle: Improve Will
+    x: 497
+    y: 551
+    kind: city
+    size: large
+    color: orange
+    routes:
+      - space_10: ship
+      - london: ship
+      - space_14: rail
+      - istanbul: rail
+      - the_pyramids: ship
+  istanbul:
+    name: Istanbul
+    subtitle: Improve Diplomacy
+    x: 603
+    y: 582
+    kind: city
+    size: large
+    color: orange
+    routes:
+      - rome: rail
+      - space_16: rail
+      - the_pyramids: rail
+      - space_17: rail
+  the_pyramids:
+    name: The Pyramids
+    x: 571
+    y: 473
+    kind: wilderness
+    size: square
+    routes:
+      - rome: ship
+      - istanbul: rail
+      - space_10: uncharted
+      - the_heart_of_africa: uncharted
+  the_heart_of_africa:
+    name: The Heart of Africa
+    x: 555
+    y: 375
+    kind: wilderness
+    size: square
+    routes:
+      - the_pyramids: uncharted
+      - space_15: uncharted
+  antarctica:
+    name: Antarctica
+    x: 592
+    y: 199
+    kind: sea
+    size: square
+    routes:
+      - space_12: ship
+      - sydney: ship
+  tunguska:
+    name: Tunguska
+    x: 752
+    y: 628
+    kind: wilderness
+    size: square
+    routes:
+      - space_16: rail
+      - space_19: rail
+  the_himalayas:
+    name: The Himalayas
+    x: 734
+    y: 528
+    kind: wilderness
+    size: square
+    routes:
+      - space_17: uncharted
+      - shanghai: uncharted
+  shanghai:
+    name: Shanghai
+    subtitle: Improve Lore
+    x: 843
+    y: 484
+    kind: city
+    size: large
+    color: purple
+    routes:
+      - the_himalayas: uncharted
+      - space_17: rail
+      - tokyo: ship
+      - space_19: rail
+      - space_20: ship
+  tokyo:
+    name: Tokyo
+    subtitle: Defeat Monsters
+    x: 927
+    y: 541
+    kind: city
+    size: large
+    color: purple
+    routes:
+      - space_20: ship
+      - shanghai: ship
+      - space_2: ship
+      - space_19: ship
+  sydney:
+    name: Sydney
+    subtitle: Improve Strength
+    x: 911
+    y: 271
+    kind: city
+    size: large
+    color: purple
+    routes:
+      - space_21: uncharted
+      - space_18: ship
+      - antarctica: ship
+      - space_20: ship
+      - space_3: ship

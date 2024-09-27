@@ -3,7 +3,10 @@ import arcade.csscolor
 import arcade.gui
 from util import *
 from investigators.investigator import Investigator
+from investigators.investigator_pane import InvestigatorPane
 from locations.location_manager import LocationManager
+from locations.map import Map
+from screens.action_button import ActionButton
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 
@@ -13,10 +16,12 @@ class HubScreen(arcade.View):
         super().__init__()
         self.background = None
         self.networker = networker
+        self.networker.external_message_processor = self.set_listener
+
+        investigator = 'akachi_onyele'
 
         self.investigator = Investigator(investigator)
-        self.map_view_loc = (0,0)
-        self.initial_loc = (0,0)
+
         self.initial_click = (0,0)
         self.zoom = 1
         self.click_time = 0
@@ -25,30 +30,35 @@ class HubScreen(arcade.View):
         self.slow_move_count = 0
         
         self.map_manager = arcade.gui.UIManager()
-        self.ui_manager = arcade.gui.UIManager()
-        self.map_layout = arcade.gui.UILayout(width=1280, height=800)
-        self.info_layout = arcade.gui.UILayout(width=1280, height=800)
-        map_texture = arcade.load_texture(IMAGE_PATH_ROOT + 'maps/world_map_square.png')
-        self.map = arcade.gui.UITextureButton(texture=map_texture, y=-200, scale=0.5)
-        self.map_layout.add(self.map)
-        self.info_layout.add(arcade.gui.UITextureButton(x=1000, width=280, height=800, texture=arcade.load_texture(
-            IMAGE_PATH_ROOT + 'buttons/placeholder.png')))
-        self.info_layout.add(arcade.gui.UITextureButton(x=0, width=1280, height=142, texture=arcade.load_texture(
-            IMAGE_PATH_ROOT + 'buttons/placeholder.png')))
-        self.map_manager.add(self.map_layout)
-        self.ui_manager.add(self.info_layout)
+        self.info_manager = arcade.gui.UIManager()
+
+        self.maps = {
+            'world': Map('world', (0, -200), 0.5)
+        }
+        self.info_panes = {
+            'investigator': InvestigatorPane(self.investigator)
+        }
+
+        self.map = self.maps['world']
+        self.info_pane = self.info_panes['investigator']
+
+        #self.info_layout.add(arcade.gui.UITextureButton(x=0, width=1280, height=142, texture=arcade.load_texture(
+        #    IMAGE_PATH_ROOT + 'buttons/placeholder.png')))
+
+        self.map_manager.add(self.map.layout)
+        self.info_manager.add(self.info_pane.layout)
         self.map_manager.enable()
-        self.ui_manager.enable()
+        self.info_manager.enable()
 
         self.location_manager = LocationManager()
 
     def on_draw(self):
         self.clear()
         self.map_manager.draw()
-        self.ui_manager.draw()
+        self.info_manager.draw()
         self.click_time += 1
         if self.slow_move[0] != 0 or self.slow_move[1] != 0:
-            self.map_layout.children[0].move(self.slow_move[0], self.slow_move[1])
+            self.map.move(self.slow_move[0], self.slow_move[1])
             self.check_map_boundaries()
             self.slow_move_count += 1
             if self.slow_move_count == 10:
@@ -57,36 +67,39 @@ class HubScreen(arcade.View):
     
     def on_mouse_release(self, x, y, button, modifiers):
         self.holding = False
-        if x < 1080 and y > 200:
-            location = self.location_manager.get_closest_location((x,y), self.zoom, (self.map.x, self.map.y))
+        if x < 1000 and y > 200:
+            location = self.location_manager.get_closest_location((x,y), self.zoom, self.map.get_location())
             if location != None and self.zoom == 2:
                 self.slow_move = ((500 - x) / 10, (471 - y) / 10)
+        else:
+            ui_buttons = list(self.info_manager.get_widgets_at((x,y)))
+            if len(ui_buttons) > 0 and type(ui_buttons[0]) == ActionButton and ui_buttons[0].enabled:
+                ui_buttons[0].action()
 
     def on_mouse_press(self, x, y, button, modifiers):
         map = list(self.map_manager.get_widgets_at((x,y)))
-        ui_buttons = list(self.ui_manager.get_widgets_at((x,y)))
-        if x < 1080 and y > 200:
+        ui_buttons = list(self.info_manager.get_widgets_at((x,y)))
+        if x < 1000 and y > 200:
             if self.click_time < 25 and get_distance((x,y), self.initial_click) < 50:
                 if self.zoom == 1:
-                    self.map.scale(2)
+                    self.map.zoom(2)
                     self.zoom = 2
-                    self.map_layout.children[0].move(500 - (x * 2), 471 - (y * 2))
+                    self.map.move(500 - (x * 2), 471 - (y * 2))
                 else:
-                    self.map.scale(0.5)
+                    self.map.zoom(0.5)
                     self.zoom = 1
                 self.check_map_boundaries()
             self.holding = True
             self.click_time = 0
-            self.initial_loc = self.map_view_loc
             self.initial_click = (x, y)
 
     def on_mouse_motion(self, x, y, dx, dy):
         if self.holding:
-            self.map_layout.children[0].move(dx, dy)
+            self.map.move(dx, dy)
             self.check_map_boundaries()
 
     def check_map_boundaries(self):
-        x, y = self.map.x, self.map.y
+        x, y = self.map.get_location()[0], self.map.get_location()[1]
         dx, dy = 0, 0
         if x > 0:
             dx = -x
@@ -96,4 +109,23 @@ class HubScreen(arcade.View):
             dy = -y + (-542 if self.zoom == 2 else -200)
         elif y < 800 - (1000 * self.zoom):
             dy = -y + (-1200 if self.zoom == 2 else -200)
-        self.map_layout.children[0].move(dx, dy)
+        self.map.move(dx, dy)
+
+    def switch_map(self, key):
+        self.map = self.maps[key]
+        self.map_manager.children = {0:[]}
+        self.map_manager.add(self.map)
+
+    def switch_info_pane(self, key):
+        self.info_pane = self.info_panes[key]
+        self.info_manager.children = {0:[]}
+        self.info_manager.add(self.info_pane)
+
+    def set_listener(self, topic, payload):
+        match payload['message']:
+            case 'spawn_gate':
+                pass
+            case 'spawn_clue':
+                pass
+            case 'spawn_monster':
+                pass

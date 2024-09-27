@@ -1,6 +1,19 @@
 ---
   akachi_onyele:
     expansion: 0
+    health: 5
+    subtitle: 'The Shaman'
+    skills:
+      - 3
+      - 2
+      - 2
+      - 2
+      - 4
+    location: "space 15"
+    tokens:
+      - 'clue'
+    spells:
+      - 'mists_of_releh'
   charlie_kane:
     expansion: 0
   diana_stanley:

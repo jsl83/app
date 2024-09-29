@@ -20,6 +20,7 @@ class ActionButton(arcade.gui.UITextureButton):
                  font: str = "",
                  action=None,
                  enabled: bool=True,
+                 action_args=None,
                  **kwargs):
         
         super().__init__(x, y, width, height, texture, texture_hovered, texture_pressed, text, scale,
@@ -27,3 +28,4 @@ class ActionButton(arcade.gui.UITextureButton):
         
         self.action = action
         self.enabled = enabled
+        self.action_args = action_args

@@ -1,0 +1,38 @@
+---
+  world:
+    space_1:
+    space_2:
+    space_3:
+    space_4:
+    space_5:
+    space_6:
+    space_7:
+    space_8:
+    space_9:
+    space_10:
+    space_11:
+    space_12:
+    space_13:
+    space_14:
+    space_15:
+    space_16:
+    space_17:
+    space_18:
+    space_19:
+    space_20:
+    space_21:
+    san_francisco: green
+    arkham: red
+    the_amazon:
+    buenos_aires: blue
+    london: blue
+    rome: red
+    istanbul: green
+    the_pyramids:
+    the_heart_of_africa:
+    antarctica:
+    tunguska:
+    the_himalayas:
+    shanghai: red
+    tokyo: blue
+    sydney: red

@@ -13,6 +13,16 @@ from screens.server_loading import ServerLoadingScreen
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 800
 SCREEN_TITLE = "ELDRITCH HORROR"
+REFERENCES = {
+    1: [1, 2, 1],
+    2: [1, 2, 2],
+    3: [2, 3, 2],
+    4: [2, 4, 3]
+}
+with open('small_cards/server_spells.yaml') as stream:
+    SPELLS = yaml.safe_load(stream)
+with open('locations/server_locations.yaml') as stream:
+    LOCATIONS = yaml.safe_load(stream)
 
 class Networker(threading.Thread, BanyanBase):
     def __init__(self, back_plane_ip_address=None, process_name=None, player=0, screen=None):
@@ -25,24 +35,27 @@ class Networker(threading.Thread, BanyanBase):
         BanyanBase.__init__(self, back_plane_ip_address=back_plane_ip_address,
             process_name=process_name, loop_time=.0001)
         self.set_subscriber_topic('login')
-        self.set_subscriber_topic('akachi_onyele')
         self.start()
 
         self.screen = screen
 
         self.player_count = 0
-        self.selected_investigators = ['akachi_onyele']
+        self.ready_count = 0
+        self.reference = None
 
         self.ancient_one = None
-        self.reserve = []
 
         self.decks = {
-            'conditiions': {},
+            'conditions': {},
             'artifacts': {},
             'unique_assets': {},
             'spells': {},
-            'clues': {},
-            'gates': {},
+            'clues': [],
+            'gates': {
+                'deck': [],
+                'discard': [],
+                'board': []
+            },
             'monsters': {}
         }
         self.assets = {
@@ -51,11 +64,21 @@ class Networker(threading.Thread, BanyanBase):
             'reserve': []
         }
 
+        for map in LOCATIONS.keys():
+            for location in LOCATIONS[map].keys():
+                self.decks['clues'].append(map + ':' + location)
+                if LOCATIONS[map][location] != None:
+                    self.decks['gates']['deck'].append(map + ':' + location)
+
         for cardtype in ['spells']:
-            with open('small_cards/server_' + cardtype + '.yaml') as stream:
-                cards = yaml.safe_load(stream)
-                for key in cards.keys():
-                    self.decks[cardtype][key] = list(range(1, int(cards[key]) + 1))
+            for key in SPELLS.keys():
+                self.decks[cardtype][key] = list(range(1, int(SPELLS[key]) + 1))
+
+        # temporary variables set for testing - DELETE LATER
+        self.set_subscriber_topic('akachi_onyele')
+        self.selected_investigators = ['akachi_onyele']
+        self.reference = REFERENCES[1]
+        self.player_count = 1
 
     def start_backplane(self):
         if sys.platform.startswith('win32'):
@@ -85,13 +108,17 @@ class Networker(threading.Thread, BanyanBase):
                     self.set_subscriber_topic(payload['value'])
                     self.screen.add_investigator(payload['value'])
                     if len(self.selected_investigators) == self.player_count:
-                        for name in self.selected_investigators:
-                            self.publish_payload({'message': 'start_game', 'value': None}, name)
+                        self.publish_payload({'message': 'start_game', 'value': None}, 'server_update')
                     else:
                         self.publish_payload({'message': 'investigator_selected', 'value': payload['value']}, 'server_update')
                 case 'number_selected':
                     self.player_count = payload['value']
+                    self.reference = REFERENCES[int(int(payload['value']) / 2)]
                     self.publish_payload({'message': 'ancient_ones', 'value': None}, 'server_update')
+                case 'ready':
+                    self.ready_count += 1
+                    if self.ready_count == self.player_count:
+                        self.initiate_gameboard()
         elif topic in self.selected_investigators:
             match payload['message']:
                 case 'spells':
@@ -110,6 +137,30 @@ class Networker(threading.Thread, BanyanBase):
             self.decks[cardtype][name[0:-1]].append(name[-1])
             return None
 
+    def spawn(self, piece, name=None, location=None):
+        if piece == 'gates':
+            if len(self.decks['gates']['deck']) > 0:
+                gate = random.choice(self.decks['gates']['deck'])
+                self.decks['gates']['deck'].remove(gate)
+                self.decks['gates']['board'].append(gate)
+                self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
+            elif len(self.decks['gates']['discard']) > 0:
+                self.decks['gates']['deck'].append(item for item in self.decks['gates']['discard'])
+                self.decks['gates']['discard'] = []
+                self.spawn('gates')
+            else:
+                #advance doom
+                pass
+        elif piece == 'clues':
+            token = random.choice(self.decks[piece])
+            self.decks[piece].remove(token)
+            self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
+
+    def initiate_gameboard(self):
+        for i in range(0, self.reference[0]):
+            self.spawn('gates')
+        for i in range(0, self.reference[1]):
+            self.spawn('clues')
 
 def set_up_network(screen):
     parser = argparse.ArgumentParser()

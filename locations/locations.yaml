@@ -192,7 +192,7 @@
     size: small
     routes:
       - space_15: ship
-      - sydney: shpi
+      - sydney: ship
   space_19:
     name: Space 19
     subtitle: Beringovsky, Russia

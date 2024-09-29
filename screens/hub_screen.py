@@ -36,31 +36,48 @@ class HubScreen(arcade.View):
         
         self.map_manager = arcade.gui.UIManager()
         self.info_manager = arcade.gui.UIManager()
+        self.ui_manager = arcade.gui.UIManager()
+        self.map_token_manager = arcade.gui.UIManager()
+        ui_layout = arcade.gui.UILayout(x=0, y=0, width=1000, height=142)
+
+        index = 0
+        for text in ['investigator', 'possessions', 'reserve', 'location', 'ancient_one']:
+            ui_layout.add(ActionButton(index * 190 + 50, y=21, width=140, height=100, texture=arcade.load_texture(
+                IMAGE_PATH_ROOT + 'buttons/placeholder.png'), text=human_readable(text), action=self.switch_info_pane, action_args={'key': text}))
+            index += 1
 
         self.maps = {
-            'world': Map('world', (0, -200), 0.5)
+            'world': {
+                'map': Map('world', (0, -200), 0.5),
+                'tokens': arcade.gui.UILayout(x=0, y=142, width=1000, height=658)
+            }
         }
         self.info_panes = {
             'investigator': InvestigatorPane(self.investigator)
         }
 
-        self.map = self.maps['world']
+        self.map = self.maps['world']['map']
         self.info_pane = self.info_panes['investigator']
-
-        #self.info_layout.add(arcade.gui.UITextureButton(x=0, width=1280, height=142, texture=arcade.load_texture(
-        #    IMAGE_PATH_ROOT + 'buttons/placeholder.png')))
 
         self.map_manager.add(self.map.layout)
         self.info_manager.add(self.info_pane.layout)
+        self.ui_manager.add(ui_layout)
+        self.map_token_manager.add(self.maps['world']['tokens'])
         self.map_manager.enable()
         self.info_manager.enable()
+        self.ui_manager.enable()
+        self.map_token_manager.enable()
 
         self.location_manager = LocationManager()
+
+        self.networker.publish_payload({'message': 'ready'}, 'login')
 
     def on_draw(self):
         self.clear()
         self.map_manager.draw()
         self.info_manager.draw()
+        self.ui_manager.draw()
+        self.map_token_manager.draw()
         self.click_time += 1
         if self.slow_move[0] != 0 or self.slow_move[1] != 0:
             self.map.move(self.slow_move[0], self.slow_move[1])
@@ -79,9 +96,9 @@ class HubScreen(arcade.View):
             if location != None and self.zoom == 2:
                 self.slow_move = ((500 - x) / 10, (471 - y) / 10)
         else:
-            ui_buttons = list(self.info_manager.get_widgets_at((x,y)))
+            ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y)))
             if len(ui_buttons) > 0 and type(ui_buttons[0]) == ActionButton and ui_buttons[0].enabled:
-                ui_buttons[0].action()
+                ui_buttons[0].action() if ui_buttons[0].action_args == None else ui_buttons[0].action(**ui_buttons[0].action_args)
 
     def on_mouse_press(self, x, y, button, modifiers):
         map = list(self.map_manager.get_widgets_at((x,y)))
@@ -121,7 +138,7 @@ class HubScreen(arcade.View):
     def switch_map(self, key):
         self.map = self.maps[key]
         self.map_manager.children = {0:[]}
-        self.map_manager.add(self.map)
+        self.map_manager.add(self.map.layout)
 
     def switch_info_pane(self, key):
         self.info_pane = self.info_panes[key]
@@ -130,12 +147,20 @@ class HubScreen(arcade.View):
 
     def set_listener(self, topic, payload):
         match payload['message']:
-            case 'spawn_gate':
-                pass
-            case 'spawn_clue':
-                pass
-            case 'spawn_monster':
-                pass
+            case 'spawn':
+                location = self.location_manager.locations[payload['location']]
+                kind = payload['value']
+                if kind == 'monster':
+                    pass
+                else:
+                    location[kind] = True
+                    if kind == 'clue':
+                        button = arcade.gui.UITextureButton(location['x'], location['y'],
+                            texture=arcade.load_texture(IMAGE_PATH_ROOT + 'icons/clue.png'), scale=0.75)
+                        button.kind = kind
+                        button.location = payload['location']
+                        self.maps[payload['map']]['tokens'].add(button)
+
             case 'spells':
                 self.investigator.get_item('spells', payload['value'])
 

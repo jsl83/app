@@ -5,6 +5,7 @@ import subprocess
 import signal
 import argparse
 import yaml
+import random
 from python_banyan.banyan_base import BanyanBase
 from screens.server_loading import ServerLoadingScreen
 
@@ -24,23 +25,37 @@ class Networker(threading.Thread, BanyanBase):
         BanyanBase.__init__(self, back_plane_ip_address=back_plane_ip_address,
             process_name=process_name, loop_time=.0001)
         self.set_subscriber_topic('login')
+        self.set_subscriber_topic('akachi_onyele')
         self.start()
 
         self.screen = screen
 
         self.player_count = 0
-        self.selected_investigators = []
+        self.selected_investigators = ['akachi_onyele']
 
         self.ancient_one = None
-        self.gates = []
-        self.monsters = []
         self.reserve = []
-        self.condition_deck = []
-        self.asset_deck = []
-        self.artifact_deck = []
-        self.spell_deck = []
-        self.unique_asset_deck = []
-        self.clues = []
+
+        self.decks = {
+            'conditiions': {},
+            'artifacts': {},
+            'unique_assets': {},
+            'spells': {},
+            'clues': {},
+            'gates': {},
+            'monsters': {}
+        }
+        self.assets = {
+            'deck': [],
+            'discard': [],
+            'reserve': []
+        }
+
+        for cardtype in ['spells']:
+            with open('small_cards/server_' + cardtype + '.yaml') as stream:
+                cards = yaml.safe_load(stream)
+                for key in cards.keys():
+                    self.decks[cardtype][key] = list(range(1, int(cards[key]) + 1))
 
     def start_backplane(self):
         if sys.platform.startswith('win32'):
@@ -67,6 +82,7 @@ class Networker(threading.Thread, BanyanBase):
                     self.publish_payload({'message': 'investigators', 'value': payload['value']}, 'server_update')
                 case 'investigators_selected':
                     self.selected_investigators.append(payload['value'])
+                    self.set_subscriber_topic(payload['value'])
                     self.screen.add_investigator(payload['value'])
                     if len(self.selected_investigators) == self.player_count:
                         for name in self.selected_investigators:
@@ -76,6 +92,24 @@ class Networker(threading.Thread, BanyanBase):
                 case 'number_selected':
                     self.player_count = payload['value']
                     self.publish_payload({'message': 'ancient_ones', 'value': None}, 'server_update')
+        elif topic in self.selected_investigators:
+            match payload['message']:
+                case 'spells':
+                    spell = self.item_request('spells', payload['value'])
+                    if spell != None:
+                        self.publish_payload({'message': 'spells', 'value': spell}, topic + '_server')
+
+    def item_request(self, cardtype, command):
+        command_type = command.split(':')[0]
+        name = command.split(':')[1]
+        if command_type == 'get':
+            variant = random.choice(self.decks[cardtype][name])
+            self.decks[cardtype][name].remove(variant)
+            return name + ':' + str(variant)
+        elif command_type == 'discard':
+            self.decks[cardtype][name[0:-1]].append(name[-1])
+            return None
+
 
 def set_up_network(screen):
     parser = argparse.ArgumentParser()

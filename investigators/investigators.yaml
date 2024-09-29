@@ -12,8 +12,8 @@
     location: "space 15"
     tokens:
       - 'clue'
-    spells:
-      - 'mists_of_releh'
+    possessions:
+      - 'spells:mists_of_releh'
   charlie_kane:
     expansion: 0
   diana_stanley:

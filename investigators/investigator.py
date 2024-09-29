@@ -24,17 +24,19 @@ class Investigator():
         self.health = self.max_health
         self.sanity = self.max_sanity
         self.skill_mods = [0,0,0,0,0]
-        self.small_cards = {
+        self.possessions = {
             'assets': [],
-            'uniques': [],
+            'unique_assets': [],
             'artifacts': [],
-            'conditions': []
+            'conditions': [],
+            'spells': []
         }
         self.clues = 0
         self.focus = 0
         self.ship_tickets = 0
         self.rail_tickets = 0
         self.location = INVESTIGATORS[name]['location']
+        self.initial_items = INVESTIGATORS[name]['possessions']
 
     def get_token(self, kind, amt=1, swap=False):
         match kind:
@@ -48,3 +50,9 @@ class Investigator():
                 self.ship_tickets += amt
                 if self.rail_tickets + self.ship_tickets > 2:
                     self.rail_tickets -= 1
+
+    def get_item(self, cardtype, name):
+        card = None
+        match cardtype:
+            case 'spells':
+                pass

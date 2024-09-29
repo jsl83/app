@@ -1,6 +1,7 @@
 import arcade
 import arcade.csscolor
 import arcade.gui
+import math
 from util import *
 from investigators.investigator import Investigator
 from investigators.investigator_pane import InvestigatorPane
@@ -21,6 +22,10 @@ class HubScreen(arcade.View):
         investigator = 'akachi_onyele'
 
         self.investigator = Investigator(investigator)
+
+        for item in self.investigator.initial_items:
+            request = item.split(':')
+            self.networker.publish_payload({'message': request[0], 'value': 'get:' + request[1]}, self.investigator.name)
 
         self.initial_click = (0,0)
         self.zoom = 1
@@ -64,6 +69,8 @@ class HubScreen(arcade.View):
             if self.slow_move_count == 10:
                 self.slow_move = (0,0)
                 self.slow_move_count = 0
+        self.draw_point_meters(self.investigator.max_health, self.investigator.health, 1075, (204,43,40))
+        self.draw_point_meters(self.investigator.max_sanity, self.investigator.sanity, 1202, (84, 117, 184))
     
     def on_mouse_release(self, x, y, button, modifiers):
         self.holding = False
@@ -129,3 +136,17 @@ class HubScreen(arcade.View):
                 pass
             case 'spawn_monster':
                 pass
+            case 'spells':
+                self.investigator.get_item('spells', payload['value'])
+
+    def draw_point_meters(self, max, current, pos, color):
+        degrees = 360 / max
+        for x in range(max - current, max):
+            x = max - x - 1
+            arcade.draw_arc_outline(
+                pos, 597, 110, 110, color, x * degrees + 93, (x + 1) * degrees + 87, 18)
+        angle = (max - current) * degrees * math.pi / 180
+        x = 55 * math.sin(angle) + pos
+        y = 55 * math.cos(angle) + 597
+        arcade.draw_circle_filled(x, y, 15, color)
+        arcade.draw_text(current, x, y+2, width=20, anchor_x='center', anchor_y='center', bold=True, font_size=17, font_name="calibri")

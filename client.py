@@ -23,6 +23,7 @@ class Networker(threading.Thread, BanyanBase):
         BanyanBase.__init__(self, back_plane_ip_address=back_plane_ip_address,
             process_name=process_name, loop_time=.0001)
         self.set_subscriber_topic('server_update')
+        self.set_subscriber_topic('akachi_onyele_server')
         self.start()
 
     # Process banyan subscribed messages

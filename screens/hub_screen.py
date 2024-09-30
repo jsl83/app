@@ -37,7 +37,7 @@ class HubScreen(arcade.View):
         
         self.info_manager = arcade.gui.UIManager()
         self.ui_manager = arcade.gui.UIManager()
-        ui_layout = arcade.gui.UILayout(x=0, y=0, width=1000, height=142)
+        ui_layout = arcade.gui.UILayout(x=0, y=0, width=1000, height=142).with_background(arcade.load_texture(IMAGE_PATH_ROOT + 'gui/ui_pane.png'))
 
         index = 0
         for text in ['investigator', 'possessions', 'reserve', 'location', 'ancient_one']:
@@ -109,15 +109,15 @@ class HubScreen(arcade.View):
             self.initial_click = (x, y)
             self.click_time = 0
         elif self.info_pane == self.info_panes['possessions'] and x > 1000:
-            self.holding = int((780 - y) / 260)
+            self.holding = 'items'
             self.click_time = 0
 
     def on_mouse_motion(self, x, y, dx, dy):
         if self.holding == 'map':
             self.map.move(dx, dy)
             self.check_map_boundaries()
-        elif self.holding != None:
-            self.info_pane.move_row(self.holding, dx) 
+        elif self.holding == 'items':
+            self.info_pane.move(dy) 
 
     def check_map_boundaries(self):
         x, y = self.map.get_location()[0], self.map.get_location()[1]

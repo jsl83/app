@@ -25,9 +25,9 @@ class Investigator():
         self.sanity = self.max_sanity
         self.skill_mods = [0,0,0,0,0]
         self.possessions = {
-            'assets': [SmallCard('.18_derringer', 'assets')],
+            'assets': [SmallCard('.18_derringer', 'assets'), SmallCard('.18_derringer', 'assets'), SmallCard('.18_derringer', 'assets'), SmallCard('.18_derringer', 'assets')],
             'unique_assets': [SmallCard('ace_of_swords', 'unique_assets')],
-            'artifacts': [SmallCard('alien_device', 'artifacts')],
+            'artifacts': [],
             'conditions': [SmallCard('agreement', 'conditions')],
             'spells': [SmallCard('mists_of_releh', 'spells')]
         }

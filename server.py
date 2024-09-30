@@ -14,7 +14,7 @@ SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 800
 SCREEN_TITLE = "ELDRITCH HORROR"
 REFERENCES = {
-    1: [1, 2, 1],
+    1: [1, 1, 1],
     2: [1, 2, 2],
     3: [2, 3, 2],
     4: [2, 4, 3]
@@ -141,6 +141,7 @@ class Networker(threading.Thread, BanyanBase):
         if piece == 'gates':
             if len(self.decks['gates']['deck']) > 0:
                 gate = random.choice(self.decks['gates']['deck'])
+                gate = 'world:arkham'
                 self.decks['gates']['deck'].remove(gate)
                 self.decks['gates']['board'].append(gate)
                 self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
@@ -153,14 +154,15 @@ class Networker(threading.Thread, BanyanBase):
                 pass
         elif piece == 'clues':
             token = random.choice(self.decks[piece])
+            token = 'world:arkham'
             self.decks[piece].remove(token)
             self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
 
     def initiate_gameboard(self):
         for i in range(0, self.reference[0]):
-            self.spawn('gates')
-        for i in range(0, self.reference[1]):
             self.spawn('clues')
+        for i in range(0, self.reference[1]):
+            self.spawn('gates')
 
 def set_up_network(screen):
     parser = argparse.ArgumentParser()

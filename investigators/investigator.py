@@ -1,6 +1,6 @@
-import arcade
 import yaml
 from util import *
+from small_cards.small_card import SmallCard
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/investigators/"
 INVESTIGATORS = None
@@ -25,18 +25,19 @@ class Investigator():
         self.sanity = self.max_sanity
         self.skill_mods = [0,0,0,0,0]
         self.possessions = {
-            'assets': [],
-            'unique_assets': [],
-            'artifacts': [],
-            'conditions': [],
-            'spells': []
+            'assets': [SmallCard('.18_derringer', 'assets')],
+            'unique_assets': [SmallCard('ace_of_swords', 'unique_assets')],
+            'artifacts': [SmallCard('alien_device', 'artifacts')],
+            'conditions': [SmallCard('agreement', 'conditions')],
+            'spells': [SmallCard('mists_of_releh', 'spells')]
         }
         self.clues = 0
         self.focus = 0
         self.ship_tickets = 0
         self.rail_tickets = 0
         self.location = INVESTIGATORS[name]['location']
-        self.initial_items = INVESTIGATORS[name]['possessions']
+        #self.initial_items = INVESTIGATORS[name]['possessions']
+        self.initial_items = []
 
     def get_token(self, kind, amt=1, swap=False):
         match kind:
@@ -51,8 +52,5 @@ class Investigator():
                 if self.rail_tickets + self.ship_tickets > 2:
                     self.rail_tickets -= 1
 
-    def get_item(self, cardtype, name):
-        card = None
-        match cardtype:
-            case 'spells':
-                pass
+    def get_item(self, cardtype, name, variant=None):
+        self.possessions[cardtype].append(SmallCard(name, cardtype))

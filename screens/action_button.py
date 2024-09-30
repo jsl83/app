@@ -18,7 +18,7 @@ class ActionButton(arcade.gui.UITextureButton):
                  style=None,
                  text_position: tuple = (0,0),
                  font: str = "",
-                 action=None,
+                 action=lambda: None,
                  enabled: bool=True,
                  action_args=None,
                  **kwargs):
@@ -29,3 +29,8 @@ class ActionButton(arcade.gui.UITextureButton):
         self.action = action
         self.enabled = enabled
         self.action_args = action_args
+        self.initial_x = x
+        self.initial_y = y
+
+    def reset_position(self):
+        self.move(self.initial_x - self.x, self.initial_y - self.y)

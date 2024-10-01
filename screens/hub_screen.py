@@ -6,6 +6,7 @@ from util import *
 from investigators.investigator import Investigator
 from screens.investigator_pane import InvestigatorPane
 from screens.possessions_pane import PossessionsPane
+from screens.reserve_pane import ReservePane
 from locations.location_manager import LocationManager
 from locations.map import Map
 from screens.action_button import ActionButton
@@ -50,7 +51,8 @@ class HubScreen(arcade.View):
         }
         self.info_panes = {
             'investigator': InvestigatorPane(self.investigator),
-            'possessions': PossessionsPane(self.investigator)
+            'possessions': PossessionsPane(self.investigator),
+            'reserve': ReservePane()
         }
 
         self.map = self.maps['world']
@@ -151,6 +153,8 @@ class HubScreen(arcade.View):
                 spell = payload['value'].split(':')
                 self.investigator.get_item('spells', spell[0], spell[1])
                 self.info_panes['possessions'].setup()
+            case 'restock':
+                self.info_panes['reserve'].restock(payload['removed'].split(':'), payload['value'].split(':'))
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max

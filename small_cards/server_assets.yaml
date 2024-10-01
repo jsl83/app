@@ -1,7 +1,6 @@
 ---
   .18_derringer:
     expansion: 0
-    cost: 1
     tags:
       - trinket
       - weapon

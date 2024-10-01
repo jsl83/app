@@ -21,6 +21,7 @@ class ActionButton(arcade.gui.UITextureButton):
                  action=lambda: None,
                  enabled: bool=True,
                  action_args=None,
+                 name: str = "",
                  **kwargs):
         
         super().__init__(x, y, width, height, texture, texture_hovered, texture_pressed, text, scale,
@@ -31,6 +32,7 @@ class ActionButton(arcade.gui.UITextureButton):
         self.action_args = action_args
         self.initial_x = x
         self.initial_y = y
+        self.name = name
 
     def reset_position(self):
         self.move(self.initial_x - self.x, self.initial_y - self.y)

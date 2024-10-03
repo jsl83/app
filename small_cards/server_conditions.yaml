@@ -1,0 +1,46 @@
+---
+  amnesia:
+    traits:
+      - madness
+    variants: 3
+  back_injury:
+    traits:
+      - injury
+    variants: 3
+  blessed:
+    traits:
+      - boon
+    variants: 3
+  cursed:
+    traits:
+      - bane
+    variants: 3
+  dark_pact:
+    traits:
+      - deal
+    variants: 3
+  debt:
+    traits:
+      - deal
+      - common
+    variants: 6
+  detained:
+    traits:
+      - restriction
+    variants: 3
+  hallucinations:
+    traits:
+      - madness
+    variants: 3
+  internal_injury:
+    traits:
+      - injury
+    variants: 3
+  leg_injury:
+    traits:
+      - injury
+    variants: 3
+  paranoia:
+    traits:
+      - madness
+    variants: 3

@@ -32,7 +32,7 @@ class HubScreen(arcade.View):
 
         for item in self.investigator.initial_items:
             request = item.split(':')
-            self.networker.publish_payload({'message': request[0], 'value': 'get:' + request[1]}, self.investigator.name)
+            self.request_card(request[0], request[1])
 
         self.initial_click = (0,0)
         self.zoom = 1
@@ -164,10 +164,19 @@ class HubScreen(arcade.View):
                 self.maps[payload['map']].spawn(payload['value'], self.location_manager.locations[payload['location']], payload['location'])
             case 'spells':
                 spell = payload['value'].split(':')
-                self.investigator.get_item('spells', spell[0], spell[1])
-                self.info_panes['possessions'].setup()
+                self.item_received('spells', spell[0], spell[1])
             case 'restock':
                 self.info_panes['reserve'].restock(payload['removed'].split(':'), payload['value'].split(':'))
+            case 'conditions':
+                card = payload['value'].split(':')
+                if next((condition for condition in self.investigator.possessions['conditions'] if condition.name == card[0]), None) is not None:
+                    self.networker.publish_payload({'message': 'discard', 'value': payload['value']})
+                else:
+                    self.item_received('conditions', card[0], card[1])
+                    if card[0] == 'debt':
+                        self.info_panes['reserve'].debt_button.disable()
+            case 'asset':
+                self.item_received('assets', payload['value'])
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max
@@ -188,7 +197,7 @@ class HubScreen(arcade.View):
             roll = int(random.random() * 6) + 1
             rolls.append(roll)
             choices.append({'path': IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png', 'value': roll})
-        self.choice_manager.add(create_choices({'text': 'Acquire Assets'}, choices = choices, size=(1000,658), pos=(0,142), offset=(0,100)))
+        self.choice_manager.add(create_choices(choices = choices, size=(1000,658), pos=(0,142), offset=(0,100)))
         return rolls
     
     def gui_set(self, able=True):
@@ -204,3 +213,17 @@ class HubScreen(arcade.View):
 
     def get_item_info(self, name):
         return ASSET_DICTIONARY[name]
+    
+    def request_card(self, kind, name, command='get:'):
+        self.networker.publish_payload({'message': kind, 'value': command + name}, self.investigator.name)
+
+    def discard_card(self, kind, name):
+        self.networker.publish_payload({'message': kind, 'value': 'discard:' + name}, self.investigator.name)
+
+    def clear_overlay(self):
+        self.choice_manager.children = {0:[]}
+        self.choice_manager.trigger_render()
+
+    def item_received(self, kind, name, variant=None):
+        self.investigator.get_item(kind, name, variant)
+        self.info_panes['possessions'].setup()

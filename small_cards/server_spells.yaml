@@ -1,2 +1,5 @@
 ---
-  mists_of_releh: 4
+  mists_of_releh:
+    traits:
+      - incantation
+    variants: 4

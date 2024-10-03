@@ -25,6 +25,8 @@ with open('locations/server_locations.yaml') as stream:
     LOCATIONS = yaml.safe_load(stream)
 with open('small_cards/server_assets.yaml') as stream:
     ASSETS = yaml.safe_load(stream)
+with open('small_cards/server_conditions.yaml') as stream:
+    CONDITIONS = yaml.safe_load(stream)
 
 class Networker(threading.Thread, BanyanBase):
     def __init__(self, back_plane_ip_address=None, process_name=None, player=0, screen=None):
@@ -74,7 +76,10 @@ class Networker(threading.Thread, BanyanBase):
                     self.decks['gates']['deck'].append(map + ':' + location)
 
         for key in SPELLS.keys():
-            self.decks['spells'][key] = list(range(1, int(SPELLS[key]) + 1))
+            self.decks['spells'][key] = list(range(1, int(SPELLS[key]['variants']) + 1))
+
+        for key in CONDITIONS.keys():
+            self.decks['conditions'][key] = list(range(1, int(CONDITIONS[key]['variants']) + 1))
 
         for key in ASSETS.keys():
             self.assets['deck'].append(key)
@@ -118,20 +123,38 @@ class Networker(threading.Thread, BanyanBase):
                         self.publish_payload({'message': 'investigator_selected', 'value': payload['value']}, 'server_update')
                 case 'number_selected':
                     self.player_count = payload['value']
-                    self.reference = REFERENCES[int(int(payload['value']) / 2)]
+                    self.reference = REFERENCES[int((int(payload['value']) + 1) / 2)]
                     self.publish_payload({'message': 'ancient_ones', 'value': None}, 'server_update')
                 case 'ready':
                     self.ready_count += 1
                     if self.ready_count == self.player_count:
                         self.initiate_gameboard()
         elif topic in self.selected_investigators:
-            match payload['message']:
-                case 'spells':
-                    spell = self.item_request('spells', payload['value'])
-                    if spell != None:
-                        self.publish_payload({'message': 'spells', 'value': spell}, topic + '_server')
+            if payload['message'] in ['spells', 'conditions']:
+                item = self.variant_request(payload['message'], payload['value'])
+                if item != None:
+                    self.publish_payload({'message': payload['message'], 'value': item}, topic + '_server')
+            elif payload['message'] == 'assets':
+                command = payload['value'].split(':')
+                item = self.asset_request(command[0], command[1])
+                if item != None:
+                    self.publish_payload({'message': 'asset', 'value': item}, topic + '_server')
 
-    def item_request(self, cardtype, command):
+    def asset_request(self, command, name):
+        match command:
+            case 'acquire':
+                self.restock_reserve([name])
+                return name
+            case 'restock':
+                self.restock_reserve([name], True)
+            case 'discard':
+                self.assets['discard'].append(name)
+                self.publish_payload({'message': 'asset', 'discard': name}, 'server_update')
+            case 'get':
+                self.assets['deck'].remove(name)
+                return name
+
+    def variant_request(self, cardtype, command):
         command_type = command.split(':')[0]
         name = command.split(':')[1]
         if command_type == 'get':
@@ -174,11 +197,12 @@ class Networker(threading.Thread, BanyanBase):
             self.spawn(kinds[i], self.reference[i])
         self.restock_reserve()
 
-    def restock_reserve(self, removed=[]):
+    def restock_reserve(self, removed=[], discard=False):
         removed_items = ':'.join(removed)
         for item in removed:
             self.assets['reserve'].remove(item)
-            self.assets['discard'].append(item)
+            if discard:
+                self.assets['discard'].append(item)
         items = ''
         for i in range(0, 4 - len(self.assets['reserve'])):
             item = random.choice(self.assets['deck'])

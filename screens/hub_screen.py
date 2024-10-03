@@ -2,6 +2,8 @@ import arcade
 import arcade.csscolor
 import arcade.gui
 import math
+import random
+import yaml
 from util import *
 from investigators.investigator import Investigator
 from screens.investigator_pane import InvestigatorPane
@@ -12,6 +14,9 @@ from locations.map import Map
 from screens.action_button import ActionButton
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
+
+with open('small_cards/assets.yaml') as stream:
+    ASSET_DICTIONARY = yaml.safe_load(stream)
 
 class HubScreen(arcade.View):
     
@@ -38,12 +43,14 @@ class HubScreen(arcade.View):
         
         self.info_manager = arcade.gui.UIManager()
         self.ui_manager = arcade.gui.UIManager()
+        self.choice_manager = arcade.gui.UIManager()
         ui_layout = arcade.gui.UILayout(x=0, y=0, width=1000, height=142).with_background(arcade.load_texture(IMAGE_PATH_ROOT + 'gui/ui_pane.png'))
 
         index = 0
         for text in ['investigator', 'possessions', 'reserve', 'location', 'ancient_one']:
             ui_layout.add(ActionButton(index * 190 + 50, y=21, width=140, height=100, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'buttons/placeholder.png'), text=human_readable(text), action=self.switch_info_pane, action_args={'key': text}))
+                IMAGE_PATH_ROOT + 'buttons/placeholder.png'), text=human_readable(text), action=self.switch_info_pane, action_args={'key': text},
+                texture_pressed=arcade.load_texture(IMAGE_PATH_ROOT + '/buttons/pressed_placeholder.png')))
             index += 1
 
         self.maps = {
@@ -52,7 +59,7 @@ class HubScreen(arcade.View):
         self.info_panes = {
             'investigator': InvestigatorPane(self.investigator),
             'possessions': PossessionsPane(self.investigator),
-            'reserve': ReservePane()
+            'reserve': ReservePane(self)
         }
 
         self.map = self.maps['world']
@@ -63,7 +70,7 @@ class HubScreen(arcade.View):
         self.ui_manager.add(ui_layout)
         self.info_manager.enable()
         self.ui_manager.enable()
-
+        self.choice_manager.enable()
         self.location_manager = LocationManager()
 
         self.networker.publish_payload({'message': 'ready'}, 'login')
@@ -73,6 +80,7 @@ class HubScreen(arcade.View):
         self.map.draw()
         self.info_manager.draw()
         self.ui_manager.draw()
+        self.choice_manager.draw()
         self.click_time += 1
         if self.slow_move[0] != 0 or self.slow_move[1] != 0:
             self.map.move(self.slow_move[0], self.slow_move[1])
@@ -96,6 +104,11 @@ class HubScreen(arcade.View):
             ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y)))
             if len(ui_buttons) > 0 and type(ui_buttons[0]) == ActionButton and ui_buttons[0].enabled:
                 ui_buttons[0].action() if ui_buttons[0].action_args == None else ui_buttons[0].action(**ui_buttons[0].action_args)
+                buttons = self.get_ui_buttons()
+                if ui_buttons[0] in buttons:
+                    for x in buttons:
+                        x.select(False)
+                    ui_buttons[0].select(True)
 
     def on_mouse_press(self, x, y, button, modifiers):
         if x < 1000 and y > 142:
@@ -167,3 +180,27 @@ class HubScreen(arcade.View):
         y = 55 * math.cos(angle) + 597
         arcade.draw_circle_filled(x, y, 15, color)
         arcade.draw_text(current, x, y+2, width=20, anchor_x='center', anchor_y='center', bold=True, font_size=17, font_name="calibri")
+
+    def run_test(self, skill):
+        choices = []
+        rolls = []
+        for x in range(self.investigator.skills[skill]):
+            roll = int(random.random() * 6) + 1
+            rolls.append(roll)
+            choices.append({'path': IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png', 'value': roll})
+        self.choice_manager.add(create_choices({'text': 'Acquire Assets'}, choices = choices, size=(1000,658), pos=(0,142), offset=(0,100)))
+        return rolls
+    
+    def gui_set(self, able=True):
+        for x in self.get_ui_buttons():
+            if able:
+                x.enable()
+            else:
+                x.disable()
+
+    def get_ui_buttons(self):
+        buttons = self.ui_manager.children[0][0].children
+        return buttons[1: len(buttons)]
+
+    def get_item_info(self, name):
+        return ASSET_DICTIONARY[name]

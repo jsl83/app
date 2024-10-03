@@ -33,6 +33,19 @@ class ActionButton(arcade.gui.UITextureButton):
         self.initial_x = x
         self.initial_y = y
         self.name = name
+        self.original_texture = texture
 
     def reset_position(self):
         self.move(self.initial_x - self.x, self.initial_y - self.y)
+
+    def disable(self):
+        self.enabled = False
+        self.style = {'font_color': arcade.color.ASH_GREY}
+    
+    def enable(self):
+        self.enabled = True
+        self.style = {'font_color': arcade.color.WHITE}
+
+    def select(self, selected: bool = False):
+        self._tex = self.texture_pressed if selected else self.original_texture
+        self.trigger_render()

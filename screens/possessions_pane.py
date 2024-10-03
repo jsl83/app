@@ -21,14 +21,14 @@ class PossessionsPane():
         for card_type in ['assets', 'unique_assets', 'artifacts', 'spells', 'conditions']:
             item_list = self.investigator.possessions[card_type]
             if len(item_list) > 0:
-                y_pos -= 40
+                y_pos -= 45
                 self.button_layout.add(ActionButton(x=1000, y=y_pos, width=280, height=25, text=human_readable(card_type)))
                 if len(item_list) > 1:
                     number = 0
                     for item in item_list:
                         if number == 0:
                             y_pos -= 190
-                        self.button_layout.add(ActionButton(1013 + number * 134, y_pos, texture=item.texture, scale=0.6 * item.scale))
+                        self.button_layout.add(ActionButton(1015 + number * 130, y_pos, texture=item.texture, scale=0.6 * item.scale))
                         number += 1
                         if number == 2:
                             number = 0

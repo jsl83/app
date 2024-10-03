@@ -38,6 +38,7 @@ class Investigator():
         self.location = INVESTIGATORS[name]['location']
         #self.initial_items = INVESTIGATORS[name]['possessions']
         self.initial_items = []
+        self.success = 5
 
     def get_token(self, kind, amt=1, swap=False):
         match kind:

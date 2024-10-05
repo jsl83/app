@@ -203,6 +203,7 @@ class Networker(threading.Thread, BanyanBase):
             self.assets['reserve'].remove(item)
             if discard:
                 self.assets['discard'].append(item)
+                self.publish_payload({'message': 'discard', 'value': item}, 'server_update')
         items = ''
         for i in range(0, 4 - len(self.assets['reserve'])):
             item = random.choice(self.assets['deck'])

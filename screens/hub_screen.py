@@ -123,7 +123,7 @@ class HubScreen(arcade.View):
             self.holding = 'map'
             self.initial_click = (x, y)
             self.click_time = 0
-        elif self.info_pane == self.info_panes['possessions'] and x > 1000:
+        elif (self.info_pane == self.info_panes['possessions'] or (self.info_pane == self.info_panes['reserve'] and self.info_panes['reserve'].discard_view)) and x > 1000:
             self.holding = 'items'
             self.click_time = 0
 
@@ -132,7 +132,7 @@ class HubScreen(arcade.View):
             self.map.move(dx, dy)
             self.check_map_boundaries()
         elif self.holding == 'items':
-            self.info_pane.move(dy) 
+            self.info_pane.move(dy)
 
     def check_map_boundaries(self):
         x, y = self.map.get_location()[0], self.map.get_location()[1]
@@ -157,6 +157,8 @@ class HubScreen(arcade.View):
             self.info_manager.add(self.info_pane.layout)
             if key == 'possessions':
                 self.info_pane.reset()
+            elif key == 'reserve':
+                self.info_pane.reset_discard()
 
     def set_listener(self, topic, payload):
         match payload['message']:
@@ -177,6 +179,8 @@ class HubScreen(arcade.View):
                         self.info_panes['reserve'].debt_button.disable()
             case 'asset':
                 self.item_received('assets', payload['value'])
+            case 'discard':
+                self.info_panes['reserve'].discard_item(payload['value'])
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max

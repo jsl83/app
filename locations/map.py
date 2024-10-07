@@ -18,6 +18,11 @@ TOKEN_DICT = {
         'size': 247,
         'scale': 0.4,
         'zoom_scale': 0.2
+    },
+    'monster': {
+        'size': 200,
+        'scale': 0.3,
+        'zoom_scale': 0.15
     }
 }
 
@@ -34,7 +39,9 @@ class Map():
 
         self.layouts = {
             'gate': arcade.gui.UILayout(width=1280, height=800),
-            'clue': arcade.gui.UILayout(width=1280, height=800)
+            'clue': arcade.gui.UILayout(width=1280, height=800),
+            'investigator': arcade.gui.UILayout(width=1280, height=800),
+            'monster': arcade.gui.UILayout(width=1280, height=800)
         }
         self.zoom_layout = arcade.gui.UILayout(width=1280, height=800)
 
@@ -43,7 +50,7 @@ class Map():
         
     def move(self, x, y):
         self.map.move(x, y)
-        for item in self.layouts['gate'].children + self.layouts['clue'].children:
+        for item in self.layouts['gate'].children + self.layouts['clue'].children + self.layouts['investigator'].children + self.layouts['monster'].children:
             item.move(x, y)
 
     def get_location(self):
@@ -53,11 +60,11 @@ class Map():
         self.map.scale(factor)
         self.token_manager.children = {0:[]}
         if factor == 2:
-            for item in self.layouts['gate'].children + self.layouts['clue'].children:
-                item.reset_position()
-                item.move(x, y)
-            self.token_manager.add(self.layouts['gate'], index=2)
-            self.token_manager.add(self.layouts['clue'], index=1)
+            for layout in [self.layouts['gate'], self.layouts['monster'], self.layouts['investigator'], self.layouts['clue']]:
+                for item in layout.children:
+                    item.reset_position()
+                    item.move(x, y)
+                self.token_manager.add(layout)
         else:
             self.token_manager.add(self.zoom_layout)
         self.map.move(x, y)
@@ -67,19 +74,27 @@ class Map():
         self.token_manager.draw()
 
     def spawn(self, kind, location, location_name, name= None):
-        if kind == 'monster':
-            pass
-        elif kind == 'investigator':
-            location['investigators'].append(name)
-        else:
-            location[kind] = True
-            path = IMAGE_PATH_ROOT + ('icons/clue.png' if kind == 'clue' else 'maps/' + location_name + '_gate.png')
-            item = TOKEN_DICT[kind]
-            button = ActionButton(location['x'] * 2 - item['size'] * item['scale'] / 2, location['y'] * 2 - item['size'] * item['scale'] / 2,
-                                  texture=arcade.load_texture(path), scale=item['scale'], name=location_name)
-            button.kind = kind
-            self.layouts[kind].add(button)
-            zoom_button = ActionButton(location['x'] - item['size'] * item['zoom_scale'] / 2, location['y'] - item['size'] * item['zoom_scale'] / 2,
-                                       texture=arcade.load_texture(path), scale=item['zoom_scale'], name=location_name)
-            zoom_button.kind = kind
-            self.zoom_layout.add(zoom_button)
+        path = None
+        match kind:
+            case 'investigator':
+                location['investigators'].append(name)
+                path = 'investigators/' + name + '_portrait.png'
+            case 'clue':
+                path = 'icons/clue.png'
+                location['clue'] = True
+            case 'gate':
+                path = 'maps/' + location_name + '_gate.png'
+                location['gate'] = True
+            case 'monster':
+                location['monsters'].append(name)
+                path = 'monsters/' + name + '.png'
+        path = IMAGE_PATH_ROOT + path
+        item = TOKEN_DICT[kind]
+        button = ActionButton(location['x'] * 2 - item['size'] * item['scale'] / 2, location['y'] * 2 - item['size'] * item['scale'] / 2,
+                                texture=arcade.load_texture(path), scale=item['scale'], name=location_name)
+        button.kind = kind
+        self.layouts[kind].add(button)
+        zoom_button = ActionButton(location['x'] - item['size'] * item['zoom_scale'] / 2, location['y'] - item['size'] * item['zoom_scale'] / 2,
+                                    texture=arcade.load_texture(path), scale=item['zoom_scale'], name=location_name)
+        zoom_button.kind = kind
+        self.zoom_layout.add(zoom_button)

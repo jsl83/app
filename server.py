@@ -29,6 +29,8 @@ with open('small_cards/server_conditions.yaml') as stream:
     CONDITIONS = yaml.safe_load(stream)
 with open('investigators/server_investigators.yaml') as stream:
     INVESTIGATORS = yaml.safe_load(stream)
+with open('monsters/server_monsters.yaml') as stream:
+    MONSTERS = yaml.safe_load(stream)
 
 class Networker(threading.Thread, BanyanBase):
     def __init__(self, back_plane_ip_address=None, process_name=None, player=0, screen=None):
@@ -62,8 +64,8 @@ class Networker(threading.Thread, BanyanBase):
                 'discard': [],
                 'board': []
             },
-            'monsters': {},
-            'epic_monsters': {}
+            'monsters': [],
+            'epic_monsters': []
         }
         self.assets = {
             'deck': [],
@@ -85,6 +87,12 @@ class Networker(threading.Thread, BanyanBase):
 
         for key in ASSETS.keys():
             self.assets['deck'].append(key)
+
+        for key in MONSTERS.keys():
+            if MONSTERS[key] != None:
+                self.decks['epic_monsters'].append(key)
+            else:
+                self.decks['monsters'].append(key)
 
         # temporary variables set for testing - DELETE LATER
         self.set_subscriber_topic('akachi_onyele')
@@ -179,14 +187,14 @@ class Networker(threading.Thread, BanyanBase):
                         self.decks['gates']['deck'].remove(location)
                         self.decks['gates']['board'].append(location)
                         self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': location.split(':')[1], 'map': location.split(':')[0]}, 'server_update')
-                        #self.spawn('monsters', location=location)
+                        self.spawn('monsters', location=location)
                     elif location == None:
                         if len(self.decks['gates']['deck']) > 0:
                             gate = random.choice(self.decks['gates']['deck'])
                             self.decks['gates']['deck'].remove(gate)
                             self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
-                            #self.spawn('monsters', location=gate)
+                            self.spawn('monsters', location=gate)
                         elif len(self.decks['gates']['discard']) > 0:
                             self.decks['gates']['deck'].append(item for item in self.decks['gates']['discard'])
                             self.decks['gates']['discard'] = []

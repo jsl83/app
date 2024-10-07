@@ -41,6 +41,7 @@ class HubScreen(arcade.View):
         self.holding = None
         self.slow_move = (0, 0)
         self.slow_move_count = 0
+        self.gui_enabled = True
         
         self.info_manager = arcade.gui.UIManager()
         self.ui_manager = arcade.gui.UIManager()
@@ -107,7 +108,7 @@ class HubScreen(arcade.View):
                 if self.zoom == 2:
                     self.slow_move = ((500 - location[0]) / 10, (471 - location[1]) / 10)
                 self.info_panes['location'].location_select(location[2])
-            self.request_spawn('gates', location='world:arkham')
+                self.switch_info_pane('location')
         else:
             ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y)))
             if len(ui_buttons) > 0 and type(ui_buttons[0]) == ActionButton and ui_buttons[0].enabled:
@@ -159,7 +160,7 @@ class HubScreen(arcade.View):
         self.map = self.maps[key]
 
     def switch_info_pane(self, key):
-        if self.info_pane != self.info_panes[key]:
+        if self.info_pane != self.info_panes[key] and self.gui_enabled:
             self.info_manager.children = {0:[]}
             self.info_pane = self.info_panes[key]
             self.info_manager.add(self.info_pane.layout)
@@ -173,8 +174,12 @@ class HubScreen(arcade.View):
             case 'spawn':
                 name = '' if payload['value'] not in  ['monster', 'investigator'] else payload['name']
                 self.maps[payload['map']].spawn(payload['value'], self.location_manager.locations[payload['location']], payload['location'], name)
-                self.location_manager.spawn(payload['value'], payload['location'], name)
-                self.info_panes['location'].update_tokens()
+                if payload['value'] == 'monster':
+                    for i in range(7):
+                        self.maps['world'].spawn('monster', self.location_manager.locations['space_15'], 'space_15', 'avian_thrall')
+                if payload['value'] == 'investigator':
+                    self.info_panes['location'].add_investigator(payload['name'])                    
+                self.info_panes['location'].update_all()
             case 'spells':
                 spell = payload['value'].split(':')
                 self.item_received('spells', spell[0], spell[1])
@@ -216,6 +221,7 @@ class HubScreen(arcade.View):
         return rolls
     
     def gui_set(self, able=True):
+        self.gui_enabled = able
         for x in self.get_ui_buttons():
             if able:
                 x.enable()

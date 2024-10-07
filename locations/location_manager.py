@@ -38,9 +38,3 @@ class LocationManager():
     def find_path(self, start, goal):
         neighbors = lambda name: list(map(lambda route: list(route.keys())[0], self.locations[name]['routes']))
         return astar.find_path(start, goal, neighbors)
-    
-    def spawn(self, value, location, name=None):
-        if value == 'monster':
-            self.locations[location]['monsters'].append(name)
-        else:
-            self.locations[location][value] = True

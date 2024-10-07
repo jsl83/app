@@ -3,7 +3,6 @@ import threading
 import signal
 import argparse
 from python_banyan.banyan_base import BanyanBase
-from screens.select_screen import SelectionScreen
 from screens.hub_screen import HubScreen
 
 # Screen title and size

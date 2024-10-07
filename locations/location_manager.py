@@ -20,6 +20,10 @@ class LocationManager():
                     self.locations[name]['gate'] = False
                     self.locations[name]['clue'] = False
                     self.locations[name]['monsters'] = []
+                    self.locations[name]['investigators'] = []
+                    self.locations[name]['expedition'] = False
+                    self.locations[name]['eldritch'] = False
+                    self.locations[name]['rumor'] = False
         except:
             self.locations = {}
 
@@ -28,9 +32,15 @@ class LocationManager():
             location = self.locations[key]
             scaled_location = (location['x'], location['y']) if zoom == 1 else (location['x'] * 2 + map_location[0], (location['y'] + 200) * 2 + map_location[1])
             if get_distance(scaled_location, point) < (25 if location['size'] == 'small' else 50):
-                return (scaled_location)
+                return (scaled_location[0], scaled_location[1], key)
         return None
     
     def find_path(self, start, goal):
         neighbors = lambda name: list(map(lambda route: list(route.keys())[0], self.locations[name]['routes']))
         return astar.find_path(start, goal, neighbors)
+    
+    def spawn(self, value, location, name=None):
+        if value == 'monster':
+            self.locations[location]['monsters'].append(name)
+        else:
+            self.locations[location][value] = True

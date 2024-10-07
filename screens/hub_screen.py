@@ -9,6 +9,7 @@ from investigators.investigator import Investigator
 from screens.investigator_pane import InvestigatorPane
 from screens.possessions_pane import PossessionsPane
 from screens.reserve_pane import ReservePane
+from screens.location_pane import LocationPane
 from locations.location_manager import LocationManager
 from locations.map import Map
 from screens.action_button import ActionButton
@@ -56,22 +57,26 @@ class HubScreen(arcade.View):
         self.maps = {
             'world': Map('world', (0, -200), 0.5)
         }
+        self.location_manager = LocationManager()
+
         self.info_panes = {
             'investigator': InvestigatorPane(self.investigator),
             'possessions': PossessionsPane(self.investigator),
-            'reserve': ReservePane(self)
+            'reserve': ReservePane(self),
+            'location': LocationPane(self.location_manager)
         }
 
         self.map = self.maps['world']
 
         self.info_pane = self.info_panes['investigator']
 
+        self.info_panes['location'].location_select(self.investigator.location)
+
         self.info_manager.add(self.info_pane.layout)
         self.ui_manager.add(ui_layout)
         self.info_manager.enable()
         self.ui_manager.enable()
         self.choice_manager.enable()
-        self.location_manager = LocationManager()
 
         self.networker.publish_payload({'message': 'ready'}, 'login')
 
@@ -96,10 +101,13 @@ class HubScreen(arcade.View):
     
     def on_mouse_release(self, x, y, button, modifiers):
         self.holding = None
-        if x < 1000 and y > 142 and self.click_time <= 5:
+        if x < 1000 and y > 142 and self.click_time <= 10:
             location = self.location_manager.get_closest_location((x,y), self.zoom, self.map.get_location())
-            if location != None and self.zoom == 2:
-                self.slow_move = ((500 - location[0]) / 10, (471 - location[1]) / 10)
+            if location != None:
+                if self.zoom == 2:
+                    self.slow_move = ((500 - location[0]) / 10, (471 - location[1]) / 10)
+                self.info_panes['location'].location_select(location[2])
+            self.request_spawn('gates', location='world:arkham')
         else:
             ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y)))
             if len(ui_buttons) > 0 and type(ui_buttons[0]) == ActionButton and ui_buttons[0].enabled:
@@ -163,7 +171,10 @@ class HubScreen(arcade.View):
     def set_listener(self, topic, payload):
         match payload['message']:
             case 'spawn':
-                self.maps[payload['map']].spawn(payload['value'], self.location_manager.locations[payload['location']], payload['location'])
+                name = '' if payload['value'] not in  ['monster', 'investigator'] else payload['name']
+                self.maps[payload['map']].spawn(payload['value'], self.location_manager.locations[payload['location']], payload['location'], name)
+                self.location_manager.spawn(payload['value'], payload['location'], name)
+                self.info_panes['location'].update_tokens()
             case 'spells':
                 spell = payload['value'].split(':')
                 self.item_received('spells', spell[0], spell[1])
@@ -172,7 +183,7 @@ class HubScreen(arcade.View):
             case 'conditions':
                 card = payload['value'].split(':')
                 if next((condition for condition in self.investigator.possessions['conditions'] if condition.name == card[0]), None) is not None:
-                    self.networker.publish_payload({'message': 'discard', 'value': payload['value']})
+                    self.networker.publish_payload({'message': 'discard', 'value': payload['value']}, self.investigator.name)
                 else:
                     self.item_received('conditions', card[0], card[1])
                     if card[0] == 'debt':
@@ -231,3 +242,6 @@ class HubScreen(arcade.View):
     def item_received(self, kind, name, variant=None):
         self.investigator.get_item(kind, name, variant)
         self.info_panes['possessions'].setup()
+
+    def request_spawn(self, kind, name='', location='', number='1'):
+        self.networker.publish_payload({'message': 'spawn', 'value': kind, 'location': location, 'name': name, 'number': number}, self.investigator.name)

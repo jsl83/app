@@ -27,6 +27,8 @@ with open('small_cards/server_assets.yaml') as stream:
     ASSETS = yaml.safe_load(stream)
 with open('small_cards/server_conditions.yaml') as stream:
     CONDITIONS = yaml.safe_load(stream)
+with open('investigators/server_investigators.yaml') as stream:
+    INVESTIGATORS = yaml.safe_load(stream)
 
 class Networker(threading.Thread, BanyanBase):
     def __init__(self, back_plane_ip_address=None, process_name=None, player=0, screen=None):
@@ -134,11 +136,15 @@ class Networker(threading.Thread, BanyanBase):
                 item = self.variant_request(payload['message'], payload['value'])
                 if item != None:
                     self.publish_payload({'message': payload['message'], 'value': item}, topic + '_server')
-            elif payload['message'] == 'assets':
-                command = payload['value'].split(':')
-                item = self.asset_request(command[0], command[1])
-                if item != None:
-                    self.publish_payload({'message': 'asset', 'value': item}, topic + '_server')
+            else:
+                match payload['message']:
+                    case 'assets':
+                        command = payload['value'].split(':')
+                        item = self.asset_request(command[0], command[1])
+                        if item != None:
+                            self.publish_payload({'message': 'asset', 'value': item}, topic + '_server')
+                    case 'spawn':
+                        self.spawn(payload['value'], payload['name'], payload['location'], int(payload['number']))
 
     def asset_request(self, command, name):
         match command:
@@ -166,36 +172,53 @@ class Networker(threading.Thread, BanyanBase):
             return None
 
     def spawn(self, piece, name=None, location=None, number=1):
-        for x in range(0, number):
-            if piece == 'gates':
-                if len(self.decks['gates']['deck']) > 0:
-                    gate = random.choice(self.decks['gates']['deck'])
-                    self.decks['gates']['deck'].remove(gate)
-                    self.decks['gates']['board'].append(gate)
-                    self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
-                    #self.spawn('monsters', location=gate)
-                elif len(self.decks['gates']['discard']) > 0:
-                    self.decks['gates']['deck'].append(item for item in self.decks['gates']['discard'])
-                    self.decks['gates']['discard'] = []
-                    self.spawn('gates')
-                else:
-                    #advance doom
-                    pass
-            elif piece == 'clues':
-                token = random.choice(self.decks[piece])
-                token = 'world:arkham'
-                self.decks[piece].remove(token)
-                self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
-            elif piece == 'monsters':
-                monster = random.choice(self.decks['monsters'])
-                self.decks['monsters'].remove(monster)
-                self.publish_payload({'message': 'spawn', 'value': 'monster', 'location': location.split(':')[1], 'map': location.split(':')[0]}, 'server_update')
+        match piece:
+            case 'gates':
+                for x in range(0, number):
+                    if location != None and location in self.decks['gates']['deck']:
+                        self.decks['gates']['deck'].remove(location)
+                        self.decks['gates']['board'].append(location)
+                        self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': location.split(':')[1], 'map': location.split(':')[0]}, 'server_update')
+                        #self.spawn('monsters', location=location)
+                    elif location == None:
+                        if len(self.decks['gates']['deck']) > 0:
+                            gate = random.choice(self.decks['gates']['deck'])
+                            self.decks['gates']['deck'].remove(gate)
+                            self.decks['gates']['board'].append(gate)
+                            self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
+                            #self.spawn('monsters', location=gate)
+                        elif len(self.decks['gates']['discard']) > 0:
+                            self.decks['gates']['deck'].append(item for item in self.decks['gates']['discard'])
+                            self.decks['gates']['discard'] = []
+                            self.spawn('gates')
+                        else:
+                            #advance doom
+                            pass
+            case 'clues':
+                for x in range(0, number):
+                    token = random.choice(self.decks[piece])
+                    token = 'world:space_1'
+                    self.decks[piece].remove(token)
+                    self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
+            case 'monsters':
+                for x in range(0, number):
+                    monster = random.choice(self.decks['monsters'])
+                    self.decks['monsters'].remove(monster)
+                    self.publish_payload({'message': 'spawn',
+                                        'value': 'monster',
+                                        'location': location.split(':')[1],
+                                        'map': location.split(':')[0],
+                                        'name': monster
+                                        },
+                                        'server_update')
 
     def initiate_gameboard(self):
         kinds = ['gates', 'clues']
         for i in range(len(kinds)):
             self.spawn(kinds[i], self.reference[i])
         self.restock_reserve()
+        for x in self.selected_investigators:
+            self.publish_payload({'message': 'spawn', 'value': 'investigator', 'name': x, 'location': INVESTIGATORS[x]['location'], 'map': 'world'}, 'server_update')
 
     def restock_reserve(self, removed=[], discard=False):
         removed_items = ':'.join(removed)

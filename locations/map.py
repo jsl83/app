@@ -6,11 +6,18 @@ IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 TOKEN_DICT = {
     'clue': {
         'size': 36,
-        'scale': 0.75
+        'scale': 1.1,
+        'zoom_scale': 0.5
     },
     'gate': {
         'size': 284,
-        'scale': 0.4
+        'scale': 0.4,
+        'zoom_scale': 0.2
+    },
+    'investigator': {
+        'size': 247,
+        'scale': 0.4,
+        'zoom_scale': 0.2
     }
 }
 
@@ -59,15 +66,20 @@ class Map():
         self.manager.draw()
         self.token_manager.draw()
 
-    def spawn(self, kind, location, location_name):
+    def spawn(self, kind, location, location_name, name= None):
         if kind == 'monster':
             pass
+        elif kind == 'investigator':
+            location['investigators'].append(name)
         else:
             location[kind] = True
             path = IMAGE_PATH_ROOT + ('icons/clue.png' if kind == 'clue' else 'maps/' + location_name + '_gate.png')
             item = TOKEN_DICT[kind]
-            button = ActionButton(
-                location['x'] * 2 - item['size'] * item['scale'] / 2, location['y'] * 2 - item['size'] * item['scale'] / 2, texture=arcade.load_texture(path), scale=item['scale'])
+            button = ActionButton(location['x'] * 2 - item['size'] * item['scale'] / 2, location['y'] * 2 - item['size'] * item['scale'] / 2,
+                                  texture=arcade.load_texture(path), scale=item['scale'], name=location_name)
             button.kind = kind
-            button.location = location_name
             self.layouts[kind].add(button)
+            zoom_button = ActionButton(location['x'] - item['size'] * item['zoom_scale'] / 2, location['y'] - item['size'] * item['zoom_scale'] / 2,
+                                       texture=arcade.load_texture(path), scale=item['zoom_scale'], name=location_name)
+            zoom_button.kind = kind
+            self.zoom_layout.add(zoom_button)

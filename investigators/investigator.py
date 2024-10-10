@@ -23,6 +23,7 @@ class Investigator():
         self.max_sanity = 12 - self.max_health
         self.health = self.max_health
         self.sanity = self.max_sanity
+        self.skill_tokens = [0,0,0,0,0]
         self.skill_mods = [0,0,0,0,0]
         self.possessions = {
             'assets': [SmallCard('.18_derringer', 'assets'), SmallCard('.18_derringer', 'assets'), SmallCard('.18_derringer', 'assets'), SmallCard('.18_derringer', 'assets')],
@@ -39,6 +40,8 @@ class Investigator():
         #self.initial_items = INVESTIGATORS[name]['possessions']
         self.initial_items = []
         self.success = 5
+        self.passive = INVESTIGATORS[name]['passive']
+        self.active = INVESTIGATORS[name]['active']
 
     def get_token(self, kind, amt=1, swap=False):
         match kind:

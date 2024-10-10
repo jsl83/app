@@ -78,6 +78,7 @@ class HubScreen(arcade.View):
         self.info_manager.enable()
         self.ui_manager.enable()
         self.choice_manager.enable()
+        self.select_ui_button(0)
 
         self.networker.publish_payload({'message': 'ready'}, 'login')
 
@@ -109,19 +110,18 @@ class HubScreen(arcade.View):
                     self.slow_move = ((500 - location[0]) / 10, (471 - location[1]) / 10)
                 self.info_panes['location'].location_select(location[2])
                 self.switch_info_pane('location')
-                buttons = self.get_ui_buttons()
-                for x in buttons:
-                    x.select(False)
-                buttons[3].select(True)
+                self.select_ui_button(3)
         else:
             ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y)))
-            if len(ui_buttons) > 0 and type(ui_buttons[0]) == ActionButton and ui_buttons[0].enabled:
-                ui_buttons[0].action() if ui_buttons[0].action_args == None else ui_buttons[0].action(**ui_buttons[0].action_args)
-                buttons = self.get_ui_buttons()
-                if ui_buttons[0] in buttons:
-                    for x in buttons:
-                        x.select(False)
-                    ui_buttons[0].select(True)
+            if len(ui_buttons) > 0:
+                for button in ui_buttons:
+                    if type(button) == ActionButton and button.enabled:
+                        button.action() if button.action_args == None else button.action(**button.action_args)
+                        buttons = self.get_ui_buttons()
+                        if button in buttons:
+                            for x in buttons:
+                                x.select(False)
+                            button.select(True)
 
     def on_mouse_press(self, x, y, button, modifiers):
         if x < 1000 and y > 142:
@@ -207,10 +207,10 @@ class HubScreen(arcade.View):
         for x in range(max - current, max):
             x = max - x - 1
             arcade.draw_arc_outline(
-                pos, 597, 110, 110, color, x * degrees + 93, (x + 1) * degrees + 87, 18)
+                pos, 577, 110, 110, color, x * degrees + 93, (x + 1) * degrees + 87, 18)
         angle = (max - current) * degrees * math.pi / 180
         x = 55 * math.sin(angle) + pos
-        y = 55 * math.cos(angle) + 597
+        y = 55 * math.cos(angle) + 577
         arcade.draw_circle_filled(x, y, 15, color)
         arcade.draw_text(current, x, y+2, width=20, anchor_x='center', anchor_y='center', bold=True, font_size=17, font_name="calibri")
 
@@ -235,6 +235,12 @@ class HubScreen(arcade.View):
     def get_ui_buttons(self):
         buttons = self.ui_manager.children[0][0].children
         return buttons[1: len(buttons)]
+    
+    def select_ui_button(self, index):
+        buttons = self.get_ui_buttons()
+        for button in buttons:
+            button.select(False)
+        buttons[index].select(True)
 
     def get_item_info(self, name):
         return ASSET_DICTIONARY[name]

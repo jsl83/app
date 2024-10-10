@@ -14,6 +14,8 @@
       - 'clue'
     possessions:
       - 'spells:mists_of_releh'
+    passive: When you close a Gate during an Other World Encounter, you may move to any space containing a Clue or a Gate.
+    active: Look at the top 2 Gates in the Gate stack. Put 1 Gate on the top of the Gate stack, and the other on the bottom.
   charlie_kane:
     expansion: 0
   diana_stanley:

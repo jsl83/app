@@ -21,11 +21,12 @@ class ActionButton(arcade.gui.UITextureButton):
                  action=lambda: None,
                  enabled: bool=True,
                  action_args=None,
+                 multiline: bool = False,
                  name: str = "",
                  **kwargs):
         
         super().__init__(x, y, width, height, texture, texture_hovered, texture_pressed, text, scale,
-                         size_hint, size_hint_min, size_hint_max, style, text_position, font)
+                         size_hint, size_hint_min, size_hint_max, style, text_position, font, multiline=multiline)
         
         self.action = action
         self.enabled = enabled

@@ -233,6 +233,7 @@
     kind: city
     size: large
     color: green
+    gate: green
     routes:
       - space_1: ship
       - space_2: ship
@@ -247,6 +248,7 @@
     kind: city
     size: large
     color: green
+    gate: red
     routes:
       - space_5: rail
       - space_6: rail
@@ -270,6 +272,7 @@
     kind: city
     size: large
     color: green
+    gate: blue
     routes:
       - space_7: ship
       - space_3: ship
@@ -285,6 +288,7 @@
     kind: city
     size: large
     color: orange
+    gate: blue
     routes:
       - space_13: ship
       - arkham: ship
@@ -297,6 +301,7 @@
     kind: city
     size: large
     color: orange
+    gate: red
     routes:
       - space_10: ship
       - london: ship
@@ -311,6 +316,7 @@
     kind: city
     size: large
     color: orange
+    gate: green
     routes:
       - rome: rail
       - space_16: rail
@@ -371,6 +377,7 @@
     kind: city
     size: large
     color: purple
+    gate: red
     routes:
       - the_himalayas: uncharted
       - space_17: rail
@@ -385,6 +392,7 @@
     kind: city
     size: large
     color: purple
+    gate: blue
     routes:
       - space_20: ship
       - shanghai: ship
@@ -398,6 +406,7 @@
     kind: city
     size: large
     color: purple
+    gate: red
     routes:
       - space_21: uncharted
       - space_18: ship

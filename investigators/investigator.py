@@ -26,19 +26,18 @@ class Investigator():
         self.skill_tokens = [0,0,0,0,0]
         self.skill_mods = [0,0,0,0,0]
         self.possessions = {
-            'assets': [SmallCard('.18_derringer', 'assets'), SmallCard('.18_derringer', 'assets'), SmallCard('.18_derringer', 'assets'), SmallCard('.18_derringer', 'assets')],
-            'unique_assets': [SmallCard('ace_of_swords', 'unique_assets')],
+            'assets': [],
+            'unique_assets': [],
             'artifacts': [],
-            'conditions': [SmallCard('agreement', 'conditions')],
-            'spells': [SmallCard('mists_of_releh', 'spells')]
+            'conditions': [],
+            'spells': []
         }
         self.clues = 0
         self.focus = 0
         self.ship_tickets = 0
         self.rail_tickets = 0
         self.location = INVESTIGATORS[name]['location']
-        #self.initial_items = INVESTIGATORS[name]['possessions']
-        self.initial_items = []
+        self.initial_items = INVESTIGATORS[name]['possessions']
         self.success = 5
         self.passive = INVESTIGATORS[name]['passive']
         self.active = INVESTIGATORS[name]['active']

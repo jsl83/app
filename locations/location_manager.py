@@ -42,3 +42,6 @@ class LocationManager():
     
     def spawn_monster(self, name, location):
         self.locations[location]['monsters'].append(Monster(name))
+
+    def add_gate(self, name):
+        self.gate_count[self.locations[name]['color']] += 1

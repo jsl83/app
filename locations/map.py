@@ -73,7 +73,8 @@ class Map():
         self.manager.draw()
         self.token_manager.draw()
 
-    def spawn(self, kind, location, location_name, name= None):
+    def spawn(self, kind, manager, location_name, name= None):
+        location = manager.locations[location_name]
         path = None
         match kind:
             case 'investigator':
@@ -85,6 +86,7 @@ class Map():
             case 'gate':
                 path = 'maps/' + location_name + '_gate.png'
                 location['gate'] = True
+                manager.add_gate(location_name)
             case 'monster':
                 path = 'monsters/' + name + '.png'
         path = IMAGE_PATH_ROOT + path

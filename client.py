@@ -4,6 +4,7 @@ import signal
 import argparse
 from python_banyan.banyan_base import BanyanBase
 from screens.hub_screen import HubScreen
+from screens.select_screen import SelectionScreen
 
 # Screen title and size
 SCREEN_WIDTH = 1280
@@ -18,7 +19,8 @@ class Networker(threading.Thread, BanyanBase):
         self.daemon = True
         self.run_the_thread = threading.Event()
         self.run_the_thread = True
-        self.sreen = None
+        self.screen = None
+        self.investigator = None
         BanyanBase.__init__(self, back_plane_ip_address=back_plane_ip_address,
             process_name=process_name, loop_time=.0001)
         self.set_subscriber_topic('server_update')
@@ -42,7 +44,7 @@ class Networker(threading.Thread, BanyanBase):
         if self.external_message_processor:
             self.external_message_processor(topic, payload)
         else:
-            """
+            '''
             message = payload['message']
             match topic:
                 case 'server_update':
@@ -55,14 +57,11 @@ class Networker(threading.Thread, BanyanBase):
                             self.window.show_view(self.screen)
                         case 'investigator_selected':
                             self.screen.remove_option(payload['value'])
-                case self.investigator:
-                    match message:
                         case 'start_game':
-                            #self.screen = HubScreen(self, '')
-                            self.screen = HubScreen('ancient_ones', self)
+                            self.screen = HubScreen(self, self.investigator, payload['value'])
                             self.window.show_view(self.screen)
-                            """
-            self.window.show_view(HubScreen(self, ''))
+            '''
+            self.window.show_view(HubScreen(self, 'akachi_onyele', 'azathoth'))
 
 def set_up_network():
     parser = argparse.ArgumentParser()

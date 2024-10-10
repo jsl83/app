@@ -25,7 +25,7 @@ class ServerLoadingScreen(arcade.View):
         x_pos = 680 + ((len(self.investigators) % 4) - 1) * 133
         x_pos = x_pos if len(self.investigators) % 4 != 0 else x_pos - 33
         self.manager.add(arcade.gui.UITextureButton(
-            x=x_pos, y=450 if len(self.investigators) < 4 else 350, scale=scale, texture=texture, text=human_readable(name), text_position=(0, -60)))
+            x=x_pos, y=450 if len(self.investigators) < 4 else 350, scale=scale, texture=texture, text=human_readable(name), text_position=(0, -55)))
 
     def on_draw(self):
         self.clear()        

@@ -48,6 +48,7 @@ class Networker(threading.Thread, BanyanBase):
         self.screen = screen
 
         self.player_count = 0
+        self.selected_investigators = []
         self.ready_count = 0
         self.reference = None
 
@@ -128,7 +129,7 @@ class Networker(threading.Thread, BanyanBase):
                     self.set_subscriber_topic(payload['value'])
                     self.screen.add_investigator(payload['value'])
                     if len(self.selected_investigators) == self.player_count:
-                        self.publish_payload({'message': 'start_game', 'value': None}, 'server_update')
+                        self.publish_payload({'message': 'start_game', 'value': self.ancient_one}, 'server_update')
                     else:
                         self.publish_payload({'message': 'investigator_selected', 'value': payload['value']}, 'server_update')
                 case 'number_selected':

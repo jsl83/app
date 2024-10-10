@@ -29,11 +29,6 @@ class SelectionScreen(arcade.View):
 
         self.manager = arcade.gui.UIManager()
         self.manager.enable()
-        #self.screen_label = arcade.gui.UILabel(
-        #    y=740, width=1280, height=100, text="Select " + human_readable(path[0:-1]), align="center", font_size=24, anchor_y="center", bold=True).with_background(
-        #        arcade.Texture.create_filled("header", (1280,120), (107,68,35))
-        #    )
-        #self.max_height = 800 if len(self.selection_options) < 24 else 800 + (math.ceil(len(self.selection_options) / 6) - 4) * 200
         self.max_height = 800 if len(self.selection_options) * 3 < 18 else 650 + (math.ceil(len(self.selection_options) * 5 / 6) - 3) * 200
         self.selection_list = arcade.gui.UILayout(width=1280, height=self.max_height)
         self.detail_list = arcade.gui.UILayout(width=1280, height=800)
@@ -96,7 +91,7 @@ class SelectionScreen(arcade.View):
                         text = buttons[0].text
                         if text == 'Select':
                             self.networker.publish_payload({'message': self.path + '_selected', 'value': self.selected}, 'login')
-                            self.networker.set_subscriber_topic(self.selected)
+                            self.networker.set_subscriber_topic(self.selected + '_server')
                             self.networker.investigator = self.selected
                         elif text == 'Back':
                             self.selected = None

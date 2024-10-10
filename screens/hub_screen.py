@@ -5,6 +5,8 @@ import math
 import random
 import yaml
 from util import *
+from ancient_ones.ancient_one import AncientOne
+from screens.ancient_pane import AncientOnePane
 from investigators.investigator import Investigator
 from screens.investigator_pane import InvestigatorPane
 from screens.possessions_pane import PossessionsPane
@@ -21,15 +23,17 @@ with open('small_cards/assets.yaml') as stream:
 
 class HubScreen(arcade.View):
     
-    def __init__(self, networker, investigator):
+    def __init__(self, networker, investigator, ancient_one):
         super().__init__()
         self.background = None
         self.networker = networker
         self.networker.external_message_processor = self.set_listener
 
-        investigator = 'akachi_onyele'
-
         self.investigator = Investigator(investigator)
+        self.ancient_one = AncientOne(ancient_one)
+
+        self.doom = 0
+        self.omen = 0
 
         for item in self.investigator.initial_items:
             request = item.split(':')
@@ -46,8 +50,12 @@ class HubScreen(arcade.View):
         self.info_manager = arcade.gui.UIManager()
         self.ui_manager = arcade.gui.UIManager()
         self.choice_manager = arcade.gui.UIManager()
+        self.doom_counter = arcade.gui.UITextureButton(x=10, y=760, scale=0.18, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'maps/doom.png'))
+        self.omen_counter = arcade.gui.UITextureButton(x=950, y=760, scale=0.35, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'maps/omen.png'))
         ui_layout = arcade.gui.UILayout(x=0, y=0, width=1000, height=142).with_background(arcade.load_texture(IMAGE_PATH_ROOT + 'gui/ui_pane.png'))
-
+        ui_layout.add(arcade.gui.UITextureButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui/map_overlay.png'), y=-200, scale=0.5))
+        ui_layout.add(self.doom_counter)
+        ui_layout.add(self.omen_counter)
         index = 0
         for text in ['investigator', 'possessions', 'reserve', 'location', 'ancient_one']:
             ui_layout.add(ActionButton(index * 190 + 50, y=21, width=140, height=100, texture=arcade.load_texture(
@@ -64,13 +72,12 @@ class HubScreen(arcade.View):
             'investigator': InvestigatorPane(self.investigator),
             'possessions': PossessionsPane(self.investigator),
             'reserve': ReservePane(self),
-            'location': LocationPane(self.location_manager)
+            'location': LocationPane(self.location_manager),
+            'ancient_one': AncientOnePane(self.ancient_one),
         }
 
         self.map = self.maps['world']
-
         self.info_pane = self.info_panes['investigator']
-
         self.info_panes['location'].location_select(self.investigator.location)
 
         self.info_manager.add(self.info_pane.layout)
@@ -79,8 +86,11 @@ class HubScreen(arcade.View):
         self.ui_manager.enable()
         self.choice_manager.enable()
         self.select_ui_button(0)
+        self.set_doom(self.ancient_one.doom)
+        self.set_omen(0, False)
 
         self.networker.publish_payload({'message': 'ready'}, 'login')
+        
 
     def on_draw(self):
         self.clear()
@@ -177,7 +187,7 @@ class HubScreen(arcade.View):
         match payload['message']:
             case 'spawn':
                 name = '' if payload['value'] not in ['monster', 'investigator'] else payload['name']
-                self.maps[payload['map']].spawn(payload['value'], self.location_manager.locations[payload['location']], payload['location'], name)
+                self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name)
                 if payload['value'] == 'investigator':
                     self.info_panes['location'].add_investigator(payload['name'])
                 elif payload['value'] == 'monster':
@@ -234,7 +244,7 @@ class HubScreen(arcade.View):
 
     def get_ui_buttons(self):
         buttons = self.ui_manager.children[0][0].children
-        return buttons[1: len(buttons)]
+        return buttons[len(buttons) - 5: len(buttons)]
     
     def select_ui_button(self, index):
         buttons = self.get_ui_buttons()
@@ -261,3 +271,28 @@ class HubScreen(arcade.View):
 
     def request_spawn(self, kind, name='', location='', number='1'):
         self.networker.publish_payload({'message': 'spawn', 'value': kind, 'location': location, 'name': name, 'number': number}, self.investigator.name)
+
+    def set_doom(self, number):
+        if number <= self.ancient_one.doom and number >= 0:
+            self.doom_counter.move(10 + (20 - number) * 42.3 - self.doom_counter.x, 0)
+            self.doom = number
+            if number == 0:
+                self.ancient_one.awaken()
+
+    def increment_doom(self, interval):
+        doom = self.doom + interval
+        doom = 20 if doom > 20 else 0 if doom < 0 else doom
+        self.set_doom(doom)
+
+    def set_omen(self, index, trigger_gates=True):
+        positions = [(921, 757), (956, 737), (937, 703), (904, 724)]
+        colors = ['green', 'blue', 'red', 'blue']
+        self.omen_counter.move(positions[index][0] - self.omen_counter.x, positions[index][1] - self.omen_counter.y)
+        if trigger_gates:
+            self.increment_doom(-self.location_manager.gate_count[colors[index]])
+
+    def increment_omen(self, trigger_gates=True):
+        self.omen += 1
+        if self.omen == 4:
+            self.omen = 0
+        self.set_omen(self.omen, trigger_gates)

@@ -109,6 +109,10 @@ class HubScreen(arcade.View):
                     self.slow_move = ((500 - location[0]) / 10, (471 - location[1]) / 10)
                 self.info_panes['location'].location_select(location[2])
                 self.switch_info_pane('location')
+                buttons = self.get_ui_buttons()
+                for x in buttons:
+                    x.select(False)
+                buttons[3].select(True)
         else:
             ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y)))
             if len(ui_buttons) > 0 and type(ui_buttons[0]) == ActionButton and ui_buttons[0].enabled:
@@ -172,14 +176,14 @@ class HubScreen(arcade.View):
     def set_listener(self, topic, payload):
         match payload['message']:
             case 'spawn':
-                name = '' if payload['value'] not in  ['monster', 'investigator'] else payload['name']
+                name = '' if payload['value'] not in ['monster', 'investigator'] else payload['name']
                 self.maps[payload['map']].spawn(payload['value'], self.location_manager.locations[payload['location']], payload['location'], name)
-                if payload['value'] == 'monster':
-                    for i in range(7):
-                        self.maps['world'].spawn('monster', self.location_manager.locations['space_15'], 'space_15', 'avian_thrall')
                 if payload['value'] == 'investigator':
-                    self.info_panes['location'].add_investigator(payload['name'])                    
-                self.info_panes['location'].update_all()
+                    self.info_panes['location'].add_investigator(payload['name'])
+                elif payload['value'] == 'monster':
+                    self.location_manager.spawn_monster(name, payload['location'])
+                if payload['location'] == self.info_panes['location'].selected:
+                    self.info_panes['location'].update_all()
             case 'spells':
                 spell = payload['value'].split(':')
                 self.item_received('spells', spell[0], spell[1])

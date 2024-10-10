@@ -86,7 +86,6 @@ class Map():
                 path = 'maps/' + location_name + '_gate.png'
                 location['gate'] = True
             case 'monster':
-                location['monsters'].append(name)
                 path = 'monsters/' + name + '.png'
         path = IMAGE_PATH_ROOT + path
         item = TOKEN_DICT[kind]

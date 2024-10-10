@@ -1,6 +1,7 @@
 import yaml
 from util import *
 import astar
+from monsters.monster import Monster
 
 class LocationManager():
     def __init__(self):
@@ -38,3 +39,6 @@ class LocationManager():
     def find_path(self, start, goal):
         neighbors = lambda name: list(map(lambda route: list(route.keys())[0], self.locations[name]['routes']))
         return astar.find_path(start, goal, neighbors)
+    
+    def spawn_monster(self, name, location):
+        self.locations[location]['monsters'].append(Monster(name))

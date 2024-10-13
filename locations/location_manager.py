@@ -28,11 +28,11 @@ class LocationManager():
         except:
             self.locations = {}
 
-    def get_closest_location(self, point, zoom, map_location):
+    def get_closest_location(self, point, zoom, map_location, area=None):
         for key in self.locations.keys():
             location = self.locations[key]
             scaled_location = (location['x'], location['y']) if zoom == 1 else (location['x'] * 2 + map_location[0], (location['y'] + 200) * 2 + map_location[1])
-            if get_distance(scaled_location, point) < (25 if location['size'] == 'small' else 50):
+            if get_distance(scaled_location, point) < (area if area != None else 15 if location['size'] == 'small' else 50):
                 return (scaled_location[0], scaled_location[1], key)
         return None
     
@@ -44,4 +44,18 @@ class LocationManager():
         self.locations[location]['monsters'].append(Monster(name))
 
     def add_gate(self, name):
-        self.gate_count[self.locations[name]['color']] += 1
+        self.gate_count[self.locations[name]['gate_color']] += 1
+
+    def get_location_coord(self, key):
+        loc = self.locations[key]
+        return (loc['x'], loc['y'])
+    
+    def get_zoom_pos(self, key, map_location):
+        location = self.locations[key]
+        return (location['x'] * 2 + map_location[0], (location['y'] + 200) * 2 + map_location[1])
+    
+    def move_investigator(self, name, destination):
+        key = next((loc for loc in self.locations if name in self.locations[loc]['investigators']))
+        self.locations[key]['investigators'].remove(name)
+        self.locations[destination]['investigators'].append(name)
+        return key

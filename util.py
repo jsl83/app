@@ -1,4 +1,5 @@
 import arcade.gui
+from screens.action_button import ActionButton
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 
 def human_readable(text: str):
@@ -21,13 +22,10 @@ def create_choices(title=None, subtitle=None, choices=[], size=(1280, 800), pos=
     choice_width = 0
     choice_height = 0
     for choice in choices:
-        texture = arcade.load_texture(choice['path'])
-        button = arcade.gui.UITextureButton(texture=texture, **choice)
-        button.value = choice['value']
-        choice_width += button.width + 20
-        if button.height > choice_height:
-            choice_height = button.height
-        choice_gui.add(button)
+        choice_width += choice.width + 20
+        if choice.height > choice_height:
+            choice_height = choice.height
+        choice_gui.add(choice)
 
     start_x = (size[0] - (choice_width - 20)) / 2
     start_y = size[1] - offset[1] - (choice_height / 2)

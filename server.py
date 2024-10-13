@@ -137,9 +137,10 @@ class Networker(threading.Thread, BanyanBase):
                     self.reference = REFERENCES[int((int(payload['value']) + 1) / 2)]
                     self.publish_payload({'message': 'ancient_ones', 'value': None}, 'server_update')
                 case 'ready':
-                    self.ready_count += 1
-                    if self.ready_count == self.player_count:
-                        self.initiate_gameboard()
+                    #self.ready_count += 1
+                    #if self.ready_count == self.player_count:
+                    #    self.initiate_gameboard()
+                    self.initiate_gameboard()
         elif topic in self.selected_investigators:
             if payload['message'] in ['spells', 'conditions']:
                 item = self.variant_request(payload['message'], payload['value'])
@@ -154,6 +155,8 @@ class Networker(threading.Thread, BanyanBase):
                             self.publish_payload({'message': 'asset', 'value': item}, topic + '_server')
                     case 'spawn':
                         self.spawn(payload['value'], payload['name'], payload['location'], int(payload['number']))
+                    case 'move_investigator':
+                        self.publish_payload({'message': 'investigator_moved', 'value': payload['value'], 'destination': payload['destination']}, 'server_update')
 
     def asset_request(self, command, name):
         match command:
@@ -207,12 +210,12 @@ class Networker(threading.Thread, BanyanBase):
                 for x in range(0, number):
                     token = random.choice(self.decks[piece])
                     token = 'world:space_1'
-                    self.decks[piece].remove(token)
+                    #self.decks[piece].remove(token)
                     self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
             case 'monsters':
                 for x in range(0, number):
                     monster = random.choice(self.decks['monsters'])
-                    self.decks['monsters'].remove(monster)
+                    #self.decks['monsters'].remove(monster)
                     self.publish_payload({'message': 'spawn',
                                         'value': 'monster',
                                         'location': location.split(':')[1],
@@ -235,14 +238,14 @@ class Networker(threading.Thread, BanyanBase):
             self.assets['reserve'].remove(item)
             if discard:
                 self.assets['discard'].append(item)
-                self.publish_payload({'message': 'discard', 'value': item}, 'server_update')
+                #self.publish_payload({'message': 'discard', 'value': item}, 'server_update')
         items = ''
         for i in range(0, 4 - len(self.assets['reserve'])):
             item = random.choice(self.assets['deck'])
             self.assets['deck'].remove(item)
             self.assets['reserve'].append(item)
             items += item + ':'
-        self.publish_payload({'message': 'restock', 'value': items[0:-1], 'removed': removed_items}, 'server_update')
+        #self.publish_payload({'message': 'restock', 'value': items[0:-1], 'removed': removed_items}, 'server_update')
 
 def set_up_network(screen):
     parser = argparse.ArgumentParser()

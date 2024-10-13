@@ -34,10 +34,15 @@ class HubScreen(arcade.View):
 
         self.doom = 0
         self.omen = 0
+        self.is_active_player = True
+        self.moving_investigator = self.investigator.name
+        self.investigator_token = None
+        self.original_investigator_location = ''
+        self.server_message = ''
 
         for item in self.investigator.initial_items:
             request = item.split(':')
-            self.request_card(request[0], request[1])
+            #self.request_card(request[0], request[1])
 
         self.initial_click = (0,0)
         self.zoom = 1
@@ -46,16 +51,20 @@ class HubScreen(arcade.View):
         self.slow_move = (0, 0)
         self.slow_move_count = 0
         self.gui_enabled = True
+        self.overlay_showing = False
         
         self.info_manager = arcade.gui.UIManager()
         self.ui_manager = arcade.gui.UIManager()
         self.choice_manager = arcade.gui.UIManager()
+        self.choice_layout = arcade.gui.UILayout()
         self.doom_counter = arcade.gui.UITextureButton(x=10, y=760, scale=0.18, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'maps/doom.png'))
         self.omen_counter = arcade.gui.UITextureButton(x=950, y=760, scale=0.35, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'maps/omen.png'))
         ui_layout = arcade.gui.UILayout(x=0, y=0, width=1000, height=142).with_background(arcade.load_texture(IMAGE_PATH_ROOT + 'gui/ui_pane.png'))
         ui_layout.add(arcade.gui.UITextureButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui/map_overlay.png'), y=-200, scale=0.5))
         ui_layout.add(self.doom_counter)
         ui_layout.add(self.omen_counter)
+        self.overlay_toggle = ActionButton(x=10, y=142, width=336, height=87, action=self.toggle_overlay, texture=arcade.load_texture(
+            IMAGE_PATH_ROOT + 'blank.png'), style={'font_color': arcade.color.BLACK})
         index = 0
         for text in ['investigator', 'possessions', 'reserve', 'location', 'ancient_one']:
             ui_layout.add(ActionButton(index * 190 + 50, y=21, width=140, height=100, texture=arcade.load_texture(
@@ -82,6 +91,7 @@ class HubScreen(arcade.View):
 
         self.info_manager.add(self.info_pane.layout)
         self.ui_manager.add(ui_layout)
+        self.ui_manager.add(self.overlay_toggle)
         self.info_manager.enable()
         self.ui_manager.enable()
         self.choice_manager.enable()
@@ -89,9 +99,13 @@ class HubScreen(arcade.View):
         self.set_doom(self.ancient_one.doom)
         self.set_omen(0, False)
 
+        self.undo_action = {
+            'action': None,
+            'args': {}
+        }
+
         self.networker.publish_payload({'message': 'ready'}, 'login')
         
-
     def on_draw(self):
         self.clear()
         self.map.draw()
@@ -112,8 +126,24 @@ class HubScreen(arcade.View):
             self.draw_point_meters(self.investigator.max_sanity, self.investigator.sanity, 1202, (84, 117, 184))
     
     def on_mouse_release(self, x, y, button, modifiers):
-        self.holding = None
-        if x < 1000 and y > 142 and self.click_time <= 10:
+        if self.holding == 'investigator':
+            map_loc = self.map.get_location()
+            location = self.location_manager.get_closest_location((x,y), self.zoom, map_loc)
+            if location == None:
+                self.move_investigator(self.moving_investigator, self.original_investigator_location)
+            elif location[2] in self.in_movement_range().keys():
+                tickets = self.in_movement_range()[location[2]]
+                if len(tickets) > 1:
+                    pass
+                else:
+                    self.undo_action = {
+                        'action': self.undo_move,
+                        'args': {'loc': self.original_investigator_location, 'rail': tickets[0][0], 'ship': tickets[0][1]}
+                    }
+                    self.networker.publish_payload({'message': 'move_investigator', 'value': self.moving_investigator, 'destination': location[2]}, self.investigator.name)
+            else:
+                self.move_investigator(self.moving_investigator, self.original_investigator_location)
+        elif x < 1000 and y > 142 and self.click_time <= 10:
             location = self.location_manager.get_closest_location((x,y), self.zoom, self.map.get_location())
             if location != None:
                 if self.zoom == 2:
@@ -121,6 +151,10 @@ class HubScreen(arcade.View):
                 self.info_panes['location'].location_select(location[2])
                 self.switch_info_pane('location')
                 self.select_ui_button(3)
+            buttons = list(self.ui_manager.get_widgets_at((x,y)))
+            if len(buttons) > 0 and type(buttons[0]) == ActionButton:
+                button = buttons[0]
+                button.action() if button.action_args == None else button.action(**button.action_args)
         else:
             ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y)))
             if len(ui_buttons) > 0:
@@ -132,6 +166,7 @@ class HubScreen(arcade.View):
                             for x in buttons:
                                 x.select(False)
                             button.select(True)
+        self.holding = None
 
     def on_mouse_press(self, x, y, button, modifiers):
         if x < 1000 and y > 142:
@@ -146,6 +181,17 @@ class HubScreen(arcade.View):
             self.holding = 'map'
             self.initial_click = (x, y)
             self.click_time = 0
+            if self.is_active_player:
+                location = self.location_manager.get_closest_location((x, y), self.zoom, self.map.get_location(), 40)
+                if location != None:
+                    key = location[2]
+                    investigators = self.location_manager.locations[key]['investigators']
+                    if len(investigators) > 0 and self.moving_investigator in investigators:
+                        self.holding = 'investigator'
+                        tokens = self.map.get_tokens('investigator', key, self.moving_investigator)
+                        self.investigator_token = tokens[0] if self.zoom == 2 else tokens[1]
+                        self.original_investigator_location = key
+                    
         elif (self.info_pane == self.info_panes['possessions'] or (self.info_pane == self.info_panes['reserve'] and self.info_panes['reserve'].discard_view)) and x > 1000:
             self.holding = 'items'
             self.click_time = 0
@@ -156,6 +202,8 @@ class HubScreen(arcade.View):
             self.check_map_boundaries()
         elif self.holding == 'items':
             self.info_pane.move(dy)
+        elif self.holding == 'investigator':
+            self.investigator_token.move(dx, dy)
 
     def check_map_boundaries(self):
         x, y = self.map.get_location()[0], self.map.get_location()[1]
@@ -182,6 +230,20 @@ class HubScreen(arcade.View):
                 self.info_pane.reset()
             elif key == 'reserve':
                 self.info_pane.reset_discard()
+
+    def toggle_overlay(self):
+        if len(self.choice_layout.children) > 0:
+            if self.overlay_showing:
+                self.choice_manager.clear()
+                button = next((button for button in self.choice_layout.children if hasattr(button, 'title')), None)
+                title = 'SHOW OVERLAY' if button == None else button.title
+                self.overlay_toggle.text = title
+                self.overlay_showing = False
+            else:
+                self.choice_manager.add(self.choice_layout)
+                self.overlay_toggle.text = 'HIDE OVERLAY'
+                self.overlay_showing = True
+            self.overlay_toggle.trigger_render()
 
     def set_listener(self, topic, payload):
         match payload['message']:
@@ -211,6 +273,8 @@ class HubScreen(arcade.View):
                 self.item_received('assets', payload['value'])
             case 'discard':
                 self.info_panes['reserve'].discard_item(payload['value'])
+            case 'investigator_moved':
+                self.move_investigator(payload['value'], payload['destination'])
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max
@@ -224,14 +288,16 @@ class HubScreen(arcade.View):
         arcade.draw_circle_filled(x, y, 15, color)
         arcade.draw_text(current, x, y+2, width=20, anchor_x='center', anchor_y='center', bold=True, font_size=17, font_name="calibri")
 
-    def run_test(self, skill):
+    def run_test(self, skill, title={'title': 'TEST'}):
         choices = []
         rolls = []
         for x in range(self.investigator.skills[skill]):
             roll = int(random.random() * 6) + 1
             rolls.append(roll)
-            choices.append({'path': IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png', 'value': roll})
-        self.choice_manager.add(create_choices(choices = choices, size=(1000,658), pos=(0,142), offset=(0,100)))
+            choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
+        self.choice_layout = create_choices(choices = choices, size=(1000,658), pos=(0,142), offset=(0,100), title=title)
+        self.choice_manager.add(self.choice_layout)
+        self.overlay_showing = True
         return rolls
     
     def gui_set(self, able=True):
@@ -262,7 +328,9 @@ class HubScreen(arcade.View):
         self.networker.publish_payload({'message': kind, 'value': 'discard:' + name}, self.investigator.name)
 
     def clear_overlay(self):
-        self.choice_manager.children = {0:[]}
+        self.choice_layout.clear()
+        self.choice_manager.clear()
+        self.overlay_showing = False
         self.choice_manager.trigger_render()
 
     def item_received(self, kind, name, variant=None):
@@ -296,3 +364,57 @@ class HubScreen(arcade.View):
         if self.omen == 4:
             self.omen = 0
         self.set_omen(self.omen, trigger_gates)
+
+    def undo_move(self, loc, rail, ship):
+        self.move_investigator(self.investigator.name, loc)
+        self.investigator.rail_tickets += rail
+        self.investigator.ship_tickets += ship
+
+    def move_investigator(self, name, location):
+        destination = self.location_manager.get_location_coord(location)
+        zoom_destination = self.location_manager.get_zoom_pos(location, self.map.get_location())
+        key = self.location_manager.move_investigator(name, location)
+        self.map.move_tokens('investigator', key, destination, zoom_destination, location, name)
+
+    def in_movement_range(self):
+        locations = self.location_manager.locations
+        rails = self.investigator.rail_tickets
+        ships = self.investigator.ship_tickets
+        start_loc = next((start for start in locations if self.moving_investigator in locations[start]['investigators']))
+        move_dict = {}
+        tickets = {'rail': 0, 'ship': 0}
+        for route in locations[start_loc]['routes'].keys():
+            move_dict[route] = [[0,0]]
+            for move_one in locations[route]['routes'].keys():
+                tickets = {'rail': 0, 'ship': 0}
+                if move_one != start_loc and locations[route]['routes'][move_one] != 'uncharted':
+                    tickets[locations[route]['routes'][move_one]] += 1
+                    if tickets['rail'] <= rails and tickets['ship'] <= ships:
+                        if move_one not in move_dict.keys():
+                            move_dict[move_one] = []
+                        if [tickets['rail'], tickets['ship']] not in move_dict[move_one] and [0,0] not in move_dict[move_one]:
+                            rail_add = tickets['rail'] + 1
+                            ship_add = tickets['ship'] + 1
+                            move_dict[move_one].append([tickets['rail'], tickets['ship']])
+                            for combo in [[rail_add, tickets['ship']], [tickets['rail'], ship_add]]:
+                                if combo in move_dict[move_one]:
+                                    move_dict[move_one].remove(combo)
+                        for move_two in locations[move_one]['routes'].keys():
+                            if move_two != start_loc and locations[move_one]['routes'][move_two] != 'uncharted':
+                                tickets[locations[move_one]['routes'][move_two]] += 1
+                                if tickets['rail'] <= rails and tickets['ship'] <= ships:
+                                    if move_two not in move_dict.keys():
+                                        move_dict[move_two] = []
+                                    tix = [tickets['rail'], tickets['ship']]
+                                    rail_check = tickets['rail'] - 1
+                                    ship_check = tickets['ship'] - 1
+                                    omit = False
+                                    for combo in [tix, [0,0], [rail_check, tickets['ship']], [tickets['rail'], ship_check]]:
+                                        if combo in move_dict[move_two]:
+                                            omit = True
+                                    if not omit:
+                                        move_dict[move_two].append([tickets['rail'], tickets['ship']])
+                                tickets[locations[move_one]['routes'][move_two]] -= 1
+                    tickets[locations[route]['routes'][move_one]] -= 1
+                tickets = {'rail': 0, 'ship': 0}
+        return move_dict

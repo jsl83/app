@@ -8,16 +8,18 @@ def human_readable(text: str):
         name += token.capitalize() + ' '
     return name[0:-1]
 
-def create_choices(title=None, subtitle=None, choices=[], size=(1280, 800), pos=(0,0), show_animation: bool = False,
-                   flip: bool = False, offset=(0,400), background=IMAGE_PATH_ROOT + 'gui/overlay.png'):
+def create_choices(title='', subtitle='', choices=[], size=(1000,658), pos=(0,142), show_animation: bool = False,
+                   flip: bool = False, offset=(0,200), background=IMAGE_PATH_ROOT + 'gui/overlay.png'):
 
     choice_gui = arcade.gui.UILayout(width=size[0], height=size[1], x=pos[0], y=pos[1]).with_background(arcade.load_texture(background))
     index = 1
     if title:
-        choice_gui.add(arcade.gui.UITextureButton(y=size[1]-100, width=size[0], height=50, align='center', **title))
+        choice_gui.add(arcade.gui.UITextureButton(y=size[1]-100, width=size[0], height=50, align='center', text=title))
+        choice_gui.children[1].title = title
         index += 1
     if subtitle:
-        choice_gui.add(arcade.gui.UITextureButton(y=size[1]-150, width=size[0], height=50, align='center', **subtitle))
+        choice_gui.add(arcade.gui.UITextureButton(y=size[1]-150, width=size[0], height=50, align='center', text=subtitle))
+        choice_gui.children[index].subtitle = subtitle
         index += 1
     choice_width = 0
     choice_height = 0

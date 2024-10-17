@@ -66,7 +66,7 @@ class SelectionScreen(arcade.View):
                     'path': IMAGE_PATH_ROOT + 'buttons\\placeholder.png',
                     'value': i
                 })
-            self.manager.add(create_choices({'text': 'Choose number of players', 'enabled': False}, choices=choices))
+            self.manager.add(create_choices('Choose Number of Players', choices=choices, size=(1280,800), pos=(0,0)))
 
         #self.manager.add(self.screen_label, index=0)
 

@@ -16,7 +16,7 @@ class InvestigatorPane():
         self.layout.add(arcade.gui.UITextureButton(x=1155, y=625, texture=arcade.load_texture(
             IMAGE_PATH_ROOT +'investigators\\' + investigator.name + '_portrait.png'), scale=0.5))
         self.layout.add(arcade.gui.UITextureButton(x=1031, y=530, texture=arcade.load_texture(
-            IMAGE_PATH_ROOT +'icons\\health_' + str(investigator.max_health-1) + '.png')))
+            IMAGE_PATH_ROOT +'icons\\health_' + str(investigator.max_health) + '.png')))
         self.toggle_attributes = ActionButton(1000, y=340, width=140, height=30, texture=arcade.load_texture(
                 IMAGE_PATH_ROOT + 'buttons/placeholder.png'), text='Attributes', action=self.toggle_details, action_args={'flag': False},
                 texture_pressed=arcade.load_texture(IMAGE_PATH_ROOT + '/buttons/pressed_placeholder.png'))

@@ -34,7 +34,17 @@ class HubScreen(arcade.View):
 
         self.doom = 0
         self.omen = 0
-        self.is_active_player = True
+        self.remaining_actions = 0
+        self.actions_taken = {
+            'focus': False,
+            'move': False,
+            'ticket': False,
+            'shop': False,
+            'personal': False,
+            'rest': False,
+            'trade': False
+        }
+        self.item_actions = {}
         self.investigator_token = None
         self.original_investigator_location = ''
         self.server_message = ''
@@ -157,13 +167,13 @@ class HubScreen(arcade.View):
             buttons = list(self.ui_manager.get_widgets_at((x,y)))
             if len(buttons) > 0 and type(buttons[0]) == ActionButton:
                 button = buttons[0]
-                button.action() if button.action_args == None else button.action(**button.action_args)
+                button.action()
         else:
-            ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y)))
+            ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y))) + list(self.choice_manager.get_widgets_at((x,y)))
             if len(ui_buttons) > 0:
                 for button in ui_buttons:
                     if type(button) == ActionButton and button.enabled:
-                        button.action() if button.action_args == None else button.action(**button.action_args)
+                        button.action()
                         buttons = self.get_ui_buttons()
                         if button in buttons:
                             for x in buttons:
@@ -184,7 +194,7 @@ class HubScreen(arcade.View):
             self.holding = 'map'
             self.initial_click = (x, y)
             self.click_time = 0
-            if self.is_active_player:
+            if self.remaining_actions > 0 and not self.actions_taken['move']:
                 location = self.location_manager.get_closest_location((x, y), self.zoom, self.map.get_location(), 40)
                 if location != None:
                     key = location[2]
@@ -278,6 +288,18 @@ class HubScreen(arcade.View):
                 self.info_panes['reserve'].discard_item(payload['value'])
             case 'investigator_moved':
                 self.move_investigator(payload['value'], payload['destination'])
+            case 'choose_lead':
+                portraits = []
+                for name in self.info_panes['location'].investigators:
+                    portraits.append(ActionButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'investigators/' + name + '_portrait.png'), scale=0.4,
+                                                action=self.networker.publish_payload, action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
+                self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
+                self.show_overlay()
+            case 'lead_selected':
+                self.clear_overlay()
+            case 'player_turn':
+                if payload['value'] == 'action':
+                    self.remaining_actions = 2
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max
@@ -332,7 +354,9 @@ class HubScreen(arcade.View):
     def clear_overlay(self):
         self.choice_layout.clear()
         self.choice_manager.clear()
+        self.overlay_toggle.text = self.server_message
         self.overlay_showing = False
+        self.ui_manager.trigger_render()
         self.choice_manager.trigger_render()
 
     def show_overlay(self):
@@ -378,6 +402,8 @@ class HubScreen(arcade.View):
         self.investigator.ship_tickets += ship
         self.info_panes['investigator'].set_ticket_counts()
         self.undo_action = None
+        self.actions_taken['move'] = False
+        self.remaining_actions += 1
 
     def move_investigator(self, name, location):
         destination = self.location_manager.get_location_coord(location)
@@ -439,7 +465,16 @@ class HubScreen(arcade.View):
         self.networker.publish_payload({'message': 'move_investigator', 'value': name, 'destination': location}, self.investigator.name)
         if overlay:
             self.clear_overlay()
+        self.action_taken('move')
     
     def undo(self):
         if self.undo_action != None:
             self.undo_action['action'](**self.undo_action['args'])
+
+    def action_taken(self, action):
+        self.actions_taken[action] = True
+        self.remaining_actions -= 1
+        if self.remaining_actions == 0:
+            self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+            for action in self.actions_taken:
+                self.actions_taken[action] = False

@@ -59,16 +59,10 @@ class SelectionScreen(arcade.View):
         if self.path == 'number_select':
             choices = []
             for i in range(1, 9):
-                choices.append({
-                    'text': str(i),
-                    'width': 50,
-                    'height': 50,
-                    'path': IMAGE_PATH_ROOT + 'buttons\\placeholder.png',
-                    'value': i
-                })
+                button = arcade.gui.UITextureButton(width=50, height=50, text=str(i), texture=arcade.load_texture(IMAGE_PATH_ROOT +  'buttons/placeholder.png'))
+                button.value = i
+                choices.append(button)
             self.manager.add(create_choices('Choose Number of Players', choices=choices, size=(1280,800), pos=(0,0)))
-
-        #self.manager.add(self.screen_label, index=0)
 
         detail_buttons = ['Select', 'Flip', 'Back']
         for i in range(0, 3):

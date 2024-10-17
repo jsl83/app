@@ -18,6 +18,19 @@
     active: Look at the top 2 Gates in the Gate stack. Put 1 Gate on the top of the Gate stack, and the other on the bottom.
   charlie_kane:
     expansion: 0
+    health: 4
+    subtitle: 'The Politician'
+    skills:
+      - 2
+      - 4
+      - 3
+      - 2
+      - 2
+    location: "san_francisco"
+    possessions:
+      - 'assets:personal_assistant'
+    passive: When you perform an Acquire Assets action, you may allow other Investigators to gain any cards you purchase.
+    active: Another Investigator of your choice may immediately perform 1 additional action.
   diana_stanley:
     expansion: 0
   jacqueline_fine:

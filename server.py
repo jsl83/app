@@ -51,6 +51,10 @@ class Networker(threading.Thread, BanyanBase):
         self.selected_investigators = []
         self.ready_count = 0
         self.reference = None
+        self.lead_investigator = 0
+        self.current_player = 0
+        self.current_phase = 0
+        self.phases = ['action', 'encounter', 'mythos']
 
         self.ancient_one = None
 
@@ -141,6 +145,7 @@ class Networker(threading.Thread, BanyanBase):
                     #if self.ready_count == self.player_count:
                     #    self.initiate_gameboard()
                     self.initiate_gameboard()
+                    self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
         elif topic in self.selected_investigators:
             if payload['message'] in ['spells', 'conditions']:
                 item = self.variant_request(payload['message'], payload['value'])
@@ -157,6 +162,22 @@ class Networker(threading.Thread, BanyanBase):
                         self.spawn(payload['value'], payload['name'], payload['location'], int(payload['number']))
                     case 'move_investigator':
                         self.publish_payload({'message': 'investigator_moved', 'value': payload['value'], 'destination': payload['destination']}, 'server_update')
+                    case 'lead_selected':
+                        self.lead_investigator = self.selected_investigators.index(payload['value'])
+                        self.current_player = self.selected_investigators.index(payload['value'])
+                        self.publish_payload({'message': 'lead_selected', 'value': None}, 'server_update')
+                        self.publish_payload({'message': 'player_turn', 'value': 'action'}, payload['value'] + '_server')
+                    case 'turn_finished':
+                        self.current_player += 1
+                        if self.current_player == len(self.selected_investigators):
+                            self.current_player = 0
+                        if self.current_player == self.lead_investigator:
+                            self.current_phase += 1
+                        if self.current_phase == 3:
+                            self.current_phase = 0
+                            self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
+                        else:
+                            self.publish_payload({'message': 'player_turn', 'value': self.phases[self.current_phase]}, self.selected_investigators[self.current_player])
 
     def asset_request(self, command, name):
         match command:

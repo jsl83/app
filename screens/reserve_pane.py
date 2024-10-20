@@ -63,6 +63,7 @@ class ReservePane():
 
     def acquire_assets(self):
         if self.is_shopping:
+            self.hub.action_taken('shop')
             for item in (self.selected):
                 self.hub.request_card('assets', item, 'acquire:')
             self.reset()

@@ -4,9 +4,10 @@ from screens.action_button import ActionButton
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 
 class InvestigatorPane():
-    def __init__(self, investigator):
+    def __init__(self, investigator, hub):
         self.investigator = investigator
         self.blank = arcade.load_texture(IMAGE_PATH_ROOT + 'blank.png')
+        self.hub = hub
 
         self.layout = arcade.gui.UILayout(x=1000, width=280, height=800).with_background(texture=arcade.load_texture(
             IMAGE_PATH_ROOT + 'buttons/placeholder.png'))
@@ -15,8 +16,9 @@ class InvestigatorPane():
         self.layout.add(arcade.gui.UITextureButton(x=1005, width=150, y=675, text=investigator.subtitle, texture=self.blank, font="Typical Writer", style={'font_size': 14}))
         self.layout.add(arcade.gui.UITextureButton(x=1155, y=625, texture=arcade.load_texture(
             IMAGE_PATH_ROOT +'investigators\\' + investigator.name + '_portrait.png'), scale=0.5))
-        self.layout.add(arcade.gui.UITextureButton(x=1031, y=530, texture=arcade.load_texture(
-            IMAGE_PATH_ROOT +'icons\\health_' + str(investigator.max_health) + '.png')))
+        self.health_button = ActionButton(x=1031, y=530, texture=arcade.load_texture(
+            IMAGE_PATH_ROOT +'icons\\health_' + str(investigator.max_health) + '.png'))
+        self.layout.add(self.health_button)
         self.toggle_attributes = ActionButton(1000, y=340, width=140, height=30, texture=arcade.load_texture(
                 IMAGE_PATH_ROOT + 'buttons/placeholder.png'), text='Attributes', action=self.toggle_details, action_args={'flag': False},
                 texture_pressed=arcade.load_texture(IMAGE_PATH_ROOT + '/buttons/pressed_placeholder.png'))
@@ -30,9 +32,9 @@ class InvestigatorPane():
         for x in range(5):
             self.skills.append(arcade.gui.UITextureButton(x=1060, y=225 - 55 * x, width=200, texture=self.blank, align='center'))
             self.details.add(self.skills[x])
-        self.ship_button = ActionButton(x=1040, width=115, y=452, action=self.ship_ticket_action, texture=arcade.load_texture(
+        self.ship_button = ActionButton(x=1040, width=115, y=452, action=self.ticket_action, action_args={'kind': 'ship'}, texture=arcade.load_texture(
             IMAGE_PATH_ROOT +'icons\\ship_ticket.png'), text='x ' + str(self.investigator.ship_tickets), text_position=(35,-2))
-        self.rail_button = ActionButton(x=1040, width=115, y=397, action=self.rail_ticket_action, texture=arcade.load_texture(
+        self.rail_button = ActionButton(x=1040, width=115, y=397, action=self.ticket_action, action_args={'kind': 'rail'}, texture=arcade.load_texture(
             IMAGE_PATH_ROOT +'icons\\train_ticket.png'), text='x ' + str(self.investigator.rail_tickets), text_position=(35,-2))
         self.clue_button = ActionButton(x=1175, y=452, texture=arcade.load_texture(
             IMAGE_PATH_ROOT +'icons\\clue.png'), text='x ' + str(self.investigator.clues), text_position=(15,-2))
@@ -49,23 +51,35 @@ class InvestigatorPane():
         self.layout.add(self.details)
 
     def focus_action(self):
-        self.investigator.get_token('focus')
+        if self.investigator.focus <= 2:
+            self.investigator.focus += 1
+            self.focus_button.clear()
+            self.focus_button.text = 'x ' + str(self.investigator.focus)
+            self.hub.action_taken('focus')
+            self.hub.undo_action = {'action': self.undo_focus, 'args': {}}
+
+    def undo_focus(self):
+        self.hub.actions_taken['focus']['taken'] = False
+        self.hub.remaining_actions += 1
+        self.hub.undo_action = None
+        self.investigator.focus -= 1
         self.focus_button.clear()
         self.focus_button.text = 'x ' + str(self.investigator.focus)
-        if self.investigator.focus == 2:
-            self.focus_button.enabled = False
 
-    def rail_ticket_action(self):
-        self.investigator.get_token('rail')
-        self.set_ticket_counts()
-        if self.investigator.rail_tickets == 2:
-            self.rail_button.enabled = False
+    def ticket_action(self, kind):
+        if not ((kind == 'ship' and self.investigator.ship_tickets >= 2) or (kind == 'rail' and self.investigator.rail_tickets >= 2)):
+            tickets = self.investigator.get_ticket(kind)
+            self.set_ticket_counts()
+            self.hub.action_taken('ticket')
+            self.hub.undo_action = {'action': self.undo_ticket, 'args': {'tickets': tickets}}
 
-    def ship_ticket_action(self):
-        self.investigator.get_token('ship')
+    def undo_ticket(self, tickets):
+        self.hub.actions_taken['ticket']['taken'] = False
+        self.hub.remaining_actions += 1
+        self.hub.undo_action = None
+        self.investigator.rail_tickets += tickets[0]
+        self.investigator.ship_tickets += tickets[1]
         self.set_ticket_counts()
-        if self.investigator.ship_tickets == 2:
-            self.ship_button.enabled = False
 
     def set_ticket_counts(self):
         for button in [self.rail_button, self.ship_button]:

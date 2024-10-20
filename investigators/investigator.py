@@ -42,18 +42,23 @@ class Investigator():
         self.passive = INVESTIGATORS[name]['passive']
         self.active = INVESTIGATORS[name]['active']
 
-    def get_token(self, kind, amt=1, swap=False):
+    def get_ticket(self, kind):
+        rail = 0
+        ship = 0
         match kind:
-            case 'focus':
-                self.focus += amt
             case 'rail':
-                self.rail_tickets += amt
+                self.rail_tickets += 1
+                rail = -1
                 if self.rail_tickets + self.ship_tickets > 2:
                     self.ship_tickets -= 1
+                    ship = 1
             case 'ship':
-                self.ship_tickets += amt
+                self.ship_tickets += 1
+                ship = -1
                 if self.rail_tickets + self.ship_tickets > 2:
                     self.rail_tickets -= 1
+                    rail = 1
+        return (rail, ship)
 
     def get_item(self, cardtype, name, variant=None):
         self.possessions[cardtype].append(SmallCard(name, cardtype))

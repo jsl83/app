@@ -35,15 +35,7 @@ class HubScreen(arcade.View):
         self.doom = 0
         self.omen = 0
         self.remaining_actions = 0
-        self.actions_taken = {
-            'focus': False,
-            'move': False,
-            'ticket': False,
-            'shop': False,
-            'personal': False,
-            'rest': False,
-            'trade': False
-        }
+        
         self.item_actions = {}
         self.investigator_token = None
         self.original_investigator_location = ''
@@ -87,11 +79,21 @@ class HubScreen(arcade.View):
         self.location_manager = LocationManager()
 
         self.info_panes = {
-            'investigator': InvestigatorPane(self.investigator),
+            'investigator': InvestigatorPane(self.investigator, self),
             'possessions': PossessionsPane(self.investigator),
             'reserve': ReservePane(self),
             'location': LocationPane(self.location_manager),
             'ancient_one': AncientOnePane(self.ancient_one),
+        }
+
+        self.actions_taken = {
+            'focus': {'taken': False, 'buttons': [self.info_panes['investigator'].focus_button]},
+            'move': {'taken': False, 'buttons': []},
+            'ticket': {'taken': False, 'buttons': [self.info_panes['investigator'].rail_button, self.info_panes['investigator'].ship_button]},
+            'shop': {'taken': False, 'buttons': [self.info_panes['reserve'].acquire_button]},
+            'personal': {'taken': False, 'buttons': [self.info_panes['investigator'].skill_button]},
+            'rest': {'taken': False, 'buttons': [self.info_panes['investigator'].health_button]},
+            'trade': {'taken': False, 'buttons': list(self.info_panes['location'].investigators.values())},
         }
 
         self.map = self.maps['world']
@@ -173,12 +175,14 @@ class HubScreen(arcade.View):
             if len(ui_buttons) > 0:
                 for button in ui_buttons:
                     if type(button) == ActionButton and button.enabled:
-                        button.action()
-                        buttons = self.get_ui_buttons()
-                        if button in buttons:
-                            for x in buttons:
-                                x.select(False)
-                            button.select(True)
+                        key = next((key for key in self.actions_taken.keys() if button in self.actions_taken[key]['buttons']), None)
+                        if key == None or (not self.actions_taken[key]['taken'] and self.remaining_actions > 0):
+                            button.action()
+                            buttons = self.get_ui_buttons()
+                            if button in buttons:
+                                for x in buttons:
+                                    x.select(False)
+                                button.select(True)
         self.holding = None
 
     def on_mouse_press(self, x, y, button, modifiers):
@@ -194,7 +198,7 @@ class HubScreen(arcade.View):
             self.holding = 'map'
             self.initial_click = (x, y)
             self.click_time = 0
-            if self.remaining_actions > 0 and not self.actions_taken['move']:
+            if self.remaining_actions > 0 and not self.actions_taken['move']['taken']:
                 location = self.location_manager.get_closest_location((x, y), self.zoom, self.map.get_location(), 40)
                 if location != None:
                     key = location[2]
@@ -402,13 +406,15 @@ class HubScreen(arcade.View):
         self.investigator.ship_tickets += ship
         self.info_panes['investigator'].set_ticket_counts()
         self.undo_action = None
-        self.actions_taken['move'] = False
+        self.actions_taken['move']['taken'] = False
         self.remaining_actions += 1
 
     def move_investigator(self, name, location):
         destination = self.location_manager.get_location_coord(location)
         zoom_destination = self.location_manager.get_zoom_pos(location, self.map.get_location())
         key = self.location_manager.move_investigator(name, location)
+        if name == self.investigator.name:
+            self.investigator.location = location
         self.map.move_tokens('investigator', key, destination, zoom_destination, location, name)
 
     def in_movement_range(self):
@@ -472,9 +478,10 @@ class HubScreen(arcade.View):
             self.undo_action['action'](**self.undo_action['args'])
 
     def action_taken(self, action):
-        self.actions_taken[action] = True
+        self.actions_taken[action]['taken'] = True
         self.remaining_actions -= 1
         if self.remaining_actions == 0:
+            self.undo_action = None
             self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
             for action in self.actions_taken:
-                self.actions_taken[action] = False
+                self.actions_taken[action]['taken'] = False

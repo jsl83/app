@@ -70,7 +70,7 @@ class ReservePane():
         else:
             self.is_shopping = True
             self.hub.gui_set(False)
-            for x in self.hub.run_test(1):
+            for x in self.hub.run_test(1, reroll_method=self.add_success):
                 if x >= self.hub.investigator.success:
                     self.successes += 1
             self.acquire_button.text = 'Acquire (Remaining cost ' + str(self.successes) + ')'
@@ -108,8 +108,7 @@ class ReservePane():
 
     def bank_loan(self):
         self.hub.request_card('conditions', 'debt')
-        self.successes += 2
-        self.acquire_button.text = 'Acquire (Remaining cost: ' + str(self.successes) + ')'
+        self.add_success(2)
 
     def reset(self):
         self.hub.gui_set(True)
@@ -171,3 +170,7 @@ class ReservePane():
         self.position = 0
         for item in self.discard_layout.children:
             item.reset_position()
+
+    def add_success(self, quant):
+        self.successes += quant
+        self.acquire_button.text = 'Acquire (Remaining cost: ' + str(self.successes) + ')'

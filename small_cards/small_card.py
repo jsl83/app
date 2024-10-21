@@ -27,3 +27,4 @@ class SmallCard():
         self.kind = kind
         self.scale = TYPE_DICT[kind]['scale']
         self.texture = arcade.load_texture(IMAGE_PATH_ROOT + kind + '/' + name.replace('.', '') + '.png')
+        self.action_used = False

@@ -317,14 +317,56 @@ class HubScreen(arcade.View):
         arcade.draw_circle_filled(x, y, 15, color)
         arcade.draw_text(current, x, y+2, width=20, anchor_x='center', anchor_y='center', bold=True, font_size=17, font_name="calibri")
 
-    def run_test(self, skill, title='TEST'):
+    def run_test(self, skill, title='TEST', reroll_method=None):
         choices = []
         rolls = []
+        options = []
         for x in range(self.investigator.skills[skill]):
-            roll = int(random.random() * 6) + 1
+            roll = random.randint(1, 6)
             rolls.append(roll)
             choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
-        self.choice_layout = create_choices(choices = choices, title=title)
+        fail = next((roll for roll in rolls if roll < self.investigator.success), None)
+        if fail != None:
+            def reroll(kind, option_index):
+                fail = next((roll for roll in rolls if roll < self.investigator.success), None)
+                if fail != None:
+                    index = rolls.index(fail)
+                    new_roll = random.randint(1, 6)
+                    choices[index].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
+                    reroll_method(1 if new_roll >= self.investigator.success else 0)
+                    if kind == 'focus':
+                        self.investigator.focus -= 1
+                        if self.investigator.focus == 0:
+                            options[option_index].disable()
+                    elif kind == 'clue' and self.investigator.clues > 0:
+                        self.investigator.clues -= 1
+                        if self.investigator.clues == 0:
+                            options[option_index].disable()
+                    elif not self.investigator.reroll_items[skill][kind].action_used:
+                        self.investigator.reroll_items[skill][kind].action_used = True
+                        options[option_index].disable()
+                else:
+                    for x in options:
+                        x.disable()
+            option_index = 0
+            if self.investigator.focus > 0:
+                focus_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': 0}, texture=arcade.load_texture(
+                IMAGE_PATH_ROOT +'icons\\focus.png'), text='Use', text_position=(15,-2))
+                options.append(focus_button)
+                option_index += 1
+            if self.investigator.clues > 0:
+                clue_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': option_index}, texture=arcade.load_texture(
+                IMAGE_PATH_ROOT +'icons\\clue.png'), text='Use', text_position=(15,-2))
+                options.append(clue_button)
+                option_index += 1
+            items = self.investigator.reroll_items[skill].keys()
+            if len(items) > 0:
+                for x in items:
+                    item_button = ActionButton(action=reroll, action_args={'kind': x, 'option_index': option_index}, texture=arcade.load_texture(
+                            IMAGE_PATH_ROOT +'buttons/placeholder.png'), text=human_readable(x))
+                    options.append(item_button)
+                    option_index += 1
+        self.choice_layout = create_choices(choices = choices, title=title, options=options)
         self.show_overlay()
         return rolls
     

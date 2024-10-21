@@ -25,24 +25,19 @@ class ReservePane():
         for i in range(4):
             if number == 0:
                 y_pos -= 190
-            self.button_layout.add(ActionButton(1015 + number * 130, y_pos, width=120, height=185, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'buttons/placeholder.png'), action=self.select_item))
+            self.button_layout.add(ActionButton(1015 + number * 130, y_pos, width=120, height=185, texture='buttons/placeholder.png', action=self.select_item))
             number += 1
             if number == 2:
                 number = 0
         self.layout.add(self.button_pane)
         self.button_layout.add(ActionButton(x=1000, y=760, width=280, height=25, text='RESERVE'))
-        self.acquire_button = ActionButton(x=1000, y=325, width=280, height=25, text='Acquire Assets', texture=arcade.load_texture(
-            IMAGE_PATH_ROOT + 'buttons/placeholder.png'), action=self.acquire_assets)
-        self.discard_button = ActionButton(x=1000, y=275, width=280, height=25, text='View Discard', texture=arcade.load_texture(
-            IMAGE_PATH_ROOT + 'buttons/placeholder.png'), action=self.discard_action)
-        self.debt_button = ActionButton(x=1000, y=225, width=280, height=25, text='Bank Loan', texture=arcade.load_texture(
-            IMAGE_PATH_ROOT + 'buttons/placeholder.png'), action=self.bank_loan)
+        self.acquire_button = ActionButton(x=1000, y=325, width=280, height=25, text='Acquire Assets', texture='buttons/placeholder.png', action=self.acquire_assets)
+        self.discard_button = ActionButton(x=1000, y=275, width=280, height=25, text='View Discard', texture='buttons/placeholder.png', action=self.discard_action)
+        self.debt_button = ActionButton(x=1000, y=225, width=280, height=25, text='Bank Loan', texture='buttons/placeholder.png', action=self.bank_loan)
         self.button_layout.add(self.acquire_button)
         self.button_layout.add(self.discard_button)
         self.discard_layout.add(ActionButton(x=1000, y=760, width=280, height=25, text='DISCARD'))
-        self.discard_layout.add(ActionButton(x=1260, y=780, width=20, height=20, text='X', texture=arcade.load_texture(
-            IMAGE_PATH_ROOT + 'buttons/placeholder.png'), action=self.close_discard))
+        self.discard_layout.add(ActionButton(x=1260, y=780, width=20, height=20, text='X', texture='buttons/placeholder.png', action=self.close_discard))
 
     def restock(self, removed, added):
         if removed != '':
@@ -153,8 +148,7 @@ class ReservePane():
             row = int((len(self.discard) / 2) - 0.5)
             if row > 2:
                 self.boundary = 20 + (row - 3) * 190
-            self.discard_layout.add(ActionButton(1015 + column * 130, 570 - row * 190, width=120, height=185, name=name, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'assets/' + name.replace('.','') + '.png')))
+            self.discard_layout.add(ActionButton(1015 + column * 130, 570 - row * 190, width=120, height=185, name=name, texture='assets/' + name.replace('.','') + '.png'))
     
     def move(self, y):
         if self.position + y < 0:

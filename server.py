@@ -77,6 +77,19 @@ class Networker(threading.Thread, BanyanBase):
             'discard': [],
             'reserve': []
         }
+        self.encounters = {
+            'green': [8, list(range(8))],
+            'orange': [8, list(range(8))],
+            'purple': [8, list(range(8))],
+            'generic': [12, list(range(12))],
+            'the_amazon': [3, list(range(3))],
+            'the_pyramids': [3, list(range(3))],
+            'the_heart_of_africa': [3, list(range(3))],
+            'antarctica': [3, list(range(3))],
+            'tunguska': [3, list(range(3))],
+            'the_himalayas': [3, list(range(3))]
+        }
+        self.expeditions = ['the_amazon', 'the_pyramids', 'the_heart_of_africa', 'antarctica', 'tunguska', 'the_himalayas']
 
         for map in LOCATIONS.keys():
             for location in LOCATIONS[map].keys():
@@ -177,7 +190,17 @@ class Networker(threading.Thread, BanyanBase):
                             self.current_phase = 0
                             self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
                         else:
-                            self.publish_payload({'message': 'player_turn', 'value': self.phases[self.current_phase]}, self.selected_investigators[self.current_player])
+                            self.publish_payload({'message': 'player_turn', 'value': self.phases[self.current_phase]},
+                                                 self.selected_investigators[self.current_player] + '_server')
+                    case 'get_encounter':
+                        kind = payload['value']
+                        encounter = random.choice(self.encounters[kind][1])
+                        self.encounters[kind][1].remove(encounter)
+                        if len(self.encounters[kind][1]) == 0:
+                            self.encounters[kind][1] = list(range(self.encounters[kind][0]))
+                        if kind in self.expeditions:
+                            self.spawn('expedition')
+                        self.publish_payload({'message': 'encounter_choice', 'value': kind + ':' + str(encounter)}, topic + '_server')
 
     def asset_request(self, command, name):
         match command:
@@ -244,9 +267,16 @@ class Networker(threading.Thread, BanyanBase):
                                         'name': monster
                                         },
                                         'server_update')
+            case 'expedition':
+                locations = [loc for loc in self.expeditions if len(self.encounters[loc][1]) > 0]
+                location = random.choice(locations)
+                self.publish_payload({'message': 'spawn', 'value': 'expedition', 'location': location, 'map': 'world'}, 'server_update')
 
     def initiate_gameboard(self):
+        self.current_phase = 0
+        self.current_player = 0
         kinds = ['gates', 'clues']
+        self.spawn('expdition')
         for i in range(len(kinds)):
             self.spawn(kinds[i], self.reference[i])
         self.restock_reserve()

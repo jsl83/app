@@ -91,15 +91,14 @@ class Map():
                 manager.add_gate(location_name)
             case 'monster':
                 path = 'monsters/' + name + '.png'
-        path = IMAGE_PATH_ROOT + path
         item = TOKEN_DICT[kind]
         button = ActionButton(location['x'] * 2 - item['size'] * item['scale'] / 2, location['y'] * 2 - item['size'] * item['scale'] / 2 - offset * 45,
-                                texture=arcade.load_texture(path), scale=item['scale'], name=location_name)
+                                texture=path, scale=item['scale'], name=location_name)
         button.kind = kind
         button.item_name = name
         self.layouts[kind].add(button)
         zoom_button = ActionButton(location['x'] - item['size'] * item['zoom_scale'] / 2, location['y'] - item['size'] * item['zoom_scale'] / 2 - offset * 25,
-                                    texture=arcade.load_texture(path), scale=item['zoom_scale'], name=location_name)
+                                    texture=path, scale=item['zoom_scale'], name=location_name)
         zoom_button.kind = kind
         zoom_button.item_name = name
         self.zoom_layout.add(zoom_button)

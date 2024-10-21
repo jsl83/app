@@ -50,8 +50,7 @@ class LocationPane():
         self.investigators = {}
 
         self.description_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
-        self.monster_close = ActionButton(x=1260, y=780, width=20, height=20, text='X', texture=arcade.load_texture(
-            IMAGE_PATH_ROOT + 'buttons/placeholder.png'), action=self.close_monster)
+        self.monster_close = ActionButton(x=1260, y=780, width=20, height=20, text='X', texture='buttons/placeholder.png', action=self.close_monster)
         self.monster_picture = arcade.gui.UITextureButton(x=1040, y=560, height=200, width=200, texture=self.blank)
         self.horror_test = arcade.gui.UITextureButton(x=1050, y=400, width=25, height=25, texture=self.blank)
         self.strength_test = arcade.gui.UITextureButton(x=1050, y=335, width=25, height=25, texture=self.blank)
@@ -136,8 +135,8 @@ class LocationPane():
                     button = self.investigators[unit]
                 else:
                     name = unit.name
-                    texture = arcade.load_texture(IMAGE_PATH_ROOT + 'monsters/' + name + '.png')
-                    button = ActionButton(texture = texture, scale=0.25, action=self.show_monster, action_args={'unit':unit, 'texture': texture})
+                    texture = 'monsters/' + name + '.png'
+                    button = ActionButton(texture=texture, scale=0.25, action=self.show_monster, action_args={'unit':unit, 'texture': texture})
                 layout.add(button)
                 button.move(1000 + offset + column * 61 - button.x, y - button.y)
                 if i % 4 == 3:
@@ -148,7 +147,7 @@ class LocationPane():
                 i += 1
     
     def add_investigator(self, name):
-        self.investigators[name] = ActionButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'investigators/' + name + '_portrait.png'), scale=0.2)
+        self.investigators[name] = ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.2)
 
     def update_all(self):
         self.update_tokens()
@@ -162,7 +161,7 @@ class LocationPane():
         stats = unit.description_dictionary()
         for stat in self.monster:
             self.monster[stat].text = str(stats[stat])
-        self.monster_picture.texture = texture
+        self.monster_picture.texture = arcade.load_texture(":resources:eldritch/images/" + texture)
         self.horror_test = self.display_skill(stats['horror_check'], 1070, 400)
         self.strength_test = self.display_skill(stats['strength_check'], 1070, 335)
         self.description_layout.add(self.horror_test)

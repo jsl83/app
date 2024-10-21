@@ -12,6 +12,7 @@ from screens.investigator_pane import InvestigatorPane
 from screens.possessions_pane import PossessionsPane
 from screens.reserve_pane import ReservePane
 from screens.location_pane import LocationPane
+from screens.encounter_pane import EncounterPane
 from locations.location_manager import LocationManager
 from locations.map import Map
 from screens.action_button import ActionButton
@@ -64,13 +65,11 @@ class HubScreen(arcade.View):
         ui_layout.add(arcade.gui.UITextureButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui/map_overlay.png'), y=-200, scale=0.5))
         ui_layout.add(self.doom_counter)
         ui_layout.add(self.omen_counter)
-        self.overlay_toggle = ActionButton(x=10, y=142, width=336, height=87, action=self.toggle_overlay, texture=arcade.load_texture(
-            IMAGE_PATH_ROOT + 'blank.png'), style={'font_color': arcade.color.BLACK})
+        self.overlay_toggle = ActionButton(x=10, y=142, width=336, height=87, action=self.toggle_overlay, texture='blank.png', style={'font_color': arcade.color.BLACK})
         index = 0
         for text in ['investigator', 'possessions', 'reserve', 'location', 'ancient_one']:
-            ui_layout.add(ActionButton(index * 190 + 50, y=21, width=140, height=100, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'buttons/placeholder.png'), text=human_readable(text), action=self.switch_info_pane, action_args={'key': text},
-                texture_pressed=arcade.load_texture(IMAGE_PATH_ROOT + '/buttons/pressed_placeholder.png')))
+            ui_layout.add(ActionButton(index * 190 + 50, y=21, width=140, height=100, texture='buttons/placeholder.png', text=human_readable(text),
+                                       action=self.switch_info_pane, action_args={'key': text}, texture_pressed='/buttons/pressed_placeholder.png'))
             index += 1
 
         self.maps = {
@@ -83,8 +82,10 @@ class HubScreen(arcade.View):
             'possessions': PossessionsPane(self.investigator),
             'reserve': ReservePane(self),
             'location': LocationPane(self.location_manager),
-            'ancient_one': AncientOnePane(self.ancient_one),
+            'ancient_one': AncientOnePane(self.ancient_one)
         }
+
+        self.encounter_pane = EncounterPane(self)
 
         self.actions_taken = {
             'focus': {'taken': False, 'buttons': [self.info_panes['investigator'].focus_button]},
@@ -103,7 +104,7 @@ class HubScreen(arcade.View):
         self.info_manager.add(self.info_pane.layout)
         self.ui_manager.add(ui_layout)
         self.ui_manager.add(self.overlay_toggle)
-        self.ui_manager.add(ActionButton(x=920, y=142, width=70, height=70, action=self.undo, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons/undo.png')))
+        self.ui_manager.add(ActionButton(x=920, y=142, width=70, height=70, action=self.undo, texture='buttons/undo.png'))
         self.info_manager.enable()
         self.ui_manager.enable()
         self.choice_manager.enable()
@@ -148,10 +149,9 @@ class HubScreen(arcade.View):
                 if len(tickets) > 1:
                     choices = []
                     for combo in tickets:
-                        choices.append(ActionButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons/placeholder.png'),
-                                action=self.ticket_move, text='Rail: ' + str(combo[0]) + '\nShip: ' + str(combo[1]), width=200, height=100,
-                                action_args={'name': self.investigator.name, 'location': location[2], 'overlay': True,
-                                             'rail': combo[0], 'ship': combo[1], 'original': self.original_investigator_location}))
+                        choices.append(ActionButton(texture='buttons/placeholder.png', action=self.ticket_move, text='Rail: ' + str(combo[0]) + '\nShip: ' + str(combo[1]),
+                                                    width=200, height=100, action_args={'name': self.investigator.name, 'location': location[2], 'overlay': True,
+                                                    'rail': combo[0], 'ship': combo[1], 'original': self.original_investigator_location}))
                     self.choice_layout = (create_choices(choices=choices, title='Choose Tickets'))
                     self.show_overlay()
                 else:
@@ -295,8 +295,8 @@ class HubScreen(arcade.View):
             case 'choose_lead':
                 portraits = []
                 for name in self.info_panes['location'].investigators:
-                    portraits.append(ActionButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'investigators/' + name + '_portrait.png'), scale=0.4,
-                                                action=self.networker.publish_payload, action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
+                    portraits.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.4, action=self.networker.publish_payload,
+                                                  action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
                 self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
                 self.show_overlay()
             case 'lead_selected':
@@ -304,6 +304,11 @@ class HubScreen(arcade.View):
             case 'player_turn':
                 if payload['value'] == 'action':
                     self.remaining_actions = 2
+                elif payload['value'] == 'encounter':
+                    self.encounter_pane.encounter_phase(self.investigator.location)
+            case 'encounter_choice':
+                self.clear_overlay()
+                self.encounter_pane.encounter(payload['value'])
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max
@@ -350,23 +355,20 @@ class HubScreen(arcade.View):
                         x.disable()
             option_index = 0
             if self.investigator.focus > 0:
-                focus_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': 0}, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT +'icons\\focus.png'), text='Use', text_position=(15,-2))
+                focus_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': 0}, texture='icons/focus.png', text='Use', text_position=(15,-2))
                 options.append(focus_button)
                 option_index += 1
             if self.investigator.clues > 0:
-                clue_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': option_index}, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT +'icons\\clue.png'), text='Use', text_position=(15,-2))
+                clue_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': option_index}, texture='icons/clue.png', text='Use', text_position=(15,-2))
                 options.append(clue_button)
                 option_index += 1
             items = self.investigator.reroll_items[skill].keys()
             if len(items) > 0:
                 for x in items:
-                    item_button = ActionButton(action=reroll, action_args={'kind': x, 'option_index': option_index}, texture=arcade.load_texture(
-                            IMAGE_PATH_ROOT +'buttons/placeholder.png'), text=human_readable(x))
+                    item_button = ActionButton(action=reroll, action_args={'kind': x, 'option_index': option_index}, texture='buttons/placeholder.png', text=human_readable(x))
                     options.append(item_button)
                     option_index += 1
-        self.choice_layout = create_choices(choices = choices, title=title, options=options)
+        self.choice_layout = create_choices(choices = choices, title=title, options=options, offset=(0,150))
         self.show_overlay()
         return rolls
     

@@ -16,12 +16,10 @@ class AncientOnePane():
         self.layout.add(arcade.gui.UITextureButton(x=1000, width=280, y=560, text=human_readable(ancient.name), texture=self.blank, font="Typical Writer", style={'font_size': 20}))
         self.layout.add(arcade.gui.UITextureButton(x=1062, y=505, texture=arcade.load_texture(
             IMAGE_PATH_ROOT +'ancient_ones/' + ancient.name + '_portrait.png'), text=ancient.mysteries, text_position=(50,-100)))
-        self.toggle_attributes = ActionButton(1000, y=475, width=140, height=30, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'buttons/placeholder.png'), text='Details', action=self.toggle_details, action_args={'flag': False},
-                texture_pressed=arcade.load_texture(IMAGE_PATH_ROOT + '/buttons/pressed_placeholder.png'))
-        self.toggle_skills = ActionButton(1140, y=475, width=140, height=30, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'buttons/placeholder.png'), text='Mystery', action=self.toggle_details, action_args={'flag': True},
-                texture_pressed=arcade.load_texture(IMAGE_PATH_ROOT + '/buttons/pressed_placeholder.png'))
+        self.toggle_attributes = ActionButton(1000, y=475, width=140, height=30, texture='buttons/placeholder.png', text='Details',
+                                              action=self.toggle_details, action_args={'flag': False}, texture_pressed='/buttons/pressed_placeholder.png')
+        self.toggle_skills = ActionButton(1140, y=475, width=140, height=30, texture='buttons/placeholder.png', text='Mystery',
+                                          action=self.toggle_details, action_args={'flag': True}, texture_pressed='/buttons/pressed_placeholder.png')
         self.toggle_attributes.select(True)
         self.layout.add(self.toggle_attributes)
         self.layout.add(self.toggle_skills)

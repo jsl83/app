@@ -1,7 +1,3 @@
-import arcade
-
-IMAGE_PATH_ROOT = ":resources:eldritch/images/"
-
 TYPE_DICT = {
     'assets': {
         'scale': 1
@@ -26,5 +22,4 @@ class SmallCard():
         self.name = name
         self.kind = kind
         self.scale = TYPE_DICT[kind]['scale']
-        self.texture = arcade.load_texture(IMAGE_PATH_ROOT + kind + '/' + name.replace('.', '') + '.png')
         self.action_used = False

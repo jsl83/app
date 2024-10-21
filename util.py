@@ -1,5 +1,4 @@
 import arcade.gui
-from screens.action_button import ActionButton
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 
 def human_readable(text: str):
@@ -9,7 +8,7 @@ def human_readable(text: str):
     return name[0:-1]
 
 def create_choices(title='', subtitle='', choices=[], size=(1000,658), pos=(0,142), options=[],
-                   flip: bool = False, offset=(0,150), background=IMAGE_PATH_ROOT + 'gui/overlay.png'):
+                   flip: bool = False, offset=(0,200), background=IMAGE_PATH_ROOT + 'gui/overlay.png'):
 
     choice_gui = arcade.gui.UILayout(width=size[0], height=size[1], x=pos[0], y=pos[1]).with_background(arcade.load_texture(background))
     index = 1

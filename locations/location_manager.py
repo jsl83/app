@@ -25,6 +25,7 @@ class LocationManager():
                     self.locations[name]['expedition'] = False
                     self.locations[name]['eldritch'] = False
                     self.locations[name]['rumor'] = False
+                    self.locations[name]['dead'] = []
         except:
             self.locations = {}
 
@@ -59,3 +60,12 @@ class LocationManager():
         self.locations[key]['investigators'].remove(name)
         self.locations[destination]['investigators'].append(name)
         return key
+    
+    def get_encounters(self, location):
+        encounters = ['generic']
+        if hasattr(self.locations[location], 'color'):
+            encounters.append(self.locations[location].color)
+        for kind in ['gate', 'eldritch', 'rumor', 'expedition', 'clue']:
+            if self.locations[location][kind]:
+                encounters.append(kind)
+        return encounters

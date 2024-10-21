@@ -28,13 +28,13 @@ class PossessionsPane():
                     for item in item_list:
                         if number == 0:
                             y_pos -= 190
-                        self.button_layout.add(ActionButton(1015 + number * 130, y_pos, texture=item.texture, scale=0.6 * item.scale))
+                        self.button_layout.add(ActionButton(1015 + number * 130, y_pos, texture=card_type + '/' + item.name + '.png', scale=0.6 * item.scale))
                         number += 1
                         if number == 2:
                             number = 0
                 else:
                     y_pos -= 190
-                    self.button_layout.add(ActionButton(1080, y_pos, texture=item_list[0].texture, scale=0.6 * item_list[0].scale))
+                    self.button_layout.add(ActionButton(1080, y_pos, texture=card_type + '/' + item_list[0].name + '.png', scale=0.6 * item_list[0].scale))
         self.boundary = -y_pos + 20 if y_pos < 0 else 0
         self.layout.add(arcade.gui.UITexturePane(self.button_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/info_pane.png')))
 

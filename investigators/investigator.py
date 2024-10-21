@@ -42,7 +42,7 @@ class Investigator():
         self.passive = INVESTIGATORS[name]['passive']
         self.active = INVESTIGATORS[name]['active']
 
-        self.reroll_items = [{}, {}, {}, {}, {}]
+        self.reroll_items = [{}, {}, {}, {}, {}, {}]
 
     def get_ticket(self, kind):
         rail = 0

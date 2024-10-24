@@ -2,7 +2,11 @@
   azathoth:
     doom: 15
     mysteries: 3
-    setup: "add_token eldritch omen0"
+    setup:
+      action: spawn
+      args:
+        piece: eldritch
+        location: omen:0
     effects:
       - "add_trigger omen green": 
         - "add_token eldritch omen0"

@@ -16,6 +16,7 @@ class ReservePane():
         self.selected = []
         self.hub = hub
         self.successes = 0
+        self.rolls = []
         self.is_shopping = False
         self.discard_view = False
         self.position = 0
@@ -65,7 +66,8 @@ class ReservePane():
         else:
             self.is_shopping = True
             self.hub.gui_set(False)
-            for x in self.hub.run_test(1, reroll_method=self.add_success):
+            self.rolls = self.hub.run_test(1, pane=self)
+            for x in self.rolls:
                 if x >= self.hub.investigator.success:
                     self.successes += 1
             self.acquire_button.text = 'Acquire (Remaining cost ' + str(self.successes) + ')'
@@ -109,6 +111,7 @@ class ReservePane():
         self.hub.gui_set(True)
         self.is_shopping = False
         self.successes = 0
+        self.rolls = []
         self.selected = []
         self.acquire_button.text = 'Acquire Assets'
         self.acquire_button.disable()
@@ -165,6 +168,9 @@ class ReservePane():
         for item in self.discard_layout.children:
             item.reset_position()
 
-    def add_success(self, quant):
-        self.successes += quant
+    def reroll(self, new, old):
+        self.rolls.remove(old)
+        self.rolls.append(new)
+        if new >= self.hub.investigator.success:
+            self.successes += 1
         self.acquire_button.text = 'Acquire (Remaining cost: ' + str(self.successes) + ')'

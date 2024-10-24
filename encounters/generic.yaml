@@ -1,0 +1,52 @@
+---
+  - city:
+      test:
+        - skill
+      targs:
+        - stat: 2
+          mod: 0
+          text: Test Observation
+      pass:
+        - gain_asset
+        - gain_asset
+      pargs:
+        - reserve: True
+          kind: item
+          text: Reserve
+        - random: True
+          kind: item
+          text: Random
+      fail: 
+        - request_card
+      fargs:
+        - card: condition:detained
+          text: Become Detained
+      test_text: You make sure no one is watching before sneaking out of the shop with your stolen goods.
+      pass_text: Gain 1 Item Asset from the Reserve or 1 random Item Asset from the deck.
+      fail_text: "You are caught by the store owner and arrested: Gain a Detained Condition"
+    wilderness:
+      test: None
+      pass:
+        - gain_asset;hp_san
+      pargs:
+        - random: True
+          kind: item
+          text: Gain Asset
+        - hp: 0
+          san: -1
+      pass_text: The remains of a long-dead explorer lie before you. Some of his gear still seems salvageable, and he won't miss it. You dig through the dead man's pockets; gain 1 random Item Asset from the deck and lose 1 Sanity.
+    sea:
+      test:
+        - skill
+      targs:
+        - stat: 2
+          mod: 0
+      pass:
+        - request_card
+      pargs:
+        - card: artifact
+      fail:
+        - delayed
+      test_text: You find the floating detritus of some sunken ship and search for any survivors or salvageable objects. Test Observation.
+      pass_text: You discover a floating trunk; gain 1 Artifact.
+      fail_text: You waste hours without result; become Delayed.

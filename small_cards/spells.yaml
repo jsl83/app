@@ -3,6 +3,28 @@
     subtype: Incantation
     action: "before_combat:test_lore"
     variants:
-      - variant_1:
-        - 0: "health:-1 sanity:-1"
-        - 2: None
+      "1":
+        - 2:
+          action: None
+          text: You walk forward boldly, knowing the mists will keep you hidden. No additional effects.
+        - 0:
+          action: hp_san
+          text: A thick, black fog engulfs you, chokingyour lungs and stinging your eyes. Lose 1 Health and 1 Sanity
+          args:
+            health: -1
+            sanity: -1
+      "2":
+        - 1:
+          action: hp_san
+          text: Although you are hidden by the darkness, you feel unnatural tendrils of fog wrapping around your body. Lose 1 Sanity
+          args:
+            health: 0
+            sanity: -1
+        - 0:
+          action: conditional_effect
+          text: You see a monstrous form vanish into the fog. Whatever it was, you fear it may return the next time you recite the incantation. Discard this card unless you gain a Hallucinations Condition.
+          args:
+            action: discard
+            args: mists_of_releh
+            unless: gain_item
+            unless_args: condition:hallucinations

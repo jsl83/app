@@ -12,7 +12,7 @@ from screens.investigator_pane import InvestigatorPane
 from screens.possessions_pane import PossessionsPane
 from screens.reserve_pane import ReservePane
 from screens.location_pane import LocationPane
-from screens.encounter_pane import EncounterPane
+from encounters.encounter_pane import EncounterPane
 from locations.location_manager import LocationManager
 from locations.map import Map
 from screens.action_button import ActionButton
@@ -158,7 +158,7 @@ class HubScreen(arcade.View):
                     self.ticket_move(self.investigator.name, location[2], tickets[0][0], tickets[0][1], self.original_investigator_location)
             else:
                 self.move_investigator(self.investigator.name, self.original_investigator_location)
-        elif x < 1000 and y > 142 and self.click_time <= 10:
+        elif x < 1000 and y > 142 and self.click_time <= 10 and self.gui_enabled:
             location = self.location_manager.get_closest_location((x,y), self.zoom, self.map.get_location())
             if location != None:
                 if self.zoom == 2:
@@ -177,7 +177,7 @@ class HubScreen(arcade.View):
                     if type(button) == ActionButton and button.enabled:
                         key = next((key for key in self.actions_taken.keys() if button in self.actions_taken[key]['buttons']), None)
                         if key == None or (not self.actions_taken[key]['taken'] and self.remaining_actions > 0):
-                            button.action()
+                            button.click_action()
                             buttons = self.get_ui_buttons()
                             if button in buttons:
                                 for x in buttons:
@@ -248,6 +248,12 @@ class HubScreen(arcade.View):
             elif key == 'reserve':
                 self.info_pane.reset_discard()
 
+    def show_encounter_pane(self):
+        self.info_manager.children = {0:[]}
+        self.info_pane = self.encounter_pane
+        self.info_manager.add(self.info_pane.layout)
+        self.gui_set(False)
+
     def toggle_overlay(self):
         if len(self.choice_layout.children) > 0:
             if self.overlay_showing:
@@ -308,7 +314,8 @@ class HubScreen(arcade.View):
                     self.encounter_pane.encounter_phase(self.investigator.location)
             case 'encounter_choice':
                 self.clear_overlay()
-                self.encounter_pane.encounter(payload['value'])
+                self.encounter_pane.start_encounter(payload['value'])
+                self.show_encounter_pane()
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max
@@ -322,11 +329,12 @@ class HubScreen(arcade.View):
         arcade.draw_circle_filled(x, y, 15, color)
         arcade.draw_text(current, x, y+2, width=20, anchor_x='center', anchor_y='center', bold=True, font_size=17, font_name="calibri")
 
-    def run_test(self, skill, title='TEST', reroll_method=None):
+    def run_test(self, skill, mod=0, pane=None):
         choices = []
         rolls = []
         options = []
-        for x in range(self.investigator.skills[skill]):
+        titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
+        for x in range(self.investigator.skills[skill] + mod):
             roll = random.randint(1, 6)
             rolls.append(roll)
             choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
@@ -338,7 +346,8 @@ class HubScreen(arcade.View):
                     index = rolls.index(fail)
                     new_roll = random.randint(1, 6)
                     choices[index].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
-                    reroll_method(1 if new_roll >= self.investigator.success else 0)
+                    if pane != None:
+                        pane.reroll(new_roll, fail)
                     if kind == 'focus':
                         self.investigator.focus -= 1
                         if self.investigator.focus == 0:
@@ -355,11 +364,11 @@ class HubScreen(arcade.View):
                         x.disable()
             option_index = 0
             if self.investigator.focus > 0:
-                focus_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': 0}, texture='icons/focus.png', text='Use', text_position=(15,-2))
+                focus_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': 0}, texture='icons/focus.png', text='Use', text_position=(20,-2))
                 options.append(focus_button)
                 option_index += 1
             if self.investigator.clues > 0:
-                clue_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': option_index}, texture='icons/clue.png', text='Use', text_position=(15,-2))
+                clue_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': option_index}, texture='icons/clue.png', text='Use', text_position=(20,-2))
                 options.append(clue_button)
                 option_index += 1
             items = self.investigator.reroll_items[skill].keys()
@@ -368,7 +377,7 @@ class HubScreen(arcade.View):
                     item_button = ActionButton(action=reroll, action_args={'kind': x, 'option_index': option_index}, texture='buttons/placeholder.png', text=human_readable(x))
                     options.append(item_button)
                     option_index += 1
-        self.choice_layout = create_choices(choices = choices, title=title, options=options, offset=(0,150))
+        self.choice_layout = create_choices(choices = choices, title=titles[skill] + ' Test', options=options, offset=(0,150))
         self.show_overlay()
         return rolls
     

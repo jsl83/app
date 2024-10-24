@@ -17,7 +17,7 @@ TYPE_DICT = {
 }
 
 class SmallCard():
-    def __init__(self, name, kind):
+    def __init__(self, name, kind, variant=None):
 
         self.name = name
         self.kind = kind

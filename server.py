@@ -81,7 +81,8 @@ class Networker(threading.Thread, BanyanBase):
             'green': [8, list(range(8))],
             'orange': [8, list(range(8))],
             'purple': [8, list(range(8))],
-            'generic': [12, list(range(12))],
+            #'generic': [12, list(range(12))],
+            'generic': [1, list(range(1))],
             'the_amazon': [3, list(range(3))],
             'the_pyramids': [3, list(range(3))],
             'the_heart_of_africa': [3, list(range(3))],
@@ -238,7 +239,8 @@ class Networker(threading.Thread, BanyanBase):
                         self.spawn('monsters', location=location)
                     elif location == None:
                         if len(self.decks['gates']['deck']) > 0:
-                            gate = random.choice(self.decks['gates']['deck'])
+                            #gate = random.choice(self.decks['gates']['deck'])
+                            gate = 'world:sydney'
                             self.decks['gates']['deck'].remove(gate)
                             self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')

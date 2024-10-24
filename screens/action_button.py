@@ -33,7 +33,7 @@ class ActionButton(arcade.gui.UITextureButton):
         super().__init__(x, y, width, height, arcade_texture, texture_hovered, arcade_pressed, text, scale,
                          size_hint, size_hint_min, size_hint_max, style, text_position, font, multiline=multiline, anchor_y=anchor_y)
         
-        self.click_action = action
+        self.action = action
         self.enabled = enabled
         self.action_args = action_args
         self.initial_x = x
@@ -63,10 +63,10 @@ class ActionButton(arcade.gui.UITextureButton):
         else:
             self.texture = self.original_texture
 
-    def action(self):
+    def click_action(self):
         if self.action_args != None:
-            self.click_action(**self.action_args)
+            self.action(**self.action_args)
         else:
-            self.click_action()
+            self.action()
         if self.is_action:
             self.action_available(False)

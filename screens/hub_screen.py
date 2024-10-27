@@ -332,6 +332,7 @@ class HubScreen(arcade.View):
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
         for x in range(self.investigator.skills[skill] + mod):
             roll = random.randint(1, 6)
+            roll = 6
             rolls.append(roll)
             choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
         fail = next((roll for roll in rolls if roll < self.investigator.success), None)
@@ -395,8 +396,8 @@ class HubScreen(arcade.View):
             button.select(False)
         buttons[index].select(True)
     
-    def request_card(self, kind, name, command='get:'):
-        self.networker.publish_payload({'message': kind, 'value': command + name}, self.investigator.name)
+    def request_card(self, kind, name, command='get', tag=''):
+        self.networker.publish_payload({'message': kind, 'value': name, 'command': command, 'tag': tag}, self.investigator.name)
 
     def discard_card(self, kind, name):
         self.networker.publish_payload({'message': kind, 'value': 'discard:' + name}, self.investigator.name)

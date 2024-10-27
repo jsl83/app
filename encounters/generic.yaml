@@ -6,21 +6,27 @@
         - stat: 2
           mod: 0
           text: Test Observation
+          step: pass
+          fail: fail
       pass:
         - gain_asset
         - gain_asset
       pargs:
         - reserve: True
-          kind: item
+          tag: item
           text: Reserve
+          step: finish
         - random: True
-          kind: item
+          tag: item
           text: Random
+          step: finish
       fail: 
         - request_card
       fargs:
-        - card: condition:detained
+        - name: detained
+          kind: conditions
           text: Become Detained
+          step: finish
       test_text: You make sure no one is watching before sneaking out of the shop with your stolen goods.
       pass_text: Gain 1 Item Asset from the Reserve or 1 random Item Asset from the deck.
       fail_text: "You are caught by the store owner and arrested: Gain a Detained Condition"
@@ -29,11 +35,13 @@
       pass:
         - gain_asset;hp_san
       pargs:
-        - random: True
-          kind: item
-          text: Gain Asset
-        - hp: 0
-          san: -1
+        -
+          - random: True
+            tag: item
+            text: Gain Asset
+            step: finish
+          - hp: 0
+            san: -1
       pass_text: The remains of a long-dead explorer lie before you. Some of his gear still seems salvageable, and he won't miss it. You dig through the dead man's pockets; gain 1 random Item Asset from the deck and lose 1 Sanity.
     sea:
       test:
@@ -41,12 +49,17 @@
       targs:
         - stat: 2
           mod: 0
+          step: pass
+          fail: fail
       pass:
         - request_card
       pargs:
         - card: artifact
+          step: finish
       fail:
         - delayed
+      fargs:
+        - step: finish
       test_text: You find the floating detritus of some sunken ship and search for any survivors or salvageable objects. Test Observation.
       pass_text: You discover a floating trunk; gain 1 Artifact.
       fail_text: You waste hours without result; become Delayed.

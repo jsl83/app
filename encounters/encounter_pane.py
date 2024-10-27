@@ -64,18 +64,18 @@ class EncounterPane():
     def mists(self):
         pass
 
-    def skill_test(self, stat, mod, pane):
-        self.rolls = self.hub.run_test(stat, mod, pane)
+    def skill_test(self, stat, mod, step, fail):
+        self.rolls = self.hub.run_test(stat, mod, self.hub.encounter_pane)
         self.proceed_button.text = 'Next'
         self.proceed_button.action = self.confirm_test
-        self.proceed_button.action_args = None
+        self.proceed_button.action_args = {'step': step, 'fail': fail}
 
-    def confirm_test(self):
+    def confirm_test(self, step, fail):
         self.hub.clear_overlay()
         if next((roll for roll in self.rolls if roll >= self.investigator.success), None) != None:
-            self.set_buttons('pass')
+            self.set_buttons(step)
         else:
-            self.set_buttons('fail')
+            self.set_buttons(fail)
 
     def reroll(self, new, old):
         self.rolls.remove(old)
@@ -83,39 +83,65 @@ class EncounterPane():
 
     def combine_actions(self, action_string, args):
         actions = action_string.split(';')
+        step = args[0]['step']
+        del args[0]['step']
         for x in range(len(actions)):
             arg = args[x]
             arg['pane'] = self
             self.action_dict[actions[x]](**arg)
+        self.set_buttons(step)
     
     def set_buttons(self, key):
-        self.layout.clear()
-        self.layout.add(self.text_button)
-        buttons = [self.proceed_button, self.option_button]
-        actions = self.encounter[key]
-        self.text_button.text = self.encounter[key + '_text']
-        for x in range(len(actions)):
-            if actions[x].find(';') == -1:
-                args = self.encounter[key[0] + 'args'][x]
-                args['pane'] = self
-                buttons[x].action = self.action_dict[actions[x]]
-                buttons[x].text = args['text']
-                del args['text']
-                buttons[x].action_args = args
-            else:
-                buttons[x].action = self.combine_actions
-                args = self.encounter[key[0] + 'args']
-                if x == 0:
-                    buttons[x].text = args[0]['text']
-                del args[0]['text']
-                buttons[x].action_args = {'action_string': actions[x], 'args': args}
-            self.layout.add(buttons[x])
-        self.hub.info_manager.trigger_render()
+        if key == 'finish':
+            self.layout.clear()
+            self.encounter = None
+            self.monsters = []
+            self.encounters = []
+            self.first_fight = True
+            self.rolls = []
+            self.hub.switch_info_pane('investigator')
+            self.hub.clear_overlay()
+            self.hub.gui_set(True)
+            self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+        else:
+            self.layout.clear()
+            self.layout.add(self.text_button)
+            buttons = [self.proceed_button, self.option_button]
+            actions = self.encounter[key]
+            self.text_button.text = self.encounter[key + '_text']
+            for x in range(len(actions)):
+                if actions[x].find(';') == -1:
+                    args = self.encounter[key[0] + 'args'][x]
+                    buttons[x].action = self.action_dict[actions[x]]
+                    buttons[x].text = args['text']
+                    del args['text']
+                    buttons[x].action_args = args
+                else:
+                    buttons[x].action = self.combine_actions
+                    args = self.encounter[key[0] + 'args'][x]
+                    if x == 0:
+                        buttons[x].text = args[0]['text']
+                    del args[0]['text']
+                    buttons[x].action_args = {'action_string': actions[x], 'args': args}
+                self.layout.add(buttons[x])
+            self.hub.info_manager.trigger_render()
 
-    def gain_asset(self, kind='any', random=False, reserve=False):
+    def gain_asset(self, tag='any', random=False, reserve=False, step='finish', name=''):
         if reserve:
             items = self.hub.info_panes['reserve'].reserve
-            items = items if kind == 'any' else [item for item in items if kind in item.tags]
+            items = items if tag == 'any' else [item for item in items if tag in item.tags]
+            if len(items) > 0:
+                def next_step(self, item, step):
+                    self.hub.request_card('assets', item, 'acquire:')
+                    self.set_buttons(step)
+                    self.hub.clear_overlay
+                choices = [ActionButton(texture=item.texture, action=next_step, action_args={'self': self, 'item': item.name, 'step': step}) for item in items]
+                self.hub.choice_layout = create_choices(choices = choices, title='Choose Asset')
+                self.hub.show_overlay()
+        else:
+            self.hub.request_card('assets', name, tag=tag)
+            self.set_buttons(step)
 
-    def request_card(self):
-        pass
+    def request_card(self, kind, name, step):
+        self.hub.request_card(kind, name)
+        self.set_buttons(step)

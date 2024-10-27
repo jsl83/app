@@ -1,6 +1,6 @@
 import yaml
 from util import *
-from small_cards.small_card import SmallCard
+from small_cards.small_card import Spell, Asset, Condition
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/investigators/"
 INVESTIGATORS = None
@@ -62,5 +62,13 @@ class Investigator():
                     rail = 1
         return (rail, ship)
 
-    def get_item(self, cardtype, name, variant=None):
-        self.possessions[cardtype].append(SmallCard(name, cardtype))
+    def get_item(self, cardtype, name):
+        card = None
+        match cardtype:
+            case 'assets':
+                card = Asset(name)
+            case 'spells':
+                card = Spell(name)
+            case 'conditions':
+                card = Condition(name)
+        self.possessions[cardtype].append(card)

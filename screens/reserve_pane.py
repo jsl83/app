@@ -1,5 +1,6 @@
 import arcade, arcade.gui
 from screens.action_button import ActionButton
+from small_cards.small_card import Asset
 from util import *
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
@@ -41,27 +42,31 @@ class ReservePane():
         self.discard_layout.add(ActionButton(x=1260, y=780, width=20, height=20, text='X', texture='buttons/placeholder.png', action=self.close_discard))
 
     def restock(self, removed, added):
-        if removed != '':
-            for item in removed:
-                item = item.replace('.', '')
-                option = next((button for button in self.button_layout.children if button.name == item), None)
-                option.name = added[0].replace('.', '')
-                option.texture = arcade.load_texture(IMAGE_PATH_ROOT + 'assets/' + option.name + '.png')
-                option.action_args = {'name': option.name, 'cost': int(self.hub.get_item_info(added[0])['cost'])}
-                added.remove(added[0])
-            for item in added:
-                option = next((button for button in self.button_layout.children if button.name == None or button.name == ''), None)
-                cost = int(self.hub.get_item_info(item)['cost'])
-                item = item.replace('.', '')
-                option.name = item
-                option.texture = arcade.load_texture(IMAGE_PATH_ROOT + 'assets/' + item + '.png')
-                option.action_args = {'name': option.name, 'cost': cost}
+        for item in removed:
+            removal = next((r for r in self.reserve if r.name == item), None)
+            option = next((button for button in self.button_layout.children if button.name == item), None)
+            option.name = added[0]
+            card = Asset(option.name)
+            option.texture = card.texture
+            option.action_args = {'name': option.name, 'cost': card.cost}
+            added.remove(added[0])
+            self.reserve.remove(removal)
+            self.reserve.append(card)
+        for item in added:
+            option = next((button for button in self.button_layout.children if button.name == None or button.name == ''), None)
+            card = Asset(item)
+            cost = card.cost
+            option.name = item
+            option.texture = card.texture
+            option.action_args = {'name': option.name, 'cost': cost}
+            self.reserve.append(card)
 
     def acquire_assets(self):
         if self.is_shopping:
             self.hub.action_taken('shop')
             for item in (self.selected):
                 self.hub.request_card('assets', item, 'acquire:')
+                self.reserve = [item for item in self.reserve if item.name != item]
             self.reset()
         else:
             self.is_shopping = True
@@ -77,13 +82,13 @@ class ReservePane():
             self.layout.add(self.debt_button)
 
     def select_item(self, name, cost):
-        self.acquire_button.enable()
         if name in self.selected:
             self.selected.remove(name)
             self.successes += cost
-            if not self.acquire_button.enabled and self.successes >= 0:
+            if not self.acquire_button.enabled and self.successes >= 0 and len(self.selected) > 0:
                 self.acquire_button.enable()
         else:
+            self.acquire_button.enable()
             self.selected.append(name)
             self.successes -= cost
             if self.acquire_button.enabled and self.successes < 0:
@@ -93,6 +98,8 @@ class ReservePane():
         self.acquire_button.text = 'Acquire (Remaining cost: ' + str(self.successes) + ')'
         if len(self.selected) == 1:
             self.discard_button.enable()
+        else:
+            self.discard_button.disable()
 
     def discard_action(self):
         if self.is_shopping:
@@ -105,7 +112,10 @@ class ReservePane():
 
     def bank_loan(self):
         self.hub.request_card('conditions', 'debt')
-        self.add_success(2)
+        self.successes += 2
+        self.acquire_button.text = 'Acquire (Remaining cost ' + str(self.successes) + ')'
+        if self.successes > 0 and len(self.selected) > 0:
+            self.acquire_button.enable()
 
     def reset(self):
         self.hub.gui_set(True)

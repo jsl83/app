@@ -1,6 +1,7 @@
 ---
   mists_of_releh:
-    subtype: Incantation
+    tags:
+      - incantation
     action: "before_combat:test_lore"
     variants:
       "1":

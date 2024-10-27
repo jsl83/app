@@ -223,7 +223,7 @@ class Networker(threading.Thread, BanyanBase):
         if command_type == 'get':
             variant = random.choice(self.decks[cardtype][name])
             self.decks[cardtype][name].remove(variant)
-            return name + ':' + str(variant)
+            return name + str(variant)
         elif command_type == 'discard':
             self.decks[cardtype][name[0:-1]].append(name[-1])
             return None

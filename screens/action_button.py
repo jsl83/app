@@ -7,7 +7,7 @@ class ActionButton(arcade.gui.UITextureButton):
                  y: float = 0,
                  width: float = None,
                  height: float = None,
-                 texture: str = None,
+                 texture: str | Texture = None,
                  texture_hovered: Texture = None,
                  texture_pressed: str = None,
                  text: str = "",
@@ -27,7 +27,7 @@ class ActionButton(arcade.gui.UITextureButton):
                  is_action: bool = False,
                  **kwargs):
         
-        arcade_texture = None if texture == None else arcade.load_texture(":resources:eldritch/images/" + texture)
+        arcade_texture = None if texture == None else arcade.load_texture(":resources:eldritch/images/" + texture) if type(texture) == str else texture
         arcade_pressed = None if texture_pressed == None else arcade.load_texture(":resources:eldritch/images/" + texture_pressed)
         
         super().__init__(x, y, width, height, arcade_texture, texture_hovered, arcade_pressed, text, scale,

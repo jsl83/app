@@ -3,7 +3,6 @@ import arcade.csscolor
 import arcade.gui
 import math
 import random
-import yaml
 from util import *
 from ancient_ones.ancient_one import AncientOne
 from screens.ancient_pane import AncientOnePane
@@ -18,9 +17,6 @@ from locations.map import Map
 from screens.action_button import ActionButton
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
-
-with open('small_cards/assets.yaml') as stream:
-    ASSET_DICTIONARY = yaml.safe_load(stream)
 
 class HubScreen(arcade.View):
     
@@ -44,7 +40,7 @@ class HubScreen(arcade.View):
 
         for item in self.investigator.initial_items:
             request = item.split(':')
-            #self.request_card(request[0], request[1])
+            self.request_card(request[0], request[1])
 
         self.initial_click = (0,0)
         self.zoom = 1
@@ -280,17 +276,17 @@ class HubScreen(arcade.View):
                 if payload['location'] == self.info_panes['location'].selected:
                     self.info_panes['location'].update_all()
             case 'spells':
-                spell = payload['value'].split(':')
-                self.item_received('spells', spell[0], spell[1])
+                self.item_received('spells', payload['value'])
             case 'restock':
-                self.info_panes['reserve'].restock(payload['removed'].split(':'), payload['value'].split(':'))
+                removed = [] if payload['removed'] == '' or payload['removed'] == None else payload['removed'].split(':')
+                self.info_panes['reserve'].restock(removed, payload['value'].split(':'))
             case 'conditions':
-                card = payload['value'].split(':')
-                if next((condition for condition in self.investigator.possessions['conditions'] if condition.name == card[0]), None) is not None:
+                card = payload['value']
+                if next((condition for condition in self.investigator.possessions['conditions'] if condition.name == card[0:-1]), None) is not None:
                     self.networker.publish_payload({'message': 'discard', 'value': payload['value']}, self.investigator.name)
                 else:
-                    self.item_received('conditions', card[0], card[1])
-                    if card[0] == 'debt':
+                    self.item_received('conditions', card)
+                    if card[0:-1] == 'debt':
                         self.info_panes['reserve'].debt_button.disable()
             case 'asset':
                 self.item_received('assets', payload['value'])
@@ -398,9 +394,6 @@ class HubScreen(arcade.View):
         for button in buttons:
             button.select(False)
         buttons[index].select(True)
-
-    def get_item_info(self, name):
-        return ASSET_DICTIONARY[name]
     
     def request_card(self, kind, name, command='get:'):
         self.networker.publish_payload({'message': kind, 'value': command + name}, self.investigator.name)
@@ -421,8 +414,8 @@ class HubScreen(arcade.View):
         self.overlay_showing = True
         self.overlay_toggle.text = 'HIDE OVERLAY'        
 
-    def item_received(self, kind, name, variant=None):
-        self.investigator.get_item(kind, name, variant)
+    def item_received(self, kind, name):
+        self.investigator.get_item(kind, name)
         self.info_panes['possessions'].setup()
 
     def request_spawn(self, kind, name='', location='', number='1'):

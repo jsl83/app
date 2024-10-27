@@ -112,8 +112,10 @@ class EncounterPane():
             self.layout.add(buttons[x])
         self.hub.info_manager.trigger_render()
 
-    def gain_asset(self):
-        pass
+    def gain_asset(self, kind='any', random=False, reserve=False):
+        if reserve:
+            items = self.hub.info_panes['reserve'].reserve
+            items = items if kind == 'any' else [item for item in items if kind in item.tags]
 
     def request_card(self):
         pass

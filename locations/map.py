@@ -88,7 +88,6 @@ class Map():
             case 'gate':
                 path = 'maps/' + location_name + '_gate.png'
                 location['gate'] = True
-                manager.add_gate(location_name)
             case 'monster':
                 path = 'monsters/' + name + '.png'
         item = TOKEN_DICT[kind]

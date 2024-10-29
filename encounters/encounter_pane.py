@@ -99,9 +99,10 @@ class EncounterPane():
             self.encounters = []
             self.first_fight = True
             self.rolls = []
-            self.hub.switch_info_pane('investigator')
             self.hub.clear_overlay()
             self.hub.gui_set(True)
+            self.hub.switch_info_pane('investigator')
+            self.hub.select_ui_button(0)
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
         else:
             self.layout.clear()
@@ -132,9 +133,9 @@ class EncounterPane():
             items = items if tag == 'any' else [item for item in items if tag in item.tags]
             if len(items) > 0:
                 def next_step(self, item, step):
-                    self.hub.request_card('assets', item, 'acquire:')
+                    self.hub.request_card('assets', item, 'acquire')
                     self.set_buttons(step)
-                    self.hub.clear_overlay
+                    self.hub.clear_overlay()
                 choices = [ActionButton(texture=item.texture, action=next_step, action_args={'self': self, 'item': item.name, 'step': step}) for item in items]
                 self.hub.choice_layout = create_choices(choices = choices, title='Choose Asset')
                 self.hub.show_overlay()
@@ -145,3 +146,6 @@ class EncounterPane():
     def request_card(self, kind, name, step):
         self.hub.request_card(kind, name)
         self.set_buttons(step)
+
+    def start_mythos(self, mythos):
+        print(mythos)

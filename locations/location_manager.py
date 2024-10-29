@@ -8,12 +8,6 @@ class LocationManager():
 
         self.locations = {}
         self.clue_count = 0
-        self.gate_count = {
-            'red': 0,
-            'blue': 0,
-            'green': 0
-        }
-
         try:
             with open('locations/locations.yaml') as stream:
                 self.locations = yaml.safe_load(stream)
@@ -43,9 +37,6 @@ class LocationManager():
     
     def spawn_monster(self, name, location):
         self.locations[location]['monsters'].append(Monster(name))
-
-    def add_gate(self, name):
-        self.gate_count[self.locations[name]['gate_color']] += 1
 
     def get_location_coord(self, key):
         loc = self.locations[key]

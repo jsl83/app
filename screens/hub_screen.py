@@ -37,6 +37,7 @@ class HubScreen(arcade.View):
         self.investigator_token = None
         self.original_investigator_location = ''
         self.server_message = ''
+        self.lead_investigator = None
 
         for item in self.investigator.initial_items:
             request = item.split(':')
@@ -106,7 +107,7 @@ class HubScreen(arcade.View):
         self.choice_manager.enable()
         self.select_ui_button(0)
         self.set_doom(self.ancient_one.doom)
-        self.set_omen(0, False)
+        self.set_omen(0)
 
         self.undo_action = {
             'action': None,
@@ -302,6 +303,7 @@ class HubScreen(arcade.View):
                 self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
                 self.show_overlay()
             case 'lead_selected':
+                self.lead_investigator = payload['value']
                 self.clear_overlay()
             case 'player_turn':
                 if payload['value'] == 'action':
@@ -312,6 +314,13 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.encounter_pane.start_encounter(payload['value'])
                 self.show_encounter_pane()
+            case 'mythos':
+                self.encounter_pane.start_mythos(payload['value'])
+                self.show_encounter_pane()
+            case 'omen':
+                self.set_omen(int(payload['value']))
+            case 'doom':
+                self.set_doom(int(payload['value']))
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max
@@ -332,7 +341,6 @@ class HubScreen(arcade.View):
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
         for x in range(self.investigator.skills[skill] + mod):
             roll = random.randint(1, 6)
-            roll = 6
             rolls.append(roll)
             choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
         fail = next((roll for roll in rolls if roll < self.investigator.success), None)
@@ -429,23 +437,9 @@ class HubScreen(arcade.View):
             if number == 0:
                 self.ancient_one.awaken()
 
-    def increment_doom(self, interval):
-        doom = self.doom + interval
-        doom = 20 if doom > 20 else 0 if doom < 0 else doom
-        self.set_doom(doom)
-
-    def set_omen(self, index, trigger_gates=True):
+    def set_omen(self, index):
         positions = [(921, 757), (956, 737), (937, 703), (904, 724)]
-        colors = ['green', 'blue', 'red', 'blue']
         self.omen_counter.move(positions[index][0] - self.omen_counter.x, positions[index][1] - self.omen_counter.y)
-        if trigger_gates:
-            self.increment_doom(-self.location_manager.gate_count[colors[index]])
-
-    def increment_omen(self, trigger_gates=True):
-        self.omen += 1
-        if self.omen == 4:
-            self.omen = 0
-        self.set_omen(self.omen, trigger_gates)
 
     def undo_move(self, loc, rail, ship):
         self.networker.publish_payload({'message': 'move_investigator', 'value': self.investigator.name, 'destination': loc}, self.investigator.name)

@@ -11,18 +11,6 @@
       - "add_trigger omen green": 
         - "add_token eldritch omen0"
     awaken: "flip"
-    mythos:
-      stage_one:
-        green: 1
-        yellow: 2
-        blue: 1
-      stage_two:
-        green: 2
-        yellow: 3
-        blue: 1
-      stage_three:
-        green: 2
-        yellow: 4
     cultist:
       toughness: 1
       will_check: "will 0 1"

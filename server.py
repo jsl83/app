@@ -251,7 +251,7 @@ class Networker(threading.Thread, BanyanBase):
                         kind = payload['value']
                         #encounter = random.choice(self.encounters[kind][1])
                         #self.encounters[kind][1].remove(encounter)
-                        encounter = 1
+                        encounter = 0
                         if len(self.encounters[kind][1]) == 0:
                             self.encounters[kind][1] = list(range(self.encounters[kind][0]))
                         if kind in self.expeditions:
@@ -312,7 +312,7 @@ class Networker(threading.Thread, BanyanBase):
                     elif location == None:
                         if len(self.decks['gates']['deck']) > 0:
                             #gate = random.choice(self.decks['gates']['deck'])
-                            gate = 'world:tokyo'
+                            gate = 'world:sydney'
                             #self.decks['gates']['deck'].remove(gate)
                             self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')

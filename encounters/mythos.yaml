@@ -1,0 +1,9 @@
+---
+  a_dark_power:
+    actions:
+      - heal
+      - combat
+    args:
+      - kind: monsters
+        amt: 20
+      - combat_only: True

@@ -24,7 +24,7 @@ class Investigator():
         self.health = self.max_health
         self.sanity = self.max_sanity
         self.skill_tokens = [0,0,0,0,0]
-        self.skill_mods = [0,0,0,0,0]
+        self.skill_mods = [0,0,0,0,0,0]
         self.possessions = {
             'assets': [],
             'unique_assets': [],
@@ -43,6 +43,7 @@ class Investigator():
         self.active = INVESTIGATORS[name]['active']
 
         self.reroll_items = [{}, {}, {}, {}, {}, {}]
+        self.skill_bonuses = [{}, {}, {}, {}, {}, {}]
 
     def get_ticket(self, kind):
         rail = 0
@@ -72,3 +73,6 @@ class Investigator():
             case 'conditions':
                 card = Condition(name)
         self.possessions[cardtype].append(card)
+
+    def calculate_skill(self, index):
+        return self.skill[3 if index == 5 else index] + self.skill_tokens[3 if index == 5 else index] + self.skill_bonuses[index]

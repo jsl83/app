@@ -23,6 +23,11 @@ TOKEN_DICT = {
         'size': 200,
         'scale': 0.3,
         'zoom_scale': 0.15
+    },
+    'expedition': {
+        'size': 230,
+        'scale': 0.4,
+        'zoom_scale': 0.2
     }
 }
 
@@ -90,12 +95,14 @@ class Map():
                 location['gate'] = True
             case 'monster':
                 path = 'monsters/' + name + '.png'
+            case 'expedition':
+                path = 'maps/expedition.png'
         item = TOKEN_DICT[kind]
         button = ActionButton(location['x'] * 2 - item['size'] * item['scale'] / 2, location['y'] * 2 - item['size'] * item['scale'] / 2 - offset * 45,
                                 texture=path, scale=item['scale'], name=location_name)
         button.kind = kind
         button.item_name = name
-        self.layouts[kind].add(button)
+        self.layouts['gate' if kind == 'expedition' else kind].add(button)
         zoom_button = ActionButton(location['x'] - item['size'] * item['zoom_scale'] / 2, location['y'] - item['size'] * item['zoom_scale'] / 2 - offset * 25,
                                     texture=path, scale=item['zoom_scale'], name=location_name)
         zoom_button.kind = kind

@@ -65,7 +65,7 @@ class ReservePane():
         if self.is_shopping:
             self.hub.action_taken('shop')
             for item in (self.selected):
-                self.hub.request_card('assets', item, 'acquire:')
+                self.hub.request_card('assets', item, 'acquire')
                 self.reserve = [item for item in self.reserve if item.name != item]
             self.reset()
         else:

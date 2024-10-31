@@ -4,9 +4,12 @@ from screens.action_button import ActionButton
 from util import *
 
 ENCOUNTERS = {}
+MYTHOS = {}
 
 with open('encounters/generic.yaml') as stream:
     ENCOUNTERS['generic'] = yaml.safe_load(stream)
+with open('encounters/mythos.yaml') as stream:
+    MYTHOS = yaml.safe_load(stream)
 
 class EncounterPane():
     def __init__(self, hub):
@@ -28,18 +31,21 @@ class EncounterPane():
         self.encounter = None
         self.layout.add(self.text_button)
         self.layout.add(self.proceed_button)
+        self.combat_only = False
 
-    def encounter_phase(self, location):
-        self.monsters = self.hub.location_manager.locations[location]['monsters']
+    def encounter_phase(self):
+        location = self.investigator.location
+        self.monsters = [monster for monster in self.hub.location_manager.locations[location]['monsters']] if self.first_fight else self.monsters
         self.encounters = self.hub.location_manager.get_encounters(location)
         choices = []
         if len(self.monsters) > 0:
             for monster in self.monsters:
-                choices.append(ActionButton(texture='monsters/' + monster.name + '.png', action=self.fight, action_args={'monster': monster}, scale=0.5))
-            options = [] if 'mists_of_releh' not in self.investigator.possessions['spells'] and not self.first_fight else [ActionButton(text='Mists of Releh', action=self.mists)]
+                choices.append(ActionButton(texture='monsters/' + monster.name + '.png', action=self.combat_will, action_args={'monster': monster}, scale=0.5))
+            options = [] if 'mists_of_releh' not in self.investigator.possessions['spells'] and not self.first_fight else [ActionButton(
+                text='Mists of Releh', action=self.mists, width=100, height=50)]
             self.hub.choice_layout = create_choices('Combat Encounter', choices=choices, options=options)
             self.hub.show_overlay()
-        else:
+        elif not self.combat_only and len(self.hub.location_manager.locations[location]['monsters']) == 0:
             for encounter in self.encounters:
                 payload = {'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}
                 choices.append(ActionButton(texture='encounters/' + encounter + '.png', action=self.hub.networker.publish_payload,
@@ -57,18 +63,43 @@ class EncounterPane():
         else:
             self.set_buttons('pass')
 
-    def fight(self, monster):
+    def combat_will(self, monster):
         self.first_fight = False
         self.hub.clear_overlay()
+        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.combat_strength, action_args={'monster': monster})
+        self.rolls = self.hub.run_test(monster.horror['index'], monster.horror['mod'], self.hub.encounter_pane,
+                                       [next_button], 'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity))
+        
+    def combat_strength(self, monster):
+        self.hub.clear_overlay()
+        successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
+        san_damage = monster.horror['san'] - successes
+        self.investigator.sanity -= san_damage if san_damage > 0 else 0
+        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.resolve_combat, action_args={'monster': monster})
+        self.rolls = self.hub.run_test(monster.strength['index'], monster.strength['mod'], self.hub.encounter_pane,
+                                       [next_button], 'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity))
+        
+    def resolve_combat(self, monster):
+        self.hub.clear_overlay()
+        successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
+        damage = monster.strength['str'] - successes
+        self.investigator.health -= damage if damage > 0 else 0
+        monster.damage += successes
+        if monster.damage >= monster.toughness:
+            self.hub.location_manager.locations[self.investigator.location]['monsters'].remove(monster)
+        self.monsters.remove(monster)
+        self.encounter_phase()
 
     def mists(self):
         pass
 
     def skill_test(self, stat, mod, step, fail):
-        self.rolls = self.hub.run_test(stat, mod, self.hub.encounter_pane)
-        self.proceed_button.text = 'Next'
-        self.proceed_button.action = self.confirm_test
-        self.proceed_button.action_args = {'step': step, 'fail': fail}
+        for button in [self.proceed_button, self.option_button]:
+            if button in self.layout.children:
+                self.layout.children.remove(button)
+        self.hub.info_manager.trigger_render()
+        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.confirm_test, action_args={'step': step, 'fail': fail})
+        self.rolls = self.hub.run_test(stat, mod, self.hub.encounter_pane, [next_button])
 
     def confirm_test(self, step, fail):
         self.hub.clear_overlay()
@@ -147,5 +178,5 @@ class EncounterPane():
         self.hub.request_card(kind, name)
         self.set_buttons(step)
 
-    def start_mythos(self, mythos):
+    def load_mythos(self, mythos):
         print(mythos)

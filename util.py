@@ -21,7 +21,7 @@ def create_choices(title='', subtitle='', choices=[], size=(1000,658), pos=(0,14
         choice_gui.children[index].subtitle = subtitle
         index += 1
 
-    start_y = size[1] - offset[1]
+    start_y = size[1] - offset[1] - (50 if subtitle != '' else 0)
 
     for menu in [choices, options]:
         choice_height = 0

@@ -53,3 +53,6 @@ class PossessionsPane():
         if y != 0:
             for item in self.button_layout.children:
                 item.move(0, y)
+
+    def on_show(self):
+        self.reset()

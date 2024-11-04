@@ -31,6 +31,8 @@ with open('investigators/server_investigators.yaml') as stream:
     INVESTIGATORS = yaml.safe_load(stream)
 with open('monsters/server_monsters.yaml') as stream:
     MONSTERS = yaml.safe_load(stream)
+with open('small_cards/server_artifacts.yaml') as stream:
+    ARTIFACTS = yaml.safe_load(stream)
 
 class Networker(threading.Thread, BanyanBase):
     def __init__(self, back_plane_ip_address=None, process_name=None, player=0, screen=None):
@@ -63,7 +65,7 @@ class Networker(threading.Thread, BanyanBase):
 
         self.decks = {
             'conditions': {},
-            'artifacts': {},
+            'used_artifacts': [],
             'unique_assets': {},
             'spells': {},
             'clues': [],
@@ -190,6 +192,11 @@ class Networker(threading.Thread, BanyanBase):
                     #    self.initiate_gameboard()
                     #    self.ready_count = 0
                     #    self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
+                    #FOR TESTING
+                    self.lead_investigator = 0
+                    self.current_player = 0
+                    self.current_phase = 0
+                    #END TESTING
                     self.initiate_gameboard()
                     self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
         elif topic in self.selected_investigators:
@@ -203,6 +210,12 @@ class Networker(threading.Thread, BanyanBase):
                         item = self.asset_request(payload['command'], payload['value'], payload['tag'])
                         if item != None:
                             self.publish_payload({'message': 'asset', 'value': item}, topic + '_server')
+                    case 'artifacts':
+                        name = payload['value'] if payload['value'] != None else ''
+                        tag = payload['tag'] if payload['tag'] != None else ''
+                        item = self.get_artifact(name, tag)
+                        if item != None:
+                            self.publish_payload({'message': 'artifact', 'value': item}, topic + '_server')
                     case 'spawn':
                         self.spawn(payload['value'], payload['name'], payload['location'], int(payload['number']))
                     case 'move_investigator':
@@ -228,18 +241,18 @@ class Networker(threading.Thread, BanyanBase):
                                             self.current_phase += 1
                                             self.set_omen()
                                             self.monster_surge()
-                                            self.spawn('clues', number=self.reference(1))
+                                            self.spawn('clues', number=self.reference[1])
                                         elif kind == 1:
                                             self.set_omen()
                                             self.yellow_card = True
                                         elif kind == 2:
                                             self.current_phase += 1
-                                            self.spawn('clues', number=self.reference(1))
+                                            self.spawn('clues', number=self.reference[1])
                                         del self.mythos_deck[x][mythos]
                                         break
                                 #Trigger no mythos deck
                         if self.current_phase == 3 and self.yellow_card:
-                            self.spawn('gates', number=self.reference(0))
+                            self.spawn('gates', number=self.reference[0])
                             self.yellow_card = False
                         if self.current_phase == 4:
                             self.current_phase = 0
@@ -291,6 +304,16 @@ class Networker(threading.Thread, BanyanBase):
         elif command == 'discard':
             self.decks[cardtype][name[0:-1]].append(name[-1])
             return None
+        
+    def get_artifact(self, name, tag):
+        if name != '' and name not in self.decks['used_artifacts']:
+            self.decks['used_artifacts'].append(name)
+            return name
+        else:
+            artifacts = [card for card in ARTIFACTS if tag == '' or tag in ARTIFACTS[card]['tags']]
+            artifact = random.choice(artifacts)
+            self.decks['used_artifacts'].append(artifact)
+            return artifact
         
     def monster_surge(self):
         colors = ['green', 'blue', 'red', 'blue']
@@ -360,15 +383,15 @@ class Networker(threading.Thread, BanyanBase):
     def restock_reserve(self, removed=[], discard=False):
         removed_items = ':'.join(removed)
         for item in removed:
-            self.assets['reserve'].remove(item)
+            #self.assets['reserve'].remove(item)
             if discard:
                 self.assets['discard'].append(item)
                 self.publish_payload({'message': 'discard', 'value': item}, 'server_update')
         items = ''
         for i in range(0, 4 - len(self.assets['reserve'])):
             item = random.choice(self.assets['deck'])
-            self.assets['deck'].remove(item)
-            self.assets['reserve'].append(item)
+            #self.assets['deck'].remove(item)
+            #self.assets['reserve'].append(item)
             items += item + ':'
         self.publish_payload({'message': 'restock', 'value': items[0:-1], 'removed': removed_items}, 'server_update')
 

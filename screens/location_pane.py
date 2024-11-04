@@ -91,6 +91,9 @@ class LocationPane():
             self.location_layout.add(self.large_icon)
         self.layout.add(self.location_layout)
 
+    def on_show(self):
+        self.location_select(self.selected)
+
     def update_tokens(self):
         self.token_layout.clear()
         self.token_layout.add(self.token_label)
@@ -136,7 +139,7 @@ class LocationPane():
                 else:
                     name = unit.name
                     texture = 'monsters/' + name + '.png'
-                    button = ActionButton(texture=texture, scale=0.25, action=self.show_monster, action_args={'unit':unit, 'texture': texture})
+                    button = ActionButton(texture=texture, scale=0.25, action=self.show_monster, action_args={'unit':unit})
                 layout.add(button)
                 button.move(1000 + offset + column * 61 - button.x, y - button.y)
                 if i % 4 == 3:
@@ -156,12 +159,12 @@ class LocationPane():
         for layout in [self.token_layout, self.investigator_layout, self.monster_layout]:
             self.location_layout.add(layout)
 
-    def show_monster(self, unit, texture):
+    def show_monster(self, unit):
         self.layout.clear()
         stats = unit.description_dictionary()
         for stat in self.monster:
             self.monster[stat].text = str(stats[stat])
-        self.monster_picture.texture = arcade.load_texture(":resources:eldritch/images/" + texture)
+        self.monster_picture.texture = arcade.load_texture(":resources:eldritch/images/monsters/" + unit.name + '.png')
         self.horror_test = self.display_skill(stats['horror_check'], 1070, 400)
         self.strength_test = self.display_skill(stats['strength_check'], 1070, 335)
         self.description_layout.add(self.horror_test)

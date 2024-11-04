@@ -51,15 +51,18 @@
           mod: 0
           step: pass
           fail: fail
+          text: Test Observation
       pass:
         - request_card
       pargs:
-        - card: artifact
+        - kind: artifact
           step: finish
+          text: Gain 1 Artifact
       fail:
         - delayed
       fargs:
         - step: finish
-      test_text: You find the floating detritus of some sunken ship and search for any survivors or salvageable objects. Test Observation.
-      pass_text: You discover a floating trunk; gain 1 Artifact.
-      fail_text: You waste hours without result; become Delayed.
+          text: Become Delayed
+      test_text: You find the floating detritus of some sunken ship and search for any survivors or salvageable objects
+      pass_text: You discover a floating trunk.
+      fail_text: You waste hours without result.

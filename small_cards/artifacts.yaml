@@ -1,0 +1,59 @@
+---
+  cultes_des_goules:
+    tags:
+      - item
+      - tome
+  de_vermis_mysteriis:
+    tags:
+      - item
+      - tome
+  flute_of_the_outer_gods:
+    tags:
+      - item
+      - magical
+  gate_box:
+    tags:
+      - item
+      - magical
+  glass_of_mortlan:
+    tags:
+      - item
+      - magical
+  grotesque_statue:
+    tags:
+      - item
+  lightning_gun:
+    tags:
+      - item
+      - magical
+      - weapon
+  mi-go_brain_case:
+    tags:
+      - item
+      - magical
+      - teamwork
+  necronomicon:
+    tags:
+      - item
+      - tome
+  pallid_mask:
+    tags:
+      - item
+      - magical
+  ruby_of_r'lyeh:
+    tags:
+      - item
+      - magical
+  sword_of_saint_gerome:
+    tags:
+      - item
+      - magical
+      - weapon
+  t'tka_halot:
+    tags:
+      - item
+      - tome
+  the_silver_key:
+    tags:
+      - item
+      - magical

@@ -34,3 +34,7 @@ class Monster():
             'text': self.text,
             'reckoning': self.reckoning_text
         }
+    
+    def heal(self, amt=1):
+        self.damage -= amt
+        self.damage = 0 if self.damage < 0 else self.damage

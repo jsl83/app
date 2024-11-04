@@ -109,3 +109,6 @@ class InvestigatorPane():
             self.toggle_attributes.select(True)
             for x in self.skills:
                 self.details.add(x)
+
+    def on_show(self):
+        pass

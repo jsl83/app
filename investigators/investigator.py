@@ -1,6 +1,6 @@
 import yaml
 from util import *
-from small_cards.small_card import Spell, Asset, Condition
+from small_cards.small_card import Spell, Asset, Condition, Artifact
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/investigators/"
 INVESTIGATORS = None
@@ -41,6 +41,7 @@ class Investigator():
         self.success = 5
         self.passive = INVESTIGATORS[name]['passive']
         self.active = INVESTIGATORS[name]['active']
+        self.delayed = False
 
         self.reroll_items = [{}, {}, {}, {}, {}, {}]
         self.skill_bonuses = [{}, {}, {}, {}, {}, {}]
@@ -67,11 +68,13 @@ class Investigator():
         card = None
         match cardtype:
             case 'assets':
-                card = Asset(name)
+                card = Asset(name, self)
             case 'spells':
-                card = Spell(name)
+                card = Spell(name, self)
             case 'conditions':
-                card = Condition(name)
+                card = Condition(name, self)
+            case 'artifacts':
+                card = Artifact(name, self)
         self.possessions[cardtype].append(card)
 
     def calculate_skill(self, index):

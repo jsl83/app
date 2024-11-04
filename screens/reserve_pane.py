@@ -1,6 +1,6 @@
 import arcade, arcade.gui
 from screens.action_button import ActionButton
-from small_cards.small_card import Asset
+from small_cards.small_card import *
 from util import *
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
@@ -43,22 +43,21 @@ class ReservePane():
 
     def restock(self, removed, added):
         for item in removed:
-            removal = next((r for r in self.reserve if r.name == item), None)
+            removal = next((r for r in self.reserve if r['name'] == item), None)
             option = next((button for button in self.button_layout.children if button.name == item), None)
             option.name = added[0]
-            card = Asset(option.name)
-            option.texture = card.texture
-            option.action_args = {'name': option.name, 'cost': card.cost}
+            card = get_asset(option.name)
+            option.texture = card['texture']
+            option.action_args = {'name': option.name, 'cost': card['cost']}
             added.remove(added[0])
             self.reserve.remove(removal)
             self.reserve.append(card)
         for item in added:
             option = next((button for button in self.button_layout.children if button.name == None or button.name == ''), None)
-            card = Asset(item)
-            cost = card.cost
+            card = get_asset(item)
             option.name = item
-            option.texture = card.texture
-            option.action_args = {'name': option.name, 'cost': cost}
+            option.texture = card['texture']
+            option.action_args = {'name': option.name, 'cost': card['cost']}
             self.reserve.append(card)
 
     def acquire_assets(self):
@@ -66,7 +65,7 @@ class ReservePane():
             self.hub.action_taken('shop')
             for item in (self.selected):
                 self.hub.request_card('assets', item, 'acquire')
-                self.reserve = [item for item in self.reserve if item.name != item]
+                self.reserve = [item for item in self.reserve if item['name'] != item]
             self.reset()
         else:
             self.is_shopping = True
@@ -177,6 +176,10 @@ class ReservePane():
         self.position = 0
         for item in self.discard_layout.children:
             item.reset_position()
+
+    def on_show(self):
+        self.reset_discard()
+        self.close_discard()
 
     def reroll(self, new, old):
         self.rolls.remove(old)

@@ -1,9 +1,10 @@
 ---
   a_dark_power:
     actions:
-      - heal
+      - monster_heal
       - combat
     args:
-      - kind: monsters
-        amt: 20
+      - amt: 99
       - combat_only: True
+    flavor: Lightning cracks across the sky. You have a sinking dread that all the good you've accomplished is about to be undone.
+    text: Each Monster recovers all Health. Then each investigator immediately encounters each Monster on their space in the order of their choice.

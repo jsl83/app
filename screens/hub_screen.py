@@ -136,7 +136,7 @@ class HubScreen(arcade.View):
             self.draw_point_meters(self.investigator.max_sanity, self.investigator.sanity, 1202, (84, 117, 184))
     
     def on_mouse_release(self, x, y, button, modifiers):
-        if self.holding == 'investigator':
+        if self.holding == 'investigator' and self.click_time >= 10:
             map_loc = self.map.get_location()
             location = self.location_manager.get_closest_location((x,y), self.zoom, map_loc, 50)
             if location == None:
@@ -240,10 +240,7 @@ class HubScreen(arcade.View):
             self.info_manager.children = {0:[]}
             self.info_pane = self.info_panes[key]
             self.info_manager.add(self.info_pane.layout)
-            if key == 'possessions':
-                self.info_pane.reset()
-            elif key == 'reserve':
-                self.info_pane.reset_discard()
+            self.info_pane.on_show()
 
     def show_encounter_pane(self):
         self.info_manager.children = {0:[]}
@@ -278,6 +275,8 @@ class HubScreen(arcade.View):
                     self.info_panes['location'].update_all()
             case 'spells':
                 self.item_received('spells', payload['value'])
+            case 'artifacts':
+                self.item_received('artifacts', payload['value'])
             case 'restock':
                 removed = [] if payload['removed'] == '' or payload['removed'] == None else payload['removed'].split(':')
                 self.info_panes['reserve'].restock(removed, payload['value'].split(':'))
@@ -302,13 +301,27 @@ class HubScreen(arcade.View):
                                                   action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
                 self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
                 self.show_overlay()
+                #FOR TESTING
+                self.networker.publish_payload({'message': 'lead_selected', 'value': 'akachi_onyele'}, self.investigator.name)
+                #END TESTING
             case 'lead_selected':
                 self.lead_investigator = payload['value']
                 self.clear_overlay()
+                #FOR TESTING
+                self.remaining_actions = 2
+                self.ticket_move('akachi_onyele', 'space_2', 0, 0, 'space_15')
+                self.info_panes['investigator'].focus_action()
+                print(self.remaining_actions)
+                #END TESTING
             case 'player_turn':
                 if payload['value'] == 'action':
-                    self.remaining_actions = 2
+                    if self.investigator.delayed:
+                        self.investigator.delayed = False
+                        self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                    else:
+                        self.remaining_actions = 2
                 elif payload['value'] == 'encounter':
+                    self.show_encounter_pane()
                     self.encounter_pane.encounter_phase()
                 elif payload['value'] == 'reckoning':
                     #self.reckonings()
@@ -318,12 +331,12 @@ class HubScreen(arcade.View):
                     pass
             case 'encounter_choice':
                 self.clear_overlay()
+                self.show_encounter_pane()
                 self.encounter_pane.start_encounter(payload['value'])
-                self.show_encounter_pane()
             case 'mythos':
-                #self.encounter_pane.load_mythos(payload['value'])
-                self.encounter_pane.load_mythos()
+                self.clear_overlay()
                 self.show_encounter_pane()
+                self.encounter_pane.load_mythos(payload['value'])
             case 'omen':
                 self.set_omen(int(payload['value']))
             case 'doom':
@@ -411,7 +424,7 @@ class HubScreen(arcade.View):
             button.select(False)
         buttons[index].select(True)
     
-    def request_card(self, kind, name, command='get', tag=''):
+    def request_card(self, kind, name='', command='get', tag=''):
         self.networker.publish_payload({'message': kind, 'value': name, 'command': command, 'tag': tag}, self.investigator.name)
 
     def discard_card(self, kind, name):

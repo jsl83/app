@@ -40,3 +40,6 @@ class AncientOnePane():
             self.toggle_skills.select(False)
             self.toggle_attributes.select(True)
             self.details.add(self.stats)
+
+    def on_show(self):
+        pass

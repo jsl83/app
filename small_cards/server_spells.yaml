@@ -1,5 +1,41 @@
 ---
   mists_of_releh:
-    traits:
+    tags:
+      - incantation
+    variants: 2
+  blessing_of_isis:
+    tags:
+      - ritual
+    variants: 2
+  clairvoyance:
+    tags:
+      - incantation
+    variants: 2
+  conjuration:
+    tags:
+      - ritual
+    variants: 2
+  feed_the_mind:
+    tags:
+      - ritual
+    variants: 2
+  flesh_ward:
+    tags:
+      - incantation
+    variants: 2
+  instill_bravery:
+    tags:
+      - incantation
+    variants: 2
+  plumb_the_void:
+    tags:
+      - ritual
+    variants: 2
+  shriveling:
+    tags:
+      - ritual
+    variants: 2
+  wither:
+    tags:
       - incantation
     variants: 2

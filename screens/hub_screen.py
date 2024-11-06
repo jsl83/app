@@ -327,7 +327,6 @@ class HubScreen(arcade.View):
                         self.remaining_actions = 2
                         #FOR TESTING
                         self.remaining_actions = 3
-                        print('here')
                         self.ticket_move('akachi_onyele', 'space_2', 0, 0, 'space_15')
                         self.info_panes['investigator'].focus_action()
                         #END TESTING
@@ -344,7 +343,7 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.show_encounter_pane()
                 #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('generic:1')
+                self.encounter_pane.start_encounter('generic:2')
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -439,7 +438,13 @@ class HubScreen(arcade.View):
         buttons[index].select(True)
     
     def request_card(self, kind, name='', command='get', tag=''):
-        self.networker.publish_payload({'message': kind, 'value': name, 'command': command, 'tag': tag}, self.investigator.name)
+        owned = ''
+        if kind == 'spells' or kind == 'conditions':
+            if next((item for item in self.investigator.possessions[kind] if item.name == name), None) != None:
+                return
+            for card in self.investigator.possessions[kind]:
+                owned += card.name
+        self.networker.publish_payload({'message': kind, 'value': name, 'tag': tag, 'command': command, 'owned': owned}, self.investigator.name)
 
     def discard_card(self, kind, name):
         self.networker.publish_payload({'message': kind, 'value': 'discard:' + name}, self.investigator.name)

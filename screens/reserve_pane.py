@@ -102,7 +102,7 @@ class ReservePane():
 
     def discard_action(self):
         if self.is_shopping:
-            self.hub.request_card('assets', self.selected[0], 'restock:')
+            self.hub.request_card('assets', self.selected[0], 'restock')
             self.reset()
         else:
             self.layout.children.clear()

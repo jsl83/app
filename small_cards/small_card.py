@@ -25,30 +25,47 @@ class SmallCard():
         self.action_used = False
         self.texture = None
         self.investigator = investigator
+        self.kind = None
 
-    def setup(self, kind):
-        self.texture = arcade.load_texture(":resources:eldritch/images/" + kind + '/' + self.name.replace('.','') + '.png')
-        for key in CARDS[kind][self.name]:
-            setattr(self, key, CARDS[kind][self.name][key])
+    def setup(self):
+        self.texture = arcade.load_texture(":resources:eldritch/images/" + self.kind + '/' + self.name.replace('.','') + '.png')
+        for key in CARDS[self.kind][self.name]:
+            setattr(self, key, CARDS[self.kind][self.name][key])
+
+    def discard(self):
+        self.investigator.possessions[self.kind].remove(self)
+
+    def get_server_name(self):
+        return self.name
 
 class Asset(SmallCard):
     def __init__(self, name, investigator):
         SmallCard.__init__(self, name, investigator)
-        self.setup('assets')
+        self.kind = 'assets'
+        self.setup()
 
 class Spell(SmallCard):
     def __init__(self, name, investigator):
-        self.variant = name[-1]
+        self.variant = int(name[-1])
         SmallCard.__init__(self, name[0:-1], investigator)
-        self.setup('spells')
+        self.kind = 'spells'
+        self.setup()
+
+    def get_server_name(self):
+        return self.name + ':' + str(self.variant)
 
 class Condition(SmallCard):
     def __init__(self, name, investigator):
-        self.variant = name[-1]
+        self.variant = int(name[-1])
         SmallCard.__init__(self, name[0:-1], investigator)
-        self.setup('conditions')
+        self.kind = 'conditions'
+        self.setup()
+
+    def get_server_name(self):
+        return self.name + ':' + str(self.variant)
 
 class Artifact(SmallCard):
     def __init__(self, name, investigator):
         SmallCard.__init__(self, name, investigator)
-        self.setup('artifacts')
+        self.kind = 'artifacts'
+        self.setup()

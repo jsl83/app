@@ -4,21 +4,17 @@
         - skill
       targs:
         - stat: 2
-          mod: 0
-          text: Test Observation
-          step: pass
-          fail: fail
       pass:
         - gain_asset
         - gain_asset
       pargs:
         - reserve: True
           tag: item
-          text: Reserve
+          text: From Reserve
           step: finish
         - random: True
           tag: item
-          text: Random
+          text: From Deck
           step: finish
       fail: 
         - request_card
@@ -28,7 +24,7 @@
           text: Become Detained
           step: finish
       test_text: You make sure no one is watching before sneaking out of the shop with your stolen goods.
-      pass_text: Gain 1 Item Asset from the Reserve or 1 random Item Asset from the deck.
+      pass_text: Gain an Item Asset.
       fail_text: You are caught by the store owner and arrested.
     wilderness:
       test: None
@@ -53,10 +49,6 @@
         - skill
       targs:
         - stat: 2
-          mod: 0
-          step: pass
-          fail: fail
-          text: Test Observation
       pass:
         - request_card
       pargs:
@@ -76,10 +68,6 @@
         - skill
       targs:
         - stat: 1
-          mod: 0
-          text: Test Influence
-          step: pass
-          fail: fail
       pass:
         - spawn_clue
       pargs:
@@ -101,10 +89,6 @@
         - skill
       targs:
         - stat: 4
-          mod: 0
-          text: Test Will
-          fail: fail
-          step: pass
       pass:
         - gain_clue
         - improve_skill
@@ -140,74 +124,75 @@
           text: Lose 1 Sanity
           step: finish
       pass_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles
-      fail_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles
   - city:
       test:
         - skill
       targs:
-        - stat: 1
-          mod: 0
-          text: Test Influence
-          step: pass
-          fail: fail
+        - stat: 3
       pass:
-        - spawn_clue
+        - gain_asset
+        - gain_asset
       pargs:
+        - reserve: True
+          tag: item
+          text: From Reserve
+          step: finish
         - random: True
-          text: Spawn 1 Clue
+          tag: item
+          text: From Deck
           step: finish
-      fail: 
-        - request_card
+      fail:
+        - hp_san
       fargs:
-        - name: debt
-          kind: conditions
-          text: Gain a Debt
+        - hp: -1
+          step: next
+      next:
+        - discard
+      nargs:
+        - kind: assets
+          tag: item
           step: finish
-      test_text: Corrupt members of the police force pressure you for a bribe. You speak to some people you know to take care of the problem.
-      pass_text: The police are apologetic and share their leads with you.
-      fail_text: Pay the bribe.
+      test_text: The shop is robbed while you are browsing! You attempt to fend off the thieves.
+      pass_text: The store owner is very gracious; gain an Item Asset.
+      fail_text: Lose 1 Health and discard an Item Asset.
     wilderness:
       test:
         - skill
       targs:
-        - stat: 4
-          mod: 0
-          text: Test Will
-          fail: fail
-          step: pass
+        - stat: 0
+          fail: finish
       pass:
         - gain_clue
-        - improve_skill
-      pargs:
-        - text: Gain 1 Clue
-          step: finish
-        - skill: 0
-          text: Improve Lore
-          step: finish
-      fail:
         - request_card
-      fargs:
-        - name: cursed
-          kind: conditions
-          text: Become Cursed
-          step: finish
-      test_text: Far from any road or village, you find a shallow grave marked only with an arcane symbol. As you dig, a growing dread weakens your resolve.
-      pass_text: You find a charred corpse clutching a journal.
-      fail_text: You run from the area.
-    sea:
-      test: None
-      pass:
-        - allow_move
       pargs:
-        - distance: 1
-          step: fail
-          text: Move 1 Space
-      fail:
-        - hp_san
-      fargs:
-        - hp: 0
-          san: -1
-          text: Lose 1 Sanity
+        - text: Gain Clue
           step: finish
-      pass_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles
-      fail_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles
+        - kind: spells
+          text: Gain Spell
+          step: finish
+      test_text: You scrape away years of moss and lichen from the stone altar, uncovering a series of prehistoric symbols. You think you can interpret the carvings.
+      pass_text: Gain 1 Clue or 1 Spell.
+    sea:
+      test:
+        - skill
+      targs:
+        - stat: 0
+          mod: -1
+          fail: finish
+      pass:
+        - request_card
+      pargs:
+        - kind: conditions
+          name: blessed
+          step: heal
+          text: Become Blessed
+      heal:
+        - hp_san
+      hargs:
+        - hp: 1
+          san: 1
+          text: Recover
+          step: finish
+      test_text: One of the sailors is singing an old sea shanty about a woman searching for her dead husband. The story seems familiar to you.
+      pass_text: You recognize it as the story of Isis, and the sailor teaches you the song.
+      heal_text: Recover 1 Health and 1 Sanity

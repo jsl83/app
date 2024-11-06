@@ -64,10 +64,10 @@ class Networker(threading.Thread, BanyanBase):
         self.omen = 0
 
         self.decks = {
-            'conditions': {},
+            'conditions': [],
             'used_artifacts': [],
             'unique_assets': {},
-            'spells': {},
+            'spells': [],
             'clues': [],
             'gates': {
                 'deck': [],
@@ -104,10 +104,12 @@ class Networker(threading.Thread, BanyanBase):
                     self.decks['gates']['deck'].append(map + ':' + location)
 
         for key in SPELLS.keys():
-            self.decks['spells'][key] = list(range(1, int(SPELLS[key]['variants']) + 1))
+            for x in range(int(SPELLS[key]['variants'])):
+                self.decks['spells'].append(key + str(x))
 
         for key in CONDITIONS.keys():
-            self.decks['conditions'][key] = list(range(1, int(CONDITIONS[key]['variants']) + 1))
+            for x in range(int(CONDITIONS[key]['variants'])):
+                self.decks['conditions'].append(key + str(x))
 
         for key in ASSETS.keys():
             self.assets['deck'].append(key)
@@ -202,9 +204,14 @@ class Networker(threading.Thread, BanyanBase):
                     self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
         elif topic in self.selected_investigators:
             if payload['message'] in ['spells', 'conditions']:
-                item = self.variant_request(payload['message'], payload['value'], payload['command'])
-                if item != None:
-                    self.publish_payload({'message': payload['message'], 'value': item}, topic + '_server')
+                ref = SPELLS if payload['message'] == 'spells' else CONDITIONS
+                kind = payload['message']
+                tag = payload.get('tag', '')
+                name = payload.get('value', '')
+                owned = payload.get('owned', '')
+                items = [card for card in self.decks[kind] if (name == '' or name in card) and (tag == '' or tag in ref[card[:-1]]['tags']) and (owned == '' or card[:-1] not in owned)]
+                item = random.choice(items)
+                self.publish_payload({'message': payload['message'], 'value': item}, topic + '_server')
             else:
                 match payload['message']:
                     case 'assets':
@@ -217,6 +224,13 @@ class Networker(threading.Thread, BanyanBase):
                         item = self.get_artifact(name, tag)
                         if item != None:
                             self.publish_payload({'message': 'artifacts', 'value': item}, topic + '_server')
+                    case 'card_discarded':
+                        if payload['kind'] == 'assets':
+                            self.assets['discard'].append(payload['value'])
+                        elif payload['kind'] == 'artifacts':
+                            self.decks['used_artifacts'].append(payload['value'])
+                        else:
+                            self.decks[payload['kind']].append(payload['value'])
                     case 'get_clue':
                         clue = random.choice(self.decks['clues'])
                         self.decks['clues'].remove(clue)
@@ -297,21 +311,17 @@ class Networker(threading.Thread, BanyanBase):
                     self.assets['deck'].remove(name)
                     return name
 
-    def variant_request(self, cardtype, name, command):
-        if command == 'get':
-            variant = random.choice(self.decks[cardtype][name])
-            #self.decks[cardtype][name].remove(variant)
-            return name + str(variant)
-        elif command == 'discard':
-            self.decks[cardtype][name[0:-1]].append(name[-1])
-            return None
+    def variant_request(self, cardtype, name, tag=None, owned=''):
+        variant = random.choice(self.decks[cardtype][name])
+        #self.decks[cardtype][name].remove(variant)
+        return name + str(variant)
         
     def get_artifact(self, name, tag):
         if name != '' and name not in self.decks['used_artifacts']:
             self.decks['used_artifacts'].append(name)
             return name
         else:
-            artifacts = [card for card in ARTIFACTS if tag == '' or tag in ARTIFACTS[card]['tags']]
+            artifacts = [card for card in ARTIFACTS if (tag == '' or tag in ARTIFACTS[card]['tags']) and card not in self.decks['used_artifacts']]
             artifact = random.choice(artifacts)
             self.decks['used_artifacts'].append(artifact)
             return artifact

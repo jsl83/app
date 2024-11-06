@@ -99,3 +99,6 @@ class Investigator():
     def improve_skill(self, skill, amt):
         self.skill_tokens[skill] += amt
         self.skill_tokens[skill] = 2 if self.skill_tokens[skill] > 2 else -2 if self.skill_tokens[skill] < -2 else self.skill_tokens[skill]
+
+    def discard(self, card):
+        card.discard()

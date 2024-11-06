@@ -35,7 +35,8 @@ class EncounterPane():
             'spawn_clue': self.spawn_clue,
             'gain_clue': self.gain_clue,
             'improve_skill': self.improve_skill,
-            'allow_move': self.allow_move
+            'allow_move': self.allow_move,
+            'discard': self.discard
         }
         self.encounter = None
         self.layout.add(self.text_button)
@@ -124,33 +125,22 @@ class EncounterPane():
     def mists(self):
         pass
 
-    def skill_test(self, stat, mod, step, fail):
+    def skill_test(self, stat, mod=0, step='pass', fail='fail'):
         for button in [self.proceed_button, self.option_button]:
             if button in self.layout.children:
                 self.layout.children.remove(button)
         self.hub.info_manager.trigger_render()
-        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.confirm_test, action_args={'step': step, 'fail': fail})
+        def confirm_test():
+            if next((roll for roll in self.rolls if roll >= self.investigator.success), None) != None:
+                self.set_buttons(step)
+            else:
+                self.set_buttons(fail)
+        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=confirm_test)
         self.rolls = self.hub.run_test(stat, mod, self.hub.encounter_pane, [next_button])
-
-    def confirm_test(self, step, fail):
-        self.hub.clear_overlay()
-        if next((roll for roll in self.rolls if roll >= self.investigator.success), None) != None:
-            self.set_buttons(step)
-        else:
-            self.set_buttons(fail)
 
     def reroll(self, new, old):
         self.rolls.remove(old)
         self.rolls.append(new)
-
-    def combine_actions(self, action_string, args):
-        actions = action_string.split(';')
-        step = args[0]['step']
-        del args[0]['step']
-        for x in range(len(actions)):
-            arg = args[x]
-            self.action_dict[actions[x]](**arg)
-        self.set_buttons(step)
 
     def finish(self):
         self.layout.clear()
@@ -175,17 +165,19 @@ class EncounterPane():
             self.layout.clear()
             self.layout.add(self.text_button)
             self.layout.add(self.phase_button)
+            self.hub.clear_overlay()
             buttons = [self.proceed_button, self.option_button]
             actions = self.encounter[key]
-            self.text_button.text = self.encounter[key + '_text']
+            self.text_button.text = self.encounter.get(key + '_text', self.text_button.text)
             for x in range(len(actions)):
                 args = self.encounter[key[0] + 'args'][x]
-                buttons[x].text = args['text']
-                del args['text']
-                if actions[x] in ['allow_move']:
-                    self.action_dict[actions[x]](**args)
+                buttons[x].text = args.get('text', '')
+                if 'text' in args:
+                    del args['text']
+                if actions[x] in ['allow_move', 'hp_san', 'gain_asset', 'skill', 'discard'] and len(actions) == 1:
                     buttons[x].action = lambda: None
                     buttons[x].action_args = None
+                    self.action_dict[actions[x]](**args)
                 else:
                     buttons[x].action = self.action_dict[actions[x]]
                     buttons[x].action_args = args
@@ -197,16 +189,33 @@ class EncounterPane():
             items = self.hub.info_panes['reserve'].reserve
             items = items if tag == 'any' else [item for item in items if tag in item['tags']]
             if len(items) > 0:
-                def next_step(self, item, step):
+                def next_step(item, step):
                     self.hub.request_card('assets', item, 'acquire')
                     self.set_buttons(step)
                     self.hub.clear_overlay()
-                choices = [ActionButton(texture=item.texture, action=next_step, action_args={'self': self, 'item': item['name'], 'step': step}) for item in items]
+                choices = [ActionButton(texture=item['texture'], width=120, height=185, action=next_step, action_args={'item': item['name'], 'step': step}) for item in items]
                 self.hub.choice_layout = create_choices(choices = choices, title='Choose Asset')
                 self.hub.show_overlay()
         else:
             self.hub.request_card('assets', name, tag=tag)
             self.set_buttons(step)
+
+    def discard(self, kind, step, tag='any', amt='one'):
+        items = self.investigator.possessions[kind]
+        items = items if tag == 'any' else [item for item in items if tag in item.tags]
+        if len(items) == 0:
+            self.set_buttons(step)
+        else:
+            options = []
+            if amt == 'one':
+                def next_step(card, step):
+                    self.set_buttons(step)
+                    card.discard()
+                    self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, self.investigator.name)
+                    self.hub.info_panes['possessions'].setup()
+            choices = [ActionButton(texture=item.texture, width=120, height=185, action=next_step, action_args={'card': item, 'step': step}) for item in items]
+            self.hub.choice_layout = create_choices(choices = choices, options = options, title='Discard ' + kind + ': ' + amt[0].upper() + amt[1:])
+            self.hub.show_overlay()
 
     def request_card(self, kind, step, name=''):
         self.hub.request_card(kind, name)
@@ -221,9 +230,13 @@ class EncounterPane():
         self.investigator.delayed = True
         self.set_buttons(step)
 
-    def hp_san(self, hp, san, step):
-        self.take_damage(hp, san, self.set_buttons, {'key': step})
-        self.layout.children.remove(self.proceed_button)
+    def hp_san(self, step, hp=0, san=0):
+        if hp < 0 or san < 0:
+            self.take_damage(hp, san, self.set_buttons, {'key': step})
+        else:
+            self.proceed_button.text = 'Recover'
+            self.proceed_button.action = self.set_buttons
+            self.proceed_button.action_args = {'key': step}
 
     def spawn_clue(self, step, random=True):
         self.hub.networker.publish_payload({'message': 'spawn', 'value': 'clues', 'number': 1}, self.investigator.name)

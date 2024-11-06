@@ -23,19 +23,18 @@ class PossessionsPane():
             if len(item_list) > 0:
                 y_pos -= 45
                 self.button_layout.add(ActionButton(x=1000, y=y_pos, width=280, height=25, text=human_readable(card_type)))
-                scale = 0.48 if card_type == 'spells' else 0.6
                 if len(item_list) > 1:
                     number = 0
                     for item in item_list:
                         if number == 0:
                             y_pos -= 190
-                        self.button_layout.add(ActionButton(1015 + number * 130, y_pos, texture=item.texture, scale=scale))
+                        self.button_layout.add(ActionButton(1015 + number * 130, y_pos, width=120, height=185, texture=item.texture))
                         number += 1
                         if number == 2:
                             number = 0
                 else:
                     y_pos -= 190
-                    self.button_layout.add(ActionButton(1080, y_pos, texture=item_list[0].texture, scale=scale))
+                    self.button_layout.add(ActionButton(1080, y_pos, width=120, height=185, texture=item_list[0].texture))
         self.boundary = -y_pos + 20 if y_pos < 0 else 0
         self.layout.add(arcade.gui.UITexturePane(self.button_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/info_pane.png')))
 

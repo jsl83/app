@@ -215,7 +215,7 @@ class Networker(threading.Thread, BanyanBase):
                         tag = payload['tag'] if payload['tag'] != None else ''
                         item = self.get_artifact(name, tag)
                         if item != None:
-                            self.publish_payload({'message': 'artifact', 'value': item}, topic + '_server')
+                            self.publish_payload({'message': 'artifacts', 'value': item}, topic + '_server')
                     case 'spawn':
                         self.spawn(payload['value'], payload['name'], payload['location'], int(payload['number']))
                     case 'move_investigator':
@@ -248,7 +248,7 @@ class Networker(threading.Thread, BanyanBase):
                                         elif kind == 2:
                                             self.current_phase += 1
                                             self.spawn('clues', number=self.reference[1])
-                                        del self.mythos_deck[x][mythos]
+                                        #del self.mythos_deck[x][mythos]
                                         break
                                 #Trigger no mythos deck
                         if self.current_phase == 3 and self.yellow_card:

@@ -33,16 +33,21 @@
     wilderness:
       test: None
       pass:
-        - gain_asset;hp_san
+        - gain_asset
       pargs:
-        -
-          - random: True
-            tag: item
-            text: Gain Asset
-            step: finish
-          - hp: 0
-            san: -1
+        - random: True
+          tag: item
+          text: Gain Asset
+          step: fail
+      fail:
+        - hp_san
+      fargs:
+        - hp: 0
+          san: -1
+          text: Lose 1 Sanity
+          step: finish
       pass_text: The remains of a long-dead explorer lie before you. Some of his gear still seems salvageable, and he won't miss it. You dig through the dead man's pockets; gain 1 random Item Asset from the deck and lose 1 Sanity.
+      fail_text: The remains of a long-dead explorer lie before you. Some of his gear still seems salvageable, and he won't miss it. You dig through the dead man's pockets; gain 1 random Item Asset from the deck and lose 1 Sanity.
     sea:
       test:
         - skill
@@ -55,7 +60,7 @@
       pass:
         - request_card
       pargs:
-        - kind: artifact
+        - kind: artifacts
           step: finish
           text: Gain 1 Artifact
       fail:

@@ -307,12 +307,6 @@ class HubScreen(arcade.View):
             case 'lead_selected':
                 self.lead_investigator = payload['value']
                 self.clear_overlay()
-                #FOR TESTING
-                self.remaining_actions = 2
-                self.ticket_move('akachi_onyele', 'space_2', 0, 0, 'space_15')
-                self.info_panes['investigator'].focus_action()
-                print(self.remaining_actions)
-                #END TESTING
             case 'player_turn':
                 if payload['value'] == 'action':
                     if self.investigator.delayed:
@@ -320,6 +314,11 @@ class HubScreen(arcade.View):
                         self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                     else:
                         self.remaining_actions = 2
+                        #FOR TESTING
+                        self.remaining_actions = 3
+                        self.ticket_move('akachi_onyele', 'space_4', 0, 0, 'space_15')
+                        self.info_panes['investigator'].focus_action()
+                        #END TESTING
                 elif payload['value'] == 'encounter':
                     self.show_encounter_pane()
                     self.encounter_pane.encounter_phase()

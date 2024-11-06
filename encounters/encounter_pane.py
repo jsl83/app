@@ -20,7 +20,8 @@ class EncounterPane():
         self.investigator = self.hub.investigator
         self.first_fight = True
         self.rolls = []
-        self.text_button = ActionButton(x=1000, width=280, y=300, height=500, texture='blank.png')
+        self.phase_button = ActionButton(x=1000, width=280, y=725, height=50, texture='blank.png')
+        self.text_button = ActionButton(x=1000, width=280, y=300, height=400, texture='blank.png')
         self.proceed_button = ActionButton(1000, 200, 280, 50, 'buttons/placeholder.png')
         self.option_button = ActionButton(1000, 100, 280, 50, 'buttons/placeholder.png')
         self.action_dict = {
@@ -29,19 +30,20 @@ class EncounterPane():
             'request_card': self.request_card,
             'monster_heal': self.monster_heal,
             'combat': self.encounter_phase,
-            'delayed': self.delay
+            'delayed': self.delay,
+            'hp_san': self.hp_san
         }
         self.encounter = None
         self.layout.add(self.text_button)
         self.layout.add(self.proceed_button)
+        self.layout.add(self.phase_button)
         self.is_mythos = False
 
     def encounter_phase(self, combat_only=False):
         location = self.investigator.location
         self.monsters = [monster for monster in self.hub.location_manager.locations[location]['monsters']] if self.first_fight else self.monsters
         self.encounters = self.hub.location_manager.get_encounters(location)
-        if not self.is_mythos:
-            self.text_button.text = 'Encounter Phase: Combat'
+        self.phase_button.text = 'Combat Phase'
         choices = []
         if len(self.monsters) > 0:
             for monster in self.monsters:
@@ -51,7 +53,7 @@ class EncounterPane():
             self.hub.choice_layout = create_choices('Choose Monster', choices=choices, options=options)
             self.hub.show_overlay()
         elif len(self.hub.location_manager.locations[location]['monsters']) == 0 and not combat_only:
-            self.text_button.text = 'Encounter Phase: Location'
+            self.phase_button.text = 'Encounter Phase'
             for encounter in self.encounters:
                 payload = {'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}
                 choices.append(ActionButton(texture='encounters/' + encounter + '.png', action=self.hub.networker.publish_payload,
@@ -81,24 +83,31 @@ class EncounterPane():
         self.hub.info_panes['location'].show_monster(monster)
         self.hub.info_manager.add(self.hub.info_panes['location'].layout)
         self.hub.clear_overlay()
-        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.combat_strength, action_args={'monster': monster})
+        def lose_san():
+            self.hub.clear_overlay()
+            successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
+            dmg = successes - monster.horror['san']
+            dmg = dmg if dmg < 0 else 0
+            self.take_damage(0, dmg, self.combat_strength, {'monster': monster})
+        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_san)
         self.rolls = self.hub.run_test(monster.horror['index'], monster.horror['mod'], self.hub.encounter_pane,
                                        [next_button], 'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity))
         
     def combat_strength(self, monster):
         self.hub.clear_overlay()
-        successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
-        san_damage = monster.horror['san'] - successes
-        self.investigator.sanity -= san_damage if san_damage > 0 else 0
-        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.resolve_combat, action_args={'monster': monster})
+        def lose_hp():
+            self.hub.clear_overlay()
+            successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
+            dmg = successes - monster.strength['str']
+            dmg = dmg if dmg < 0 else 0
+            self.take_damage(dmg, 0, self.resolve_combat, {'monster': monster})
+        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_hp)
         self.rolls = self.hub.run_test(monster.strength['index'], monster.strength['mod'], self.hub.encounter_pane,
                                        [next_button], 'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity))
         
     def resolve_combat(self, monster):
         self.hub.clear_overlay()
         successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
-        damage = monster.strength['str'] - successes
-        self.investigator.health -= damage if damage > 0 else 0
         monster.damage += successes
         if monster.damage >= monster.toughness:
             self.hub.location_manager.locations[self.investigator.location]['monsters'].remove(monster)
@@ -116,6 +125,7 @@ class EncounterPane():
         self.hub.info_manager.trigger_render()
         next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.confirm_test, action_args={'step': step, 'fail': fail})
         self.rolls = self.hub.run_test(stat, mod, self.hub.encounter_pane, [next_button])
+        self.rolls = [6]
 
     def confirm_test(self, step, fail):
         self.hub.clear_overlay()
@@ -139,6 +149,8 @@ class EncounterPane():
 
     def finish(self):
         self.layout.clear()
+        self.layout.add(self.text_button)
+        self.layout.add(self.phase_button)
         self.encounter = None
         self.monsters = []
         self.encounters = []
@@ -157,6 +169,7 @@ class EncounterPane():
         else:
             self.layout.clear()
             self.layout.add(self.text_button)
+            self.layout.add(self.phase_button)
             buttons = [self.proceed_button, self.option_button]
             actions = self.encounter[key]
             self.text_button.text = self.encounter[key + '_text']
@@ -206,14 +219,36 @@ class EncounterPane():
         self.investigator.delayed = True
         self.set_buttons(step)
 
+    def hp_san(self, hp, san, step):
+        self.take_damage(hp, san, self.set_buttons, {'key': step})
+
+    def take_damage(self, hp, san, action, args):
+        if hp == 0 and san == 0:
+            action(**args)
+        else:
+            choices = []
+            self.investigator.hp_damage += hp
+            self.investigator.san_damage += san
+            if hp < 0:
+                #choices.append(hp damage triggers)
+                pass
+            if san < 0:
+                #choices.append(san damage triggers)
+                pass
+            next_button = ActionButton(
+                width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.investigator.hp_san, action_args={'action': action, 'args': args})
+            self.hub.choice_layout = create_choices(choices = choices, options=[next_button], title='Health: ' + str(hp) + '   Sanity: ' + str(san))
+            self.hub.show_overlay()
+
     def load_mythos(self, mythos):
         mythos = 'a_dark_power'
         self.is_mythos = True
+        self.phase_button.text = 'Mythos Phase'
         actions = MYTHOS[mythos]['actions']
         args = MYTHOS[mythos]['args']
         self.layout.clear()
         self.layout.add(self.text_button)
-        text = 'Mythos Phase' + '\n\n' + MYTHOS[mythos]['flavor'] + '\n\n' + MYTHOS[mythos]['text']
+        text = MYTHOS[mythos]['flavor'] + '\n\n' + MYTHOS[mythos]['text']
         self.text_button.text = text
         self.hub.info_manager.trigger_render()
         for x in range(len(args)):

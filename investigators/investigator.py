@@ -46,6 +46,9 @@ class Investigator():
         self.reroll_items = [{}, {}, {}, {}, {}, {}]
         self.skill_bonuses = [{}, {}, {}, {}, {}, {}]
 
+        self.san_damage = 0
+        self.hp_damage = 0
+
     def get_ticket(self, kind):
         rail = 0
         ship = 0
@@ -79,3 +82,16 @@ class Investigator():
 
     def calculate_skill(self, index):
         return self.skill[3 if index == 5 else index] + self.skill_tokens[3 if index == 5 else index] + self.skill_bonuses[index]
+    
+    def death(self, hp, san):
+        pass
+    
+    def hp_san(self, action=None, args=None):
+        self.health += self.hp_damage
+        self.sanity += self.san_damage
+        if self.health <= 0 or self.sanity <= 0:
+            self.death(self.health <= 0, self.sanity <= 0)
+        elif action != None:
+            action(**args)
+        self.san_damage = 0
+        self.hp_damage = 0

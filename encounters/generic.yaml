@@ -29,7 +29,7 @@
           step: finish
       test_text: You make sure no one is watching before sneaking out of the shop with your stolen goods.
       pass_text: Gain 1 Item Asset from the Reserve or 1 random Item Asset from the deck.
-      fail_text: "You are caught by the store owner and arrested: Gain a Detained Condition"
+      fail_text: You are caught by the store owner and arrested.
     wilderness:
       test: None
       pass:
@@ -68,6 +68,146 @@
       fargs:
         - step: finish
           text: Become Delayed
-      test_text: You find the floating detritus of some sunken ship and search for any survivors or salvageable objects
+      test_text: You find the floating detritus of some sunken ship and search for any survivors or salvageable objects.
       pass_text: You discover a floating trunk.
       fail_text: You waste hours without result.
+  - city:
+      test:
+        - skill
+      targs:
+        - stat: 1
+          mod: 0
+          text: Test Influence
+          step: pass
+          fail: fail
+      pass:
+        - spawn_clue
+      pargs:
+        - random: True
+          text: Spawn 1 Clue
+          step: finish
+      fail: 
+        - request_card
+      fargs:
+        - name: debt
+          kind: conditions
+          text: Gain a Debt
+          step: finish
+      test_text: Corrupt members of the police force pressure you for a bribe. You speak to some people you know to take care of the problem.
+      pass_text: The police are apologetic and share their leads with you.
+      fail_text: Pay the bribe.
+    wilderness:
+      test:
+        - skill
+      targs:
+        - stat: 4
+          mod: 0
+          text: Test Will
+          fail: fail
+          step: pass
+      pass:
+        - gain_clue
+        - improve_skill
+      pargs:
+        - text: Gain 1 Clue
+          step: finish
+        - skill: 0
+          text: Improve Lore
+          step: finish
+      fail:
+        - request_card
+      fargs:
+        - name: cursed
+          kind: conditions
+          text: Become Cursed
+          step: finish
+      test_text: Far from any road or village, you find a shallow grave marked only with an arcane symbol. As you dig, a growing dread weakens your resolve.
+      pass_text: You find a charred corpse clutching a journal.
+      fail_text: You run from the area.
+    sea:
+      test: None
+      pass:
+        - allow_move
+      pargs:
+        - distance: 1
+          step: fail
+          text: Move 1 Space
+      fail:
+        - hp_san
+      fargs:
+        - hp: 0
+          san: -1
+          text: Lose 1 Sanity
+          step: finish
+      pass_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles
+      fail_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles
+  - city:
+      test:
+        - skill
+      targs:
+        - stat: 1
+          mod: 0
+          text: Test Influence
+          step: pass
+          fail: fail
+      pass:
+        - spawn_clue
+      pargs:
+        - random: True
+          text: Spawn 1 Clue
+          step: finish
+      fail: 
+        - request_card
+      fargs:
+        - name: debt
+          kind: conditions
+          text: Gain a Debt
+          step: finish
+      test_text: Corrupt members of the police force pressure you for a bribe. You speak to some people you know to take care of the problem.
+      pass_text: The police are apologetic and share their leads with you.
+      fail_text: Pay the bribe.
+    wilderness:
+      test:
+        - skill
+      targs:
+        - stat: 4
+          mod: 0
+          text: Test Will
+          fail: fail
+          step: pass
+      pass:
+        - gain_clue
+        - improve_skill
+      pargs:
+        - text: Gain 1 Clue
+          step: finish
+        - skill: 0
+          text: Improve Lore
+          step: finish
+      fail:
+        - request_card
+      fargs:
+        - name: cursed
+          kind: conditions
+          text: Become Cursed
+          step: finish
+      test_text: Far from any road or village, you find a shallow grave marked only with an arcane symbol. As you dig, a growing dread weakens your resolve.
+      pass_text: You find a charred corpse clutching a journal.
+      fail_text: You run from the area.
+    sea:
+      test: None
+      pass:
+        - allow_move
+      pargs:
+        - distance: 1
+          step: fail
+          text: Move 1 Space
+      fail:
+        - hp_san
+      fargs:
+        - hp: 0
+          san: -1
+          text: Lose 1 Sanity
+          step: finish
+      pass_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles
+      fail_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles

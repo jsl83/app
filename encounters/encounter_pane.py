@@ -31,13 +31,19 @@ class EncounterPane():
             'monster_heal': self.monster_heal,
             'combat': self.encounter_phase,
             'delayed': self.delay,
-            'hp_san': self.hp_san
+            'hp_san': self.hp_san,
+            'spawn_clue': self.spawn_clue,
+            'gain_clue': self.gain_clue,
+            'improve_skill': self.improve_skill,
+            'allow_move': self.allow_move
         }
         self.encounter = None
         self.layout.add(self.text_button)
         self.layout.add(self.proceed_button)
         self.layout.add(self.phase_button)
         self.is_mythos = False
+        self.move_action = None
+        self.allowed_locs = {}
 
     def encounter_phase(self, combat_only=False):
         location = self.investigator.location
@@ -125,7 +131,6 @@ class EncounterPane():
         self.hub.info_manager.trigger_render()
         next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.confirm_test, action_args={'step': step, 'fail': fail})
         self.rolls = self.hub.run_test(stat, mod, self.hub.encounter_pane, [next_button])
-        self.rolls = [6]
 
     def confirm_test(self, step, fail):
         self.hub.clear_overlay()
@@ -174,19 +179,16 @@ class EncounterPane():
             actions = self.encounter[key]
             self.text_button.text = self.encounter[key + '_text']
             for x in range(len(actions)):
-                if actions[x].find(';') == -1:
-                    args = self.encounter[key[0] + 'args'][x]
-                    buttons[x].action = self.action_dict[actions[x]]
-                    buttons[x].text = args['text']
-                    del args['text']
-                    buttons[x].action_args = args
+                args = self.encounter[key[0] + 'args'][x]
+                buttons[x].text = args['text']
+                del args['text']
+                if actions[x] in ['allow_move']:
+                    self.action_dict[actions[x]](**args)
+                    buttons[x].action = lambda: None
+                    buttons[x].action_args = None
                 else:
-                    buttons[x].action = self.combine_actions
-                    args = self.encounter[key[0] + 'args'][x]
-                    if x == 0:
-                        buttons[x].text = args[0]['text']
-                    del args[0]['text']
-                    buttons[x].action_args = {'action_string': actions[x], 'args': args}
+                    buttons[x].action = self.action_dict[actions[x]]
+                    buttons[x].action_args = args
                 self.layout.add(buttons[x])
             self.hub.info_manager.trigger_render()
 
@@ -221,6 +223,28 @@ class EncounterPane():
 
     def hp_san(self, hp, san, step):
         self.take_damage(hp, san, self.set_buttons, {'key': step})
+        self.layout.children.remove(self.proceed_button)
+
+    def spawn_clue(self, step, random=True):
+        self.hub.networker.publish_payload({'message': 'spawn', 'value': 'clues', 'number': 1}, self.investigator.name)
+        self.set_buttons(step)
+
+    def gain_clue(self, step):
+        self.hub.networker.publish_payload({'message': 'get_clue'}, self.investigator.name)
+        self.set_buttons(step)
+
+    def improve_skill(self, skill, step, amt=1):
+        self.investigator.improve_skill(skill, amt)
+        self.hub.info_panes['investigator'].calc_skill(skill)
+        self.set_buttons(step)
+
+    def allow_move(self, distance, step):
+        self.allowed_locs = self.hub.get_locations_within(distance)
+        def action():
+            self.move_action = None
+            self.allowed_locs = set()
+            self.set_buttons(step)
+        self.move_action = action
 
     def take_damage(self, hp, san, action, args):
         if hp == 0 and san == 0:
@@ -248,6 +272,7 @@ class EncounterPane():
         args = MYTHOS[mythos]['args']
         self.layout.clear()
         self.layout.add(self.text_button)
+        self.layout.add(self.phase_button)
         text = MYTHOS[mythos]['flavor'] + '\n\n' + MYTHOS[mythos]['text']
         self.text_button.text = text
         self.hub.info_manager.trigger_render()

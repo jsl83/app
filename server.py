@@ -131,7 +131,6 @@ class Networker(threading.Thread, BanyanBase):
         with open('ancient_ones/server_ancient_ones.yaml') as stream:
             self.ancient_one = yaml.safe_load(stream)['azathoth']
         self.ancient_one['name'] = 'azathoth'
-        self.ancient_one['mythos'] = [['0'],['1'],['2']]
         self.mythos_setup()
         for effects in self.ancient_one['effects']:
             if effects['kind'] == 'trigger':
@@ -196,6 +195,8 @@ class Networker(threading.Thread, BanyanBase):
                     self.lead_investigator = 0
                     self.current_player = 0
                     self.current_phase = 0
+                    self.ancient_one['mythos'] = [{},{},{}]
+                    self.mythos_setup()
                     #END TESTING
                     self.initiate_gameboard()
                     self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
@@ -216,8 +217,14 @@ class Networker(threading.Thread, BanyanBase):
                         item = self.get_artifact(name, tag)
                         if item != None:
                             self.publish_payload({'message': 'artifacts', 'value': item}, topic + '_server')
+                    case 'get_clue':
+                        clue = random.choice(self.decks['clues'])
+                        self.decks['clues'].remove(clue)
+                        self.publish_payload({'message': 'receive_clue', 'value': clue}, topic + '_server')
+                    case 'clue_spent':
+                        self.decks['clues'].append(payload['value'])
                     case 'spawn':
-                        self.spawn(payload['value'], payload['name'], payload['location'], int(payload['number']))
+                        self.spawn(payload['value'], payload.get('name', None), payload.get('location', None), int(payload.get('number', 1)))
                     case 'move_investigator':
                         self.publish_payload({'message': 'investigator_moved', 'value': payload['value'], 'destination': payload['destination']}, 'server_update')
                     case 'lead_selected':
@@ -270,12 +277,6 @@ class Networker(threading.Thread, BanyanBase):
                         if kind in self.expeditions:
                             self.spawn('expedition')
                         self.publish_payload({'message': 'encounter_choice', 'value': kind + ':' + str(encounter)}, topic + '_server')
-                    case 'mythos_finished':
-                        self.ready_count += 1
-                        if self.ready_count == self.player_count:
-                            self.current_phase = 0
-                            self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
-                            self.ready_count = 0
 
     def asset_request(self, command, name, tag=''):
         match command:
@@ -334,8 +335,7 @@ class Networker(threading.Thread, BanyanBase):
                         self.spawn('monsters', location=location)
                     elif location == None:
                         if len(self.decks['gates']['deck']) > 0:
-                            #gate = random.choice(self.decks['gates']['deck'])
-                            gate = 'world:sydney'
+                            gate = random.choice(self.decks['gates']['deck'])
                             #self.decks['gates']['deck'].remove(gate)
                             self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
@@ -350,7 +350,6 @@ class Networker(threading.Thread, BanyanBase):
             case 'clues':
                 for x in range(0, number):
                     token = random.choice(self.decks[piece])
-                    token = 'world:space_1'
                     #self.decks[piece].remove(token)
                     self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
             case 'monsters':

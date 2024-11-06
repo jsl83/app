@@ -33,7 +33,7 @@ class InvestigatorPane():
                                         text='x ' + str(self.investigator.ship_tickets), text_position=(35,-2))
         self.rail_button = ActionButton(x=1040, width=115, y=397, action=self.ticket_action, action_args={'kind': 'rail'}, texture='icons/train_ticket.png',
                                         text='x ' + str(self.investigator.rail_tickets), text_position=(35,-2))
-        self.clue_button = ActionButton(x=1175, y=452, texture='icons/clue.png', text='x ' + str(self.investigator.clues), text_position=(15,-2))
+        self.clue_button = ActionButton(x=1175, y=452, texture='icons/clue.png', text='x ' + str(len(self.investigator.clues)), text_position=(15,-2))
         self.focus_button = ActionButton(x=1175, y=397, action=self.focus_action, texture='icons/focus.png', text='x ' + str(self.investigator.focus), text_position=(15,-2))
         self.skill_button = ActionButton(x=1040, y=180, width=200, height=135, style={'font_size': 14},
             text=self.investigator.active, texture='blank.png', align='center', multiline=True)

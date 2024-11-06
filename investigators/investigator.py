@@ -32,7 +32,7 @@ class Investigator():
             'conditions': [],
             'spells': []
         }
-        self.clues = 0
+        self.clues = []
         self.focus = 0
         self.ship_tickets = 0
         self.rail_tickets = 0
@@ -95,3 +95,7 @@ class Investigator():
             action(**args)
         self.san_damage = 0
         self.hp_damage = 0
+
+    def improve_skill(self, skill, amt):
+        self.skill_tokens[skill] += amt
+        self.skill_tokens[skill] = 2 if self.skill_tokens[skill] > 2 else -2 if self.skill_tokens[skill] < -2 else self.skill_tokens[skill]

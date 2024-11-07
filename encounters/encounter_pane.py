@@ -144,6 +144,8 @@ class EncounterPane():
 
     def finish(self):
         self.layout.clear()
+        for button in [self.phase_button, self.text_button, self.proceed_button, self.option_button]:
+            button.text = ''
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
         self.encounter = None
@@ -166,25 +168,32 @@ class EncounterPane():
             self.layout.add(self.text_button)
             self.layout.add(self.phase_button)
             self.hub.clear_overlay()
-            buttons = [self.proceed_button, self.option_button]
-            actions = self.encounter[key]
-            self.text_button.text = self.encounter.get(key + '_text', self.text_button.text)
-            for x in range(len(actions)):
-                args = self.encounter[key[0] + 'args'][x]
-                buttons[x].text = args.get('text', '')
-                if 'text' in args:
-                    del args['text']
-                if actions[x] in ['allow_move', 'hp_san', 'gain_asset', 'skill', 'discard'] and len(actions) == 1:
-                    buttons[x].action = lambda: None
-                    buttons[x].action_args = None
-                    self.action_dict[actions[x]](**args)
-                else:
-                    buttons[x].action = self.action_dict[actions[x]]
-                    buttons[x].action_args = args
-                self.layout.add(buttons[x])
+            if key == 'no_effect':
+                self.proceed_button.text = 'Onward...'
+                self.text_button.text = 'The long night continues...'
+                self.layout.add(self.proceed_button)
+                self.proceed_button.action = self.set_buttons
+                self.proceed_button.action_args = {'key': 'finish'}
+            else:
+                buttons = [self.proceed_button, self.option_button]
+                actions = self.encounter[key]
+                self.text_button.text = self.encounter.get(key + '_text', self.text_button.text)
+                for x in range(len(actions)):
+                    args = self.encounter[key[0] + 'args'][x]
+                    buttons[x].text = args.get('text', '')
+                    if 'text' in args:
+                        del args['text']
+                    if actions[x] in ['allow_move', 'hp_san', 'skill', 'discard'] and len(actions) == 1:
+                        buttons[x].action = lambda: None
+                        buttons[x].action_args = None
+                        self.action_dict[actions[x]](**args)
+                    else:
+                        buttons[x].action = self.action_dict[actions[x]]
+                        buttons[x].action_args = args
+                    self.layout.add(buttons[x])
             self.hub.info_manager.trigger_render()
 
-    def gain_asset(self, tag='any', random=False, reserve=False, step='finish', name=''):
+    def gain_asset(self, tag='any', reserve=False, step='finish', name=''):
         if reserve:
             items = self.hub.info_panes['reserve'].reserve
             items = items if tag == 'any' else [item for item in items if tag in item['tags']]
@@ -200,7 +209,7 @@ class EncounterPane():
             self.hub.request_card('assets', name, tag=tag)
             self.set_buttons(step)
 
-    def discard(self, kind, step, tag='any', amt='one'):
+    def discard(self, kind, step='finish', tag='any', amt='one'):
         items = self.investigator.possessions[kind]
         items = items if tag == 'any' else [item for item in items if tag in item.tags]
         if len(items) == 0:
@@ -217,7 +226,7 @@ class EncounterPane():
             self.hub.choice_layout = create_choices(choices = choices, options = options, title='Discard ' + kind + ': ' + amt[0].upper() + amt[1:])
             self.hub.show_overlay()
 
-    def request_card(self, kind, step, name=''):
+    def request_card(self, kind, step='finish', name=''):
         self.hub.request_card(kind, name)
         self.set_buttons(step)
 
@@ -226,11 +235,11 @@ class EncounterPane():
             for monster in self.hub.location_manager.locations[location]['monsters']:
                 monster.heal(amt)
 
-    def delay(self, step):
+    def delay(self, step='finish'):
         self.investigator.delayed = True
         self.set_buttons(step)
 
-    def hp_san(self, step, hp=0, san=0):
+    def hp_san(self, step='finish', hp=0, san=0):
         if hp < 0 or san < 0:
             self.take_damage(hp, san, self.set_buttons, {'key': step})
         else:
@@ -238,20 +247,20 @@ class EncounterPane():
             self.proceed_button.action = self.set_buttons
             self.proceed_button.action_args = {'key': step}
 
-    def spawn_clue(self, step, random=True):
+    def spawn_clue(self, step='finish', random=True):
         self.hub.networker.publish_payload({'message': 'spawn', 'value': 'clues', 'number': 1}, self.investigator.name)
         self.set_buttons(step)
 
-    def gain_clue(self, step):
+    def gain_clue(self, step='finish'):
         self.hub.networker.publish_payload({'message': 'get_clue'}, self.investigator.name)
         self.set_buttons(step)
 
-    def improve_skill(self, skill, step, amt=1):
+    def improve_skill(self, skill, step='finish', amt=1):
         self.investigator.improve_skill(skill, amt)
         self.hub.info_panes['investigator'].calc_skill(skill)
         self.set_buttons(step)
 
-    def allow_move(self, distance, step):
+    def allow_move(self, distance, step='finish'):
         self.allowed_locs = self.hub.get_locations_within(distance)
         def action():
             self.move_action = None

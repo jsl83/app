@@ -343,7 +343,7 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.show_encounter_pane()
                 #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('generic:2')
+                self.encounter_pane.start_encounter('generic:3')
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -391,7 +391,7 @@ class HubScreen(arcade.View):
                     elif kind == 'clue' and len(self.investigator.clues) > 0:
                         clue = random.choice(self.investigator.clues)
                         self.investigator.clues.remove(clue)
-                        self.networker.publish_payload({'message': 'clue_spent', 'value': clue}, self.investigator.name)
+                        self.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
                         if len(self.investigator.clues) == 0:
                             options[option_index].disable()
                     elif not self.investigator.reroll_items[skill][kind].action_used:

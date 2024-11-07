@@ -235,8 +235,6 @@ class Networker(threading.Thread, BanyanBase):
                         clue = random.choice(self.decks['clues'])
                         self.decks['clues'].remove(clue)
                         self.publish_payload({'message': 'receive_clue', 'value': clue}, topic + '_server')
-                    case 'clue_spent':
-                        self.decks['clues'].append(payload['value'])
                     case 'spawn':
                         self.spawn(payload['value'], payload.get('name', None), payload.get('location', None), int(payload.get('number', 1)))
                     case 'move_investigator':

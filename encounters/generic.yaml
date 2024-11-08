@@ -195,7 +195,7 @@
         - allow_move
       pargs:
         - distance: 1
-          text: Move 1 space
+          skip: True
       fail:
         - hp_san
       fargs:
@@ -336,3 +336,120 @@
       test_text: The ship ahead of you seemed abandoned, but now you see that it is crewed entirely by ghostly figures. You try to discern what ship this had once been and what happened to it.
       pass_text: The spectral captain grants you aid.
       fail_text: The spectral captain curses you!
+  - city:
+      test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - gain_asset
+      pargs:
+        - text: Gain an Ally Asset
+          tag: ally
+      fail:
+        - request_card
+      fargs:
+        - text: Gain a Debt Condition
+          kind: conditions
+          name: debt
+      test_text: A friendly game of cards ends with a very high-stakes hand.
+      pass_text: You amaze everyone watching and find a new friend.
+      fail_text: Go in debt to cover the loss.
+    wilderness:
+      test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - allow_move
+      pargs:
+        - distance: 1
+          skip: True
+      fail:
+        - delayed
+      fargs:
+        - text: Become Delayed; Gain Madness
+          step: madness
+      madness:
+        - request_card
+      margs:
+        - skip: True
+          kind: conditions
+          tag: madness
+      test_text: Your map is gone, and you must navigate based on your own observations.
+      pass_text: You confidently progress on your journey; move 1 Space
+      fail_text: You travel in circles.
+    sea:
+      test: None
+      pass:
+        - hp_san
+      pargs:
+        - text: Lose 1 Sanity; gain a Back Injury
+          san: -1
+          step: fail
+      fail:
+        - request_card
+      fargs:
+        - skip: True
+          kind: conditions
+          name: back_injury
+      pass_text: A sudden storm descends upon you and strong winds whip around your vessel. Huge waves toss your ship around like a toy, and you are thrown to the deck repeatedly.
+  - city:
+      test: None
+      pass:
+        - hp_san
+      pargs:
+        - text: Recover 2 Sanity
+          san: 2
+          step: obs
+      obs:
+        - skill
+      oargs:
+        - stat: 2
+          fail: fail
+          step: finish
+      fail:
+        - discard
+      fargs:
+        - text: Discard 1 Item
+          kind: assets
+          tag: item
+      pass_text: A night of drinking and good cheer helps raise your spirits.
+      obs_text: While you are celebrating, you hardly notice that you are being robbed.
+      fail_text: The thief gets away.
+    wilderness:
+      test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - gain_clue
+        - improve_skill
+      pargs:
+        - text: Gain 1 Clue
+        - text: Improve Influence
+          skill: 1
+      fail:
+        - request_card
+      fargs:
+        - text: Become Cursed
+          kind: conditions
+          name: cursed
+      test_text: Past where your campfire allows you to see, you hear voices chanting. You try to draw a protective sigil in the ground.
+      pass_text: The next morning you find evidence of cult activity that you can use to identify the cult members.
+      fail_text: Your protection fails you.
+    sea:
+      test: None
+      pass:
+        - hp_san
+      pargs:
+        - text: Lose 1 Sanity; gain a Back Injury
+          san: -1
+          step: fail
+      fail:
+        - request_card
+      fargs:
+        - skip: True
+          kind: conditions
+          name: back_injury
+      pass_text: A sudden storm descends upon you and strong winds whip around your vessel. Huge waves toss your ship around like a toy, and you are thrown to the deck repeatedly.

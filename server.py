@@ -211,6 +211,7 @@ class Networker(threading.Thread, BanyanBase):
                 owned = payload.get('owned', '')
                 items = [card for card in self.decks[kind] if (name == '' or name in card) and (tag == '' or tag in ref[card[:-1]]['tags']) and (owned == '' or card[:-1] not in owned)]
                 item = random.choice(items)
+                #self.decks[kind].remove(item)
                 self.publish_payload({'message': payload['message'], 'value': item}, topic + '_server')
             else:
                 match payload['message']:
@@ -302,11 +303,11 @@ class Networker(threading.Thread, BanyanBase):
                 self.publish_payload({'message': 'asset', 'discard': name}, 'server_update')
             case 'get':
                 if name != '':
-                    self.assets['deck'].remove(name)
+                    #self.assets['deck'].remove(name)
                     return name
                 elif tag != '':
                     name = random.choice([item for item in self.assets['deck'] if tag in ASSETS[item]['tags']])
-                    self.assets['deck'].remove(name)
+                    #self.assets['deck'].remove(name)
                     return name
 
     def variant_request(self, cardtype, name, tag=None, owned=''):

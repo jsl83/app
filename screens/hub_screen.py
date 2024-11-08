@@ -115,6 +115,11 @@ class HubScreen(arcade.View):
         }
 
         self.networker.publish_payload({'message': 'ready'}, 'login')
+
+        #FOR TESTING
+        self.request_card('assets', 'arcane_tome')
+        self.investigator.sanity -= 3
+        #END TESTING
         
     def on_draw(self):
         self.clear()
@@ -324,13 +329,14 @@ class HubScreen(arcade.View):
             case 'player_turn':
                 if payload['value'] == 'action':
                     if self.investigator.delayed:
-                        self.investigator.delayed = False
-                        self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                        #self.investigator.delayed = False
+                        #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                        self.remaining_actions = 2
                     else:
                         self.remaining_actions = 2
                         #FOR TESTING
                         self.remaining_actions = 3
-                        self.ticket_move('akachi_onyele', 'space_2', 0, 0, 'space_15')
+                        self.ticket_move('akachi_onyele', 'space_4', 0, 0, 'space_15')
                         self.info_panes['investigator'].focus_action()
                         #END TESTING
                 elif payload['value'] == 'encounter':
@@ -346,7 +352,7 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.show_encounter_pane()
                 #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('generic:5')
+                self.encounter_pane.start_encounter('generic:7')
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -444,10 +450,11 @@ class HubScreen(arcade.View):
         owned = ''
         if kind == 'spells' or kind == 'conditions':
             if next((item for item in self.investigator.possessions[kind] if item.name == name), None) != None:
-                return
+                return False
             for card in self.investigator.possessions[kind]:
                 owned += card.name
         self.networker.publish_payload({'message': kind, 'value': name, 'tag': tag, 'command': command, 'owned': owned}, self.investigator.name)
+        return True
 
     def discard_card(self, kind, name):
         self.networker.publish_payload({'message': kind, 'value': 'discard:' + name}, self.investigator.name)

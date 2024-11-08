@@ -212,15 +212,15 @@ class EncounterPane():
             items = items if tag == 'any' else [item for item in items if tag in item['tags']]
             if len(items) > 0:
                 def next_step(item, step):
+                    self.wait_step = step
                     self.hub.request_card('assets', item, 'acquire')
-                    self.set_buttons(step)
                     self.hub.clear_overlay()
                 choices = [ActionButton(texture=item['texture'], width=120, height=185, action=next_step, action_args={'item': item['name'], 'step': step}) for item in items]
                 self.hub.choice_layout = create_choices(choices = choices, title='Choose Asset')
                 self.hub.show_overlay()
         else:
+            self.wait_step = step
             self.hub.request_card('assets', name, tag=tag)
-            self.set_buttons(step)
 
     def discard(self, kind, step='finish', tag='any', amt='one'):
         items = self.investigator.possessions[kind]
@@ -234,7 +234,7 @@ class EncounterPane():
                     card.discard()
                     self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, self.investigator.name)
                     self.hub.info_panes['possessions'].setup()
-                    self.wait_step = step
+                    self.set_buttons(step)
             choices = [ActionButton(texture=item.texture, width=120, height=185, action=next_step, action_args={'card': item, 'step': step}) for item in items]
             self.hub.choice_layout = create_choices(choices = choices, options = options, title='Discard ' + kind + ': ' + amt[0].upper() + amt[1:])
             self.hub.show_overlay()
@@ -242,12 +242,15 @@ class EncounterPane():
     def spend_clue(self, step='finish'):
         clue = random.choice(self.investigator.clues)
         self.investigator.clues.remove(clue)
-        self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
         self.wait_step = step
+        self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
 
     def request_card(self, kind, step='finish', name='', tag=''):
-        self.hub.request_card(kind, name, tag=tag)
         self.wait_step = step
+        message_sent = self.hub.request_card(kind, name, tag=tag)
+        if not message_sent:
+            self.wait_step = None
+            self.set_buttons(step)
 
     def monster_heal(self, amt):
         for location in self.hub.location_manager.locations:
@@ -262,15 +265,17 @@ class EncounterPane():
         if hp < 0 or san < 0:
             self.take_damage(hp, san, self.set_buttons, {'key': step})
         else:
+            self.investigator.health += hp
+            self.investigator.sanity += san
             self.set_buttons(step)
 
     def spawn_clue(self, step='finish', random=True):
-        self.hub.networker.publish_payload({'message': 'spawn', 'value': 'clues', 'number': 1}, self.investigator.name)
         self.wait_step = step
+        self.hub.networker.publish_payload({'message': 'spawn', 'value': 'clues', 'number': 1}, self.investigator.name)
 
     def gain_clue(self, step='finish'):
-        self.hub.networker.publish_payload({'message': 'get_clue'}, self.investigator.name)
         self.wait_step = step
+        self.hub.networker.publish_payload({'message': 'get_clue'}, self.investigator.name)
 
     def improve_skill(self, skill, step='finish', amt=1):
         self.investigator.improve_skill(skill, amt)

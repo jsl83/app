@@ -104,6 +104,7 @@ class ReservePane():
         if self.is_shopping:
             self.hub.request_card('assets', self.selected[0], 'restock')
             self.reset()
+            self.hub.action_taken('shop')
         else:
             self.layout.children.clear()
             self.layout.add(self.discard_pane)

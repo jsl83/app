@@ -1,5 +1,6 @@
 import arcade, arcade.gui
 import yaml
+import random
 from screens.action_button import ActionButton
 from util import *
 
@@ -36,7 +37,12 @@ class EncounterPane():
             'gain_clue': self.gain_clue,
             'improve_skill': self.improve_skill,
             'allow_move': self.allow_move,
-            'discard': self.discard
+            'discard': self.discard,
+            'spend_clue': self.spend_clue,
+            'set_buttons': self.set_buttons
+        }
+        self.req_dict = {
+            'spend_clue': lambda: len(self.investigator.clues) > 0
         }
         self.encounter = None
         self.layout.add(self.text_button)
@@ -45,6 +51,7 @@ class EncounterPane():
         self.is_mythos = False
         self.move_action = None
         self.allowed_locs = {}
+        self.wait_step = None
 
     def encounter_phase(self, combat_only=False):
         location = self.investigator.location
@@ -169,6 +176,7 @@ class EncounterPane():
             self.layout.add(self.phase_button)
             self.hub.clear_overlay()
             if key == 'no_effect':
+                self.proceed_button.enable()
                 self.proceed_button.text = 'Onward...'
                 self.text_button.text = 'The long night continues...'
                 self.layout.add(self.proceed_button)
@@ -181,15 +189,20 @@ class EncounterPane():
                 for x in range(len(actions)):
                     args = self.encounter[key[0] + 'args'][x]
                     buttons[x].text = args.get('text', '')
+                    buttons[x].enable()
                     if 'text' in args:
                         del args['text']
-                    if actions[x] in ['allow_move', 'hp_san', 'skill', 'discard'] and len(actions) == 1:
+                    if actions[x] == 'skill' or args.get('skip', None) != None:
+                        if 'skip' in args:
+                            del args['skip']
                         buttons[x].action = lambda: None
                         buttons[x].action_args = None
                         self.action_dict[actions[x]](**args)
                     else:
                         buttons[x].action = self.action_dict[actions[x]]
                         buttons[x].action_args = args
+                    if actions[x] in self.req_dict and not self.req_dict[actions[x]]():
+                        buttons[x].disable()
                     self.layout.add(buttons[x])
             self.hub.info_manager.trigger_render()
 
@@ -218,17 +231,23 @@ class EncounterPane():
             options = []
             if amt == 'one':
                 def next_step(card, step):
-                    self.set_buttons(step)
                     card.discard()
                     self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, self.investigator.name)
                     self.hub.info_panes['possessions'].setup()
+                    self.wait_step = step
             choices = [ActionButton(texture=item.texture, width=120, height=185, action=next_step, action_args={'card': item, 'step': step}) for item in items]
             self.hub.choice_layout = create_choices(choices = choices, options = options, title='Discard ' + kind + ': ' + amt[0].upper() + amt[1:])
             self.hub.show_overlay()
 
-    def request_card(self, kind, step='finish', name=''):
-        self.hub.request_card(kind, name)
-        self.set_buttons(step)
+    def spend_clue(self, step='finish'):
+        clue = random.choice(self.investigator.clues)
+        self.investigator.clues.remove(clue)
+        self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
+        self.wait_step = step
+
+    def request_card(self, kind, step='finish', name='', tag=''):
+        self.hub.request_card(kind, name, tag=tag)
+        self.wait_step = step
 
     def monster_heal(self, amt):
         for location in self.hub.location_manager.locations:
@@ -243,30 +262,32 @@ class EncounterPane():
         if hp < 0 or san < 0:
             self.take_damage(hp, san, self.set_buttons, {'key': step})
         else:
-            self.proceed_button.text = 'Recover'
-            self.proceed_button.action = self.set_buttons
-            self.proceed_button.action_args = {'key': step}
+            self.set_buttons(step)
 
     def spawn_clue(self, step='finish', random=True):
         self.hub.networker.publish_payload({'message': 'spawn', 'value': 'clues', 'number': 1}, self.investigator.name)
-        self.set_buttons(step)
+        self.wait_step = step
 
     def gain_clue(self, step='finish'):
         self.hub.networker.publish_payload({'message': 'get_clue'}, self.investigator.name)
-        self.set_buttons(step)
+        self.wait_step = step
 
     def improve_skill(self, skill, step='finish', amt=1):
         self.investigator.improve_skill(skill, amt)
         self.hub.info_panes['investigator'].calc_skill(skill)
         self.set_buttons(step)
 
-    def allow_move(self, distance, step='finish'):
-        self.allowed_locs = self.hub.get_locations_within(distance)
+    def allow_move(self, distance, step='finish', same_loc=True, must_move=False):
+        self.allowed_locs = self.hub.get_locations_within(distance, same_loc=same_loc)
         def action():
             self.move_action = None
             self.allowed_locs = set()
             self.set_buttons(step)
         self.move_action = action
+        if not must_move:
+            self.proceed_button.text = 'Stay still'
+            self.proceed_button.action = self.set_buttons
+            self.proceed_button.action_args = {'key': step}
 
     def take_damage(self, hp, san, action, args):
         if hp == 0 and san == 0:

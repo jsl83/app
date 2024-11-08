@@ -271,6 +271,9 @@ class HubScreen(arcade.View):
             self.ui_manager.trigger_render()
 
     def set_listener(self, topic, payload):
+        if self.encounter_pane.wait_step != None:
+            self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
+            self.encounter_pane.wait_step = None
         match payload['message']:
             case 'spawn':
                 name = '' if payload['value'] not in ['monster', 'investigator'] else payload['name']
@@ -343,7 +346,7 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.show_encounter_pane()
                 #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('generic:3')
+                self.encounter_pane.start_encounter('generic:5')
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -497,7 +500,7 @@ class HubScreen(arcade.View):
             self.investigator.location = location
         self.map.move_tokens('investigator', key, destination, zoom_destination, location, name)
 
-    def get_locations_within(self, distance, investigator=None):
+    def get_locations_within(self, distance, investigator=None, same_loc=True):
         locations = self.location_manager.locations
         investigator = investigator if investigator != None else self.investigator.name
         start_loc = next((start for start in locations if investigator in locations[start]['investigators']))
@@ -509,7 +512,8 @@ class HubScreen(arcade.View):
                     temp.add(route)
             locs.update(temp)
             temp = {}
-        locs.remove(start_loc)
+        if not same_loc:
+            locs.remove(start_loc)
         return locs
 
     def in_movement_range(self):

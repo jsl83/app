@@ -24,20 +24,19 @@
       fail_text: You are caught by the store owner and arrested.
     wilderness:
       test: None
-      pass:
-        - gain_asset
-      pargs:
-        - tag: item
-          text: Gain Asset
-          step: fail
       fail:
-        - hp_san
+        - gain_asset
       fargs:
+        - tag: item
+          skip: True
+      pass:
+        - hp_san
+      pargs:
         - hp: 0
           san: -1
-          text: Lose 1 Sanity
-      pass_text: The remains of a long-dead explorer lie before you. Some of his gear still seems salvageable, and he won't miss it. You dig through the dead man's pockets; gain 1 random Item Asset from the deck and lose 1 Sanity.
-      fail_text: The remains of a long-dead explorer lie before you. Some of his gear still seems salvageable, and he won't miss it. You dig through the dead man's pockets; gain 1 random Item Asset from the deck and lose 1 Sanity.
+          step: fail
+          text: Lose 1 Sanity; gain an Item
+      pass_text: The remains of a long-dead explorer lie before you. Some of his gear still seems salvageable, and he won't miss it. You dig through the dead man's pockets.
     sea:
       test:
         - skill
@@ -96,18 +95,18 @@
       fail_text: You run from the area.
     sea:
       test: None
-      pass:
-        - allow_move
-      pargs:
-        - distance: 1
-          step: fail
-          text: Move 1 space
       fail:
-        - hp_san
+        - allow_move
       fargs:
+        - distance: 1
+          skip: True
+      pass:
+        - hp_san
+      pargs:
         - hp: 0
           san: -1
           text: Lose 1 Sanity
+          step: fail
       pass_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles
   - city:
       test:
@@ -149,8 +148,8 @@
         - text: Gain Clue
         - kind: spells
           text: Gain Spell
-      test_text: You scrape away years of moss and lichen from the stone altar, uncovering a series of prehistoric symbols. You think you can interpret the carvings.
-      pass_text: Gain 1 Clue or 1 Spell.
+      test_text: You scrape away years of moss and lichen from the stone altar, uncovering a series of prehistoric symbols.
+      pass_text: You think you can interpret the carvings.
     sea:
       test:
         - skill
@@ -164,16 +163,15 @@
         - kind: conditions
           name: blessed
           step: heal
-          text: Become Blessed
+          text: Become Blessed; Recover 1 Health and Sanity
       heal:
         - hp_san
       hargs:
         - hp: 1
           san: 1
-          text: Recover
+          skip: True
       test_text: One of the sailors is singing an old sea shanty about a woman searching for her dead husband. The story seems familiar to you.
       pass_text: You recognize it as the story of Isis, and the sailor teaches you the song.
-      heal_text: Recover 1 Health and 1 Sanity
   - city:
       test:
         - skill
@@ -201,7 +199,7 @@
       fail:
         - hp_san
       fargs:
-        - text: Lose 1 Health
+        - text: Lose 1 Health; Gain a Leg Injury
           hp: -1
           step: next
       next:
@@ -209,7 +207,7 @@
       nargs:
         - kind: conditions
           name: leg_injury
-          text: Gain a Leg Injury
+          skip: True
       test_text: The terrain ahead of you looks impassable, but going around would take too long. You'll need to find some way to move forward.
       pass_text: You discover a path.
       fail_text: You trip over the uneven ground.
@@ -222,11 +220,11 @@
         - gain_clue
       pargs:
         - step: asset
-          text: Gain 1 Clue
+          text: Gain 1 Clue and an Ally
       asset:
         - gain_asset
       aargs:
-        - text: Gain Ally
+        - skip: True
           tag: ally
       fail:
         - request_card
@@ -235,5 +233,106 @@
           name: paranoia
           text: Become Paranoid
       test_text: You discover a signal fire on a small island, but don't find any people. You search the beach for signs of life.
-      pass_text: You spot a person hiding behind large stones.
+      pass_text: You spot a person hiding behind some large stones.
       fail_text: The mystery remains unsolved.
+  - city:
+      test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - gain_asset
+      pargs:
+        - text: Gain Weapon
+          tag: weapon
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: detained
+          text: Become Detained
+      test_text: A shady figure offers to sell you a weapon, no questions asked. You speak with him to determine his motives.
+      pass_text: Gain a random weapon.
+      fail_text: The undercover policeman arrests you.
+    wilderness:
+      test: None
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - step: fail
+          text: Spend 1 Clue; gain Artifact
+        - key: no_effect
+          text: Give Up
+      fail:
+        - request_card
+      fargs:
+        - kind: artifacts
+          skip: True
+      pass_text: The ground slopes upward so uniformly that you suspect a structure exists underneath. You search for a buried entrance to claim the treasures found inside.
+    sea:
+      test: None
+      pass:
+        - delayed
+        - set_buttons
+      pargs:
+        - step: asset
+          text: Become Delayed; gain Artifact
+        - text: Keep sailing
+          key: no_effect
+      asset:
+        - request_card
+      aargs:
+        - kind: artifacts
+          skip: True
+      pass_text: The captain tells you that you are passing over the site of a famous shipwreck. You can use this ship's deap-sea diving equipment to explore the wreckage.
+  - city:
+      test:
+        - skill
+      targs:
+        - stat: 0
+          mod: -1
+          fail: no_effect
+      pass:
+        - request_card
+      pargs:
+        - text: Gain Tome Artifact
+          tag: tome
+          kind: artifacts
+      test_text: You wander through the aisles of an antique book store. Although many extremely rare books can be found here, the organizational system is almost impossible to decipher.
+      pass_text: You're able to track down a hidden gem.
+    wilderness:
+      test:
+        - skill
+      targs:
+        - stat: 2
+          fail: no_effect
+      pass:
+        - request_card
+      pargs:
+        - text: Gain a Tome Artifact
+          kind: artifacts
+          tag: tome
+      test_text: You help a young woman search the countryside for her uncle.
+      pass_text: You find the eccentric old man and he gives you a gift for helping his niece.
+    sea:
+      test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - gain_clue
+        - improve_skill
+      pargs:
+        - text: Gain 1 Clue
+        - text: Improve Will
+          skill: 4
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: cursed
+          text: Become Cursed
+      test_text: The ship ahead of you seemed abandoned, but now you see that it is crewed entirely by ghostly figures. You try to discern what ship this had once been and what happened to it.
+      pass_text: The spectral captain grants you aid.
+      fail_text: The spectral captain curses you!

@@ -254,7 +254,7 @@
         - stat: 0
           fail: damage
           skip: True
-          step: finish
+          step: no_effect
       damage:
         - hp_san
       dargs:
@@ -277,7 +277,7 @@
         - skip: True
           stat: 4
           mod: -1
-          step: finish
+          step: no_effect
           fail: damage
       damage:
         - hp_san
@@ -305,4 +305,155 @@
       test_text: A pulp author named Smith invites you to read his work. The stories disturb you.
       pass_text: You gain insight into how the invisible world remains hidden.
       fail_text: The tale chills you to the bone.
-    
+  buenos_aires:
+    - test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - request_card
+      pargs:
+        - text: Become Blessed
+          kind: conditions
+          name: blessed
+      fail:
+        - hp_san
+      fargs:
+        - san: -2
+          skip: True
+      test_text: In an ancient underground chamber, you study strange scientific and magic paraphernalia once used by the Serpent Men.
+      pass_text: You manipulate the devices to transform yourself.
+      fail_text: The devices remain utterly alien.
+    - test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - request_card
+      pargs:
+        - text: Gain a Ritual
+          kind: spells
+          tag: ritual
+      fail:
+        - hp_san
+      fargs:
+        - skip: True
+          san: -1
+      test_text: You sneak into the temple and overhear the rough croaking of deep ones chanting. You recognize familiar elements to the words they are intoning.
+      pass_text: You manage to decipher some of the strange language.
+      fail_text: It's nothing more than horrific noise.
+    - test:
+        - skill
+      targs:
+        - stat: 0
+          mod: 1
+      pass:
+        - request_card
+      pargs:
+        - kind: spells
+          text: Gain 1 Spell
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: debt
+          text: Gain Debt
+      test_text: The museum's curator shows you a unique golden jewel that was recovered from the sea. You believe that the symbols on it indicate that something is hidden inside.
+      pass_text: You reveal a small scroll.
+      fail_text: You damage the jewel and must pay for the repairs.
+    - test: None
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - step: spell
+          text: Spend 1 Clue; Gain a Ritual
+        - text: Refuse to share (pass)
+          key: finish
+      spell:
+        - request_card
+      sargs:
+        - kind: spells
+          tag: ritual
+          skip: True
+      pass_text: A student has been studying the university's copy of the Necronomicon and is eager to share what he's learned in exchange for hearing what you know.
+    - test: None
+      pass:
+        - request_card
+      pargs:
+        - text: Gain a Ritual
+          step: will
+          kind: spells
+          tag: ritual
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          step: no_effect
+          skip: True
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          text: Become Detained
+          name: detained
+      pass_text: You sneak aboard a ship loaded with stolen antiquities, including an ancient stone tablet, which you read.
+      will_text: Memorizing the words, you feel yourself slipping into a trance.
+      fail_text: You wake up imprisoned for theft.
+    - test: None
+      pass:
+        - request_card
+      pargs:
+        - kind: spells
+          tag: ritual
+          step: lore
+          text: Gain a Ritual
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          step: no_effect
+          skip: True
+      fail:
+        - request_card
+      fargs:
+        - text: Become Paranoid
+          kind: conditions
+          name: paranoia
+      pass_text: An old woman warns you that you've angered Yig and teaches you a protective chant.
+      lore_text: Concerned that she may be right, you learn all you can about Yig.
+      fail_text: You learn nothing.
+    - test: None
+      pass:
+        - delayed
+        - set_buttons
+      pargs:
+        - text: Become Delayed; gain 2 Spells
+          step: spell
+        - text: No time for stories (pass)
+          key: finish
+      spell:
+        - request_card
+      sargs:
+        - step: next
+          skip: True
+          kind: spells
+      next:
+        - request_card
+      nargs:
+        - skip: True
+          kind: spells
+      pass_text: At the hospital you find a bald, old man with leathery skin and a flat face. He speaks very slowly, but his story is fascinating. He starts recounting all the details of his time worshiping the Father of Serpents.
+    - test:
+        - skill
+      targs:
+        - stat: 1
+          fail: no_effect
+      pass:
+        - request_card
+      pargs:
+        - kind: spells
+          tag: ritual
+          text: Gain a Ritual
+      test_text: A copy of the Necronomicon is kept at the University of Buenos Aires, but the librarian tells you that it's not available for viewing at this time. You try to convince him of the book's importance.
+      pass_text: He relents and allows you a brief look at the book.

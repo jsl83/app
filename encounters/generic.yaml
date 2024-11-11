@@ -139,8 +139,7 @@
         - skill
       oargs:
         - stat: 2
-          fail: fail
-          step: finish
+          step: no_effect
       fail:
         - discard
       fargs:
@@ -297,8 +296,8 @@
       pargs:
         - step: fail
           text: Spend 1 Clue; gain Artifact
-        - key: no_effect
-          text: Give Up
+        - key: finish
+          text: Give Up (pass)
       fail:
         - request_card
       fargs:
@@ -518,8 +517,8 @@
       pargs:
         - step: asset
           text: Become Delayed; gain Artifact
-        - text: Keep sailing
-          key: no_effect
+        - text: Keep sailing (pass)
+          key: finish
       asset:
         - request_card
       aargs:

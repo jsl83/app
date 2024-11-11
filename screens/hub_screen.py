@@ -119,6 +119,7 @@ class HubScreen(arcade.View):
         #FOR TESTING
         self.request_card('assets', 'arcane_tome')
         self.investigator.sanity -= 3
+        self.investigator.clues.append('arkham')
         #END TESTING
         
     def on_draw(self):
@@ -278,7 +279,6 @@ class HubScreen(arcade.View):
     def set_listener(self, topic, payload):
         if self.encounter_pane.wait_step != None:
             self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
-            self.encounter_pane.wait_step = None
         match payload['message']:
             case 'spawn':
                 name = '' if payload['value'] not in ['monster', 'investigator'] else payload['name']
@@ -336,7 +336,7 @@ class HubScreen(arcade.View):
                         self.remaining_actions = 2
                         #FOR TESTING
                         self.remaining_actions = 3
-                        self.ticket_move('akachi_onyele', 'space_4', 0, 0, 'space_15')
+                        self.ticket_move('akachi_onyele', 'san_francisco', 0, 0, 'space_15')
                         self.info_panes['investigator'].focus_action()
                         #END TESTING
                 elif payload['value'] == 'encounter':
@@ -352,7 +352,7 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.show_encounter_pane()
                 #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('generic:7')
+                self.encounter_pane.start_encounter('green:0')
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -415,7 +415,7 @@ class HubScreen(arcade.View):
                 options.append(focus_button)
                 option_index += 1
             if len(self.investigator.clues) > 0:
-                clue_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': option_index}, texture='icons/clue.png', text='Use', text_position=(20,-2))
+                clue_button = ActionButton(action=reroll, action_args={'kind': 'clue', 'option_index': option_index}, texture='icons/clue.png', text='Use', text_position=(20,-2))
                 options.append(clue_button)
                 option_index += 1
             items = self.investigator.reroll_items[skill].keys()

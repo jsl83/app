@@ -1,0 +1,156 @@
+---
+  arkham:
+    - test: None
+      pass:
+        - request_card
+      pargs:
+        - kind: spells
+          tag: incantation
+          step: skill
+          text: Gain an Incantation
+      skill:
+        - skill
+      sargs:
+        - stat: 0
+          skip: True
+          step: no_effect
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: hallucinations
+          text: Gain Hallucinations
+      pass_text: In the restricted section of Miskatonic University's library, you study an esoteric tome.
+      skill_text: You try to decode a note written in the margins.
+      fail_text: The words put strange visions into your mind.
+    - test: None
+      pass:
+        - request_card
+      pargs:
+        - kind: spells
+          tag: incantation
+          step: skill
+          text: Gain an Incantation
+      skill:
+        - skill
+      sargs:
+        - stat: 4
+          mod: 1
+          step: no_effect
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: paranoia
+          text: Become Paranoid
+      pass_text: During the night, you have a nightmare about the old witch, Keziah Mason. In the dream, she shares her power with you.
+      skill_text: When you wake up, you fear that the old witch will someday ask you for a favor in return.
+      fail_text: You cannot stop seeing the witch in every shadow.
+    - test:
+        - skill
+      targs:
+        - stat: 0
+          mod: 1
+          fail: no_effect
+      pass:
+        - request_card
+      pargs:
+        - kind: spells
+          text: Gain 1 Spell
+      test_text: The Silver Twilight Lodge members ask you several riddles to prove your knowledge.
+      pass_text: They instruct you in their ways.
+    - test: None
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - step: spell
+          text: Spend 1 Clue
+        - text: Stay silent (pass)
+          key: finish
+      spell:
+        - request_card
+      sargs:
+        - kind: spells
+          tag: incantation
+          text: Gain an Incantation
+      pass_text: An anonymous patient in the asylum pleads with you to share what you've learned.
+      spell_text: The man begins chanting in a long-dead language.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - request_card
+      pargs:
+        - kind: spells
+          tag: incantation
+          text: Gain an Incantation
+      fail:
+        - hp_san
+      fargs:
+        - hp: -1
+          skip: True
+      test_text: Some ritual had been performed in the Black Cave, but the cultists are long gone. You look around for anything they may have left behind.
+      pass_text: You find a scrap of parchment.
+      fail_text: You hurt yourself as you stumble around in the dark.
+    - test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - request_card
+      pargs:
+        - text: Gain an Incantation
+          kind: spells
+          tag: incantation
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: amnesia
+          text: Gain Amnesia
+      test_text: Inside Ye Olde Magick Shoppe, Miriam Beecher talks to you about the finer points of the occult.
+      pass_text: You impress her with your acumen, and she gives you a rare text.
+      fail_text: You lose track of time and can't seem to remember when you departed.
+    - test: None
+      pass:
+        - delayed
+        - set_buttons
+      pargs:
+        - text: Become Delayed; Gain 2 Spells
+          step: spells
+        - text: You'd rather not (pass)
+          key: finish
+      spells:
+        - request_card
+      sargs:
+        - kind: spells
+          step: next
+          skip: True
+      next:
+        - request_card
+      nargs:
+        - kind: spells
+          skip: True
+      pass_text: The administrators of Arkham's Historical Society take great pains to show you their extensive collection of historical documents.
+    - test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - request_card
+      pargs:
+        - text: Become Blessed
+          kind: conditions
+          name: blessed
+      fail:
+        - request_card
+      fargs:
+        - text: Become Paranoid
+          kind: conditions
+          name: paranoia
+      test_text: A fortune teller in Independence Square warns you of dire events. You try to interpret her words.
+      pass_text: You discern that you ultimately survive.
+      fail_text: You fear an inevitable doom.
+      

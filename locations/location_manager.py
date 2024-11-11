@@ -54,8 +54,8 @@ class LocationManager():
     
     def get_encounters(self, location):
         encounters = ['generic']
-        if hasattr(self.locations[location], 'color'):
-            encounters.append(self.locations[location].color)
+        if self.locations[location].get('color', None) != None:
+            encounters.append(self.locations[location].get('color'))
         for kind in ['gate', 'eldritch', 'rumor', 'expedition', 'clue']:
             if self.locations[location][kind]:
                 encounters.append(kind)

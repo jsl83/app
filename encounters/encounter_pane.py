@@ -7,8 +7,9 @@ from util import *
 ENCOUNTERS = {}
 MYTHOS = {}
 
-with open('encounters/generic.yaml') as stream:
-    ENCOUNTERS['generic'] = yaml.safe_load(stream)
+for color in ['generic', 'green']:
+    with open('encounters/' + color + '.yaml') as stream:
+        ENCOUNTERS[color] = yaml.safe_load(stream)
 with open('encounters/mythos.yaml') as stream:
     MYTHOS = yaml.safe_load(stream)
 
@@ -43,7 +44,7 @@ class EncounterPane():
             'set_buttons': self.set_buttons
         }
         self.req_dict = {
-            'spend_clue': lambda: len(self.investigator.clues) > 0,
+            'spend_clue': lambda *args: len(self.investigator.clues) > 0,
             'discard': lambda *args: len([item for item in self.investigator.possessions[args[0]['kind']] if args[0]['tag'] == 'any' or args[0]['tag'] in item.tags]) > 0,
             'gain_asset': lambda *args: not args[0].get('reserve', False) or len([item for item in self.hub.info_panes['reserve'].reserve if args[0]['tag'] == 'any' or args[0]['tag'] in item['tags']]) > 0
         }
@@ -88,7 +89,7 @@ class EncounterPane():
         self.hub.clear_overlay()
         choice = value.split(':')
         loc = self.investigator.location if self.investigator.location.find('space') == -1 and choice[0] != 'generic' else self.hub.location_manager.locations[self.investigator.location]['kind']
-        self.encounter = ENCOUNTERS[choice[0]][int(choice[1])][loc]
+        self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
         if self.encounter['test'] != 'None':
             self.set_buttons('test')
         else:
@@ -172,6 +173,7 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
 
     def set_buttons(self, key):
+        self.wait_step = None
         if key == 'finish':
             self.finish()
         else:
@@ -246,8 +248,8 @@ class EncounterPane():
     def spend_clue(self, step='finish'):
         clue = random.choice(self.investigator.clues)
         self.investigator.clues.remove(clue)
-        self.wait_step = step
         self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
+        self.set_buttons(step)
 
     def request_card(self, kind, step='finish', name='', tag=''):
         self.wait_step = step

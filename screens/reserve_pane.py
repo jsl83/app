@@ -27,7 +27,9 @@ class ReservePane():
         for i in range(4):
             if number == 0:
                 y_pos -= 190
-            self.button_layout.add(ActionButton(1015 + number * 130, y_pos, width=120, height=185, texture='buttons/placeholder.png', action=self.select_item))
+            button = ActionButton(1015 + number * 130, y_pos, width=120, height=185, texture='buttons/placeholder.png', action=self.select_item)
+            button.is_reserve = True
+            self.button_layout.add(button)
             number += 1
             if number == 2:
                 number = 0
@@ -53,7 +55,7 @@ class ReservePane():
             self.reserve.remove(removal)
             self.reserve.append(card)
         for item in added:
-            option = next((button for button in self.button_layout.children if button.name == None or button.name == ''), None)
+            option = next((button for button in self.button_layout.children if (button.name == None or button.name == '') and hasattr(button, 'is_reserve')), None)
             card = get_asset(item)
             option.name = item
             option.texture = card['texture']

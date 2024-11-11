@@ -24,7 +24,8 @@ class EncounterPane():
         self.phase_button = ActionButton(x=1000, width=280, y=725, height=50, texture='blank.png')
         self.text_button = ActionButton(x=1000, width=280, y=300, height=400, texture='blank.png')
         self.proceed_button = ActionButton(1000, 200, 280, 50, 'buttons/placeholder.png')
-        self.option_button = ActionButton(1000, 100, 280, 50, 'buttons/placeholder.png')
+        self.option_button = ActionButton(1000, 125, 280, 50, 'buttons/placeholder.png')
+        self.last_button = ActionButton(1000, 50, 280, 50, 'buttons/placeholder.png')
         self.action_dict = {
             'skill': self.skill_test,
             'gain_asset': self.gain_asset,
@@ -42,7 +43,9 @@ class EncounterPane():
             'set_buttons': self.set_buttons
         }
         self.req_dict = {
-            'spend_clue': lambda: len(self.investigator.clues) > 0
+            'spend_clue': lambda: len(self.investigator.clues) > 0,
+            'discard': lambda *args: len([item for item in self.investigator.possessions[args[0]['kind']] if args[0]['tag'] == 'any' or args[0]['tag'] in item.tags]) > 0,
+            'gain_asset': lambda *args: not args[0].get('reserve', False) or len([item for item in self.hub.info_panes['reserve'].reserve if args[0]['tag'] == 'any' or args[0]['tag'] in item['tags']]) > 0
         }
         self.encounter = None
         self.layout.add(self.text_button)
@@ -80,7 +83,7 @@ class EncounterPane():
             self.proceed_button.text = 'End Combat'
             self.proceed_button.action = self.finish
             self.proceed_button.action_args = {}
-                
+
     def start_encounter(self, value):
         self.hub.clear_overlay()
         choice = value.split(':')
@@ -133,7 +136,7 @@ class EncounterPane():
         pass
 
     def skill_test(self, stat, mod=0, step='pass', fail='fail'):
-        for button in [self.proceed_button, self.option_button]:
+        for button in [self.proceed_button, self.option_button, self.last_button]:
             if button in self.layout.children:
                 self.layout.children.remove(button)
         self.hub.info_manager.trigger_render()
@@ -151,8 +154,9 @@ class EncounterPane():
 
     def finish(self):
         self.layout.clear()
-        for button in [self.phase_button, self.text_button, self.proceed_button, self.option_button]:
+        for button in [self.phase_button, self.text_button, self.proceed_button, self.option_button, self.last_button]:
             button.text = ''
+            button.enable()
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
         self.encounter = None
@@ -183,7 +187,7 @@ class EncounterPane():
                 self.proceed_button.action = self.set_buttons
                 self.proceed_button.action_args = {'key': 'finish'}
             else:
-                buttons = [self.proceed_button, self.option_button]
+                buttons = [self.proceed_button, self.option_button, self.last_button]
                 actions = self.encounter[key]
                 self.text_button.text = self.encounter.get(key + '_text', self.text_button.text)
                 for x in range(len(actions)):
@@ -201,7 +205,7 @@ class EncounterPane():
                     else:
                         buttons[x].action = self.action_dict[actions[x]]
                         buttons[x].action_args = args
-                    if actions[x] in self.req_dict and not self.req_dict[actions[x]]():
+                    if actions[x] in self.req_dict and not self.req_dict[actions[x]](args) and len(actions) > 0:
                         buttons[x].disable()
                     self.layout.add(buttons[x])
             self.hub.info_manager.trigger_render()
@@ -309,7 +313,7 @@ class EncounterPane():
                 pass
             next_button = ActionButton(
                 width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.investigator.hp_san, action_args={'action': action, 'args': args})
-            self.hub.choice_layout = create_choices(choices = choices, options=[next_button], title='Health: ' + str(hp) + '   Sanity: ' + str(san))
+            self.hub.choice_layout = create_choices(choices = choices, options=[next_button], title='Taking Damage' ,subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))
             self.hub.show_overlay()
 
     def load_mythos(self, mythos):

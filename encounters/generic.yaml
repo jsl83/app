@@ -453,3 +453,210 @@
           kind: conditions
           name: back_injury
       pass_text: A sudden storm descends upon you and strong winds whip around your vessel. Huge waves toss your ship around like a toy, and you are thrown to the deck repeatedly.
+  - city:
+      test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - gain_asset
+      pargs:
+        - text: Gain an Ally
+          tag: ally
+      fail:
+        - hp_san
+      fargs:
+        - hp: -1
+          skip: True
+      test_text: The police report that people are being abducted by a monster dwelling in the sewer system. Wandering through the underground tunnels, you are suddenly attacked by a deep one!
+      pass_text: You defeat the creature and rescue its hostage.
+      fail_text: You are hurt in the struggle.
+    wilderness:
+      test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - improve_skill
+      pargs:
+        - text: Improve Will
+          skill: 4
+      fail:
+        - hp_san
+      fargs:
+        - hp: -1
+          step: injury
+          skip: True
+      injury:
+        - request_card
+      iargs:
+        - kind: conditions
+          name: leg_injury
+          skip: True
+      test_text: In the middle of the night, a feral beast rips apart your camp and attacks you!
+      pass_text: You feel invincible!
+      fail_text: Lose 1 Health and gain a Leg Injury Condition.
+    sea:
+      test:
+        - skill
+      targs:
+        - stat: 2
+          fail: no_effect
+      pass:
+        - spawn_clue
+      pargs:
+        - text: Spawn 1 Clue
+      test_text: The captain of the ship invites you to dine with him. You have the feeling that he's had some experience with unearthly creatures and try to convince him to share his story.
+      pass_text: His tale includes highly significant details.
+  - city:
+      test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - spawn_clue
+      pargs:
+        - text: Spawn 1 Clue
+      fail:
+        - hp_san
+      fargs:
+        - san: -2
+          skip: True
+      test_text: The police ask for your help investigating a series of ritual killings. The grisly crime scenes threaten to overwhelm you with chills and nausea.
+      pass_text: You manage to examine the scene and find significant information.
+      fail_text: You can't endure the horror.
+    wilderness:
+      test:
+        - skill
+      targs:
+        - stat: 3
+          step: no_effect
+      fail:
+        - request_card
+      fargs:
+        - text: Gain Hallucinations
+          kind: conditions
+          name: hallucinations
+      test_text: Extreme conditions have left you fevered and delirious. You force yourself to keep moving, putting a terrible strain on your body.
+      fail_text: The fever grows worse and you begin seeing things.
+    sea:
+      test:
+        - skill
+      targs:
+        - stat: 3
+          step: no_effect
+      fail:
+        - delayed
+      fargs:
+        - text: Become Delayed
+      test_text: You're awakened in the night by gunfire. Deep ones have climbed aboard the ship and are trying to sabotage the engine. You do your best to help the crew fight them.
+      fail_text: The engine is destroyed before you finish off the sea creatures, and you must wait to be rescued.
+  - city:
+      test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - hp_san
+      pargs:
+        - text: Recover 2 Sanity
+          san: 2
+      fail:
+        - request_card
+      fargs:
+        - text: Become Paranoid
+          kind: conditions
+          name: paranoia
+      test_text: Legends say that this cemetery is haunted. Exploring the headstones, you encounter an angry specter, eager to share his story. The experience is nerve-wracking, but you try to listen.
+      pass_text: The spirit gratefully fades from view.
+      fail_text: His desperate voice echoes in your mind.
+    wilderness:
+      test: None
+      pass:
+        - hp_san
+        - discard
+        - set_buttons
+      pargs:
+        - text: Recover 3 Sanity
+          step: delay
+          san: 3
+        - kind: conditions
+          tag: madness
+          text: Discard Madness
+          step: delay
+        - text: Keep moving (pass)
+          key: finish
+      delay:
+        - delayed
+      dargs:
+        - skip: True
+      pass_text: According to your map, you can make a detour to visit a lake purported to have restorative powers. You may become Delayed and...
+    sea:
+      test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - request_card
+      pargs:
+        - text: Gain 1 Spell
+          kind: spells
+      fail:
+        - request_card
+      fargs:
+        - text: Become Cursed
+          kind: conditions
+          name: cursed
+      test_text: One of the sailors speaks in a strange, ancient dialect. You try to communicate with the man based on obscure languages you have studied.
+      pass_text: The peculiar man teaches you a chant.
+      fail_text: He growls an unintelligible phrase.
+  - city:
+      test:
+        - skill
+      targs:
+        - stat: 1
+          fail: no_effect
+      pass:
+        - gain_asset
+        - gain_asset
+      pargs:
+        - reserve: True
+          tag: service
+          text: From Reserve
+        - tag: service
+          text: From Deck
+      test_text: The Syndicate is engaged in a gang war with local thugs and is under intense legal scrutiny. You try to trade your political clout for assistance.
+      pass_text: Gain a Service Asset
+    wilderness:
+      test:
+        - skill
+      targs:
+        - stat: 4
+          mod: -1
+      pass:
+        - request_card
+      pargs:
+        - text: Gain 1 Artifact
+          kind: artifacts
+      fail:
+        - hp_san
+      fargs:
+        - san: -2
+          skip: True
+      test_text: You find a primitive painting on the wall of a cave and decide to explore the subterranean depths that lie beyond. The dark, constricting passages create a terrible sense of claustrophobia.
+      pass_text: You discover an artifact left by an ancient civilization.
+      fail_text: The darkness overwhelms you.
+    sea:
+      test:
+        - skill
+      targs:
+        - stat: 4
+          step: no_effect
+      fail:
+        - discard
+      fargs:
+        - text: Discard 1 Item
+          kind: assets
+          tag: item
+      test_text: A large wave washes across the deck, and a prized possession slips from your fingers. You dive into the water, holding your breath as long as you can to recover the object before it sinks out of reach.
+      fail_text: The item disappears into the depths.

@@ -119,7 +119,7 @@ class HubScreen(arcade.View):
         #FOR TESTING
         self.request_card('assets', 'arcane_tome')
         self.investigator.sanity -= 3
-        self.investigator.clues.append('arkham')
+        self.investigator.clues.append('world:arkham')
         #END TESTING
         
     def on_draw(self):
@@ -332,6 +332,7 @@ class HubScreen(arcade.View):
                         #self.investigator.delayed = False
                         #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                         self.remaining_actions = 2
+                        print('delayed')
                     else:
                         self.remaining_actions = 2
                         #FOR TESTING

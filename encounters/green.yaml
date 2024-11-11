@@ -153,4 +153,156 @@
       test_text: A fortune teller in Independence Square warns you of dire events. You try to interpret her words.
       pass_text: You discern that you ultimately survive.
       fail_text: You fear an inevitable doom.
-      
+  san_francisco:
+    - test: None
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - text: Spend 1 Clue; improve Observation
+          step: improve
+        - text: Ignore him (pass)
+          key: finish
+      improve:
+        - improve_skill
+      iargs:
+        - skill: 2
+          skip: True
+      pass_text: Inspector Jack Manion is looking for information about the Tongs in Chinatown. If you can help him, he'll teach you the basics of police work in exchange.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          mod: -1
+      pass:
+        - improve_skill
+      pargs:
+        - skill: '01234'
+          skip: True
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: leg_injury
+          text: Gain a Leg Injury
+      test_text: You find the husk of a squid-like creature in a tunnel. Just seeing it terrifies you.
+      pass_text: You identify the cthonian; scientists clamor to contribute to its study.
+      fail_text: You run headlong through the tunnel.
+    - test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 2
+          text: Improve Observation
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: debt
+          text: Gain Debt
+      test_text: You meet Hammett, a former Pinkerton Agent, on the street car and try to convince him to teach you how to be a detective.
+      pass_text: He agrees.
+      fail_text: He's too distracted by his financial woes. You help support his family.
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - request_card
+      pargs:
+        - text: Become Blessed
+          kind: conditions
+          name: blessed
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: detained
+          text: Become Detained
+      test_text: You speak to a military prisoner on Alcatraz Island. He tells you his story of deserting after encountering a horrific creature.
+      pass_text: He thanks you for believing him and blesses your name.
+      fail_text: The story throws you into a hysterical fit, and the guards arrest you.
+    - test: None
+      pass:
+        - improve_skill
+        - set_buttons
+      pargs:
+        - skill: '01234'
+          text: Become Delayed; Improve any Skill
+          step: delay
+          skip: True
+        - text: Leave posthaste (pass)
+          key: finish
+      delay:
+        - delayed
+      dargs:
+        - skip: True
+      pass_text: You are invited to the Hearst Castle and find yourself surrounded by the best and brightest. You could pick up some amazing talents here.
+    - test: None
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 2
+          step: lore
+          text: Improve Observation
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          fail: damage
+          skip: True
+          step: finish
+      damage:
+        - hp_san
+      dargs:
+        - skip: True
+          hp: -1
+          san: -1
+      pass_text: While patrolling in Chinatown, you become adept at spotting signs of cult activity.
+      lore_text: You find their temple, but must dispel a hex on the door to enter.
+      damage_text: The hex saps your life away.
+    - test: None
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 2
+          step: will
+          text: Improve Observation
+      will:
+        - skill
+      wargs:
+        - skip: True
+          stat: 4
+          mod: -1
+          step: finish
+          fail: damage
+      damage:
+        - hp_san
+      dargs:
+        - san: -2
+          skip: True
+      pass_text: The Examiner hires you to spend a night in the Winchester Mystery House. They provide you with experts in detecting the supernatural.
+      will_text: The odd architecture and the building's history threaten to unhinge your mind as the evening passes.
+      damage_text: Your mind is unhinged.
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 2
+          text: Improve Observation
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          tag: madness
+          text: Gain a Madness Condition
+      test_text: A pulp author named Smith invites you to read his work. The stories disturb you.
+      pass_text: You gain insight into how the invisible world remains hidden.
+      fail_text: The tale chills you to the bone.
+    

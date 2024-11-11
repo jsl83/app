@@ -22,11 +22,11 @@ class EncounterPane():
         self.investigator = self.hub.investigator
         self.first_fight = True
         self.rolls = []
-        self.phase_button = ActionButton(x=1000, width=280, y=725, height=50, texture='blank.png')
-        self.text_button = ActionButton(x=1000, width=280, y=300, height=400, texture='blank.png')
-        self.proceed_button = ActionButton(1000, 200, 280, 50, 'buttons/placeholder.png')
-        self.option_button = ActionButton(1000, 125, 280, 50, 'buttons/placeholder.png')
-        self.last_button = ActionButton(1000, 50, 280, 50, 'buttons/placeholder.png')
+        self.phase_button = ActionButton(x=1020, width=240, y=725, height=50, texture='blank.png')
+        self.text_button = ActionButton(x=1020, width=240, y=300, height=400, texture='blank.png')
+        self.proceed_button = ActionButton(1020, 200, 240, 50, 'buttons/placeholder.png')
+        self.option_button = ActionButton(1020, 125, 240, 50, 'buttons/placeholder.png')
+        self.last_button = ActionButton(1020, 50, 240, 50, 'buttons/placeholder.png')
         self.action_dict = {
             'skill': self.skill_test,
             'gain_asset': self.gain_asset,
@@ -284,9 +284,23 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'get_clue'}, self.investigator.name)
 
     def improve_skill(self, skill, step='finish', amt=1):
-        self.investigator.improve_skill(skill, amt)
-        self.hub.info_panes['investigator'].calc_skill(skill)
-        self.set_buttons(step)
+        if len(str(skill)) == 1:
+            self.investigator.improve_skill(skill, amt)
+            self.hub.info_panes['investigator'].calc_skill(skill)
+            self.set_buttons(step)
+        else:
+            choices = []
+            skills = ['lore', 'influence', 'observation', 'strength', 'will']
+            def improve(stat):
+                self.investigator.improve_skill(stat, amt)
+                self.hub.info_panes['investigator'].calc_skill(stat)
+                self.set_buttons(step)
+            for char in str(skill):
+                button = ActionButton(width=80, height=80, texture='icons/' + skills[int(char)] + '.png', action=improve, action_args={'stat': int(char)})
+                if self.investigator.skill_tokens[int(char)] < 2:
+                    choices.append(button)
+            self.hub.choice_layout = create_choices(choices=choices, title='Improve a Skill')
+            self.hub.show_overlay()
 
     def allow_move(self, distance, step='finish', same_loc=True, must_move=False):
         self.allowed_locs = self.hub.get_locations_within(distance, same_loc=same_loc)

@@ -41,6 +41,7 @@ class Map():
         map_texture = arcade.load_texture(":resources:eldritch/images/maps/" + name + ".png")
         self.map = arcade.gui.UITextureButton(texture=map_texture, x=offset[0], y=offset[1], scale=zoom, width=10)
         self.layout.add(self.map)
+        self.name = name
 
         self.layouts = {
             'gate': arcade.gui.UILayout(width=1280, height=800),
@@ -103,6 +104,7 @@ class Map():
         button.kind = kind
         button.item_name = name
         self.layouts['gate' if kind == 'expedition' else kind].add(button)
+        button.move(self.map.x, self.map.y + 400)
         zoom_button = ActionButton(location['x'] - item['size'] * item['zoom_scale'] / 2, location['y'] - item['size'] * item['zoom_scale'] / 2 - offset * 25,
                                     texture=path, scale=item['zoom_scale'], name=location_name)
         zoom_button.kind = kind

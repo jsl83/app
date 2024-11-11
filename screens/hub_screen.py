@@ -120,6 +120,7 @@ class HubScreen(arcade.View):
         self.request_card('assets', 'arcane_tome')
         self.investigator.sanity -= 3
         self.investigator.clues.append('world:arkham')
+        #self.request_card('conditions', 'debt')
         #END TESTING
         
     def on_draw(self):
@@ -169,14 +170,17 @@ class HubScreen(arcade.View):
                         self.ticket_move(self.investigator.name, location[2], tickets[0][0], tickets[0][1], self.original_investigator_location)
                 else:
                     self.move_investigator(self.investigator.name, self.original_investigator_location)
-        elif x < 1000 and y > 142 and self.click_time <= 10 and self.gui_enabled:
+        elif x < 1000 and y > 142 and self.click_time <= 10 and (self.gui_enabled or self.encounter_pane.click_action != None):
             location = self.location_manager.get_closest_location((x,y), self.zoom, self.map.get_location())
             if location != None:
-                if self.zoom == 2:
-                    self.slow_move = ((500 - location[0]) / 10, (471 - location[1]) / 10)
-                self.info_panes['location'].location_select(location[2])
-                self.switch_info_pane('location')
-                self.select_ui_button(3)
+                if self.encounter_pane.click_action != None:
+                    self.encounter_pane.click_action(location[2])
+                else:
+                    if self.zoom == 2:
+                        self.slow_move = ((500 - location[0]) / 10, (471 - location[1]) / 10)
+                    self.info_panes['location'].location_select(location[2])
+                    self.switch_info_pane('location')
+                    self.select_ui_button(3)
             buttons = list(self.ui_manager.get_widgets_at((x,y)))
             if len(buttons) > 0 and type(buttons[0]) == ActionButton:
                 button = buttons[0]
@@ -281,7 +285,7 @@ class HubScreen(arcade.View):
             self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
         match payload['message']:
             case 'spawn':
-                name = '' if payload['value'] not in ['monster', 'investigator'] else payload['name']
+                name = payload.get('name', '')
                 self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name)
                 if payload['value'] == 'investigator':
                     self.info_panes['location'].add_investigator(payload['name'])
@@ -337,7 +341,7 @@ class HubScreen(arcade.View):
                         self.remaining_actions = 2
                         #FOR TESTING
                         self.remaining_actions = 3
-                        self.ticket_move('akachi_onyele', 'san_francisco', 0, 0, 'space_15')
+                        self.ticket_move('akachi_onyele', 'rome', 0, 0, 'space_15')
                         self.info_panes['investigator'].focus_action()
                         #END TESTING
                 elif payload['value'] == 'encounter':
@@ -353,7 +357,7 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.show_encounter_pane()
                 #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('green:0')
+                self.encounter_pane.start_encounter('orange:0')
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()

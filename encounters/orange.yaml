@@ -1,0 +1,148 @@
+---
+  london:
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - request_card
+      pargs:
+        - text: Become Blessed
+          kind: conditions
+          name: blessed
+      fail:
+        - delayed
+      fargs:
+        - text: Become Delayed
+      test_text: The Silver Twilight Lodge is locked up tight. You look over the old building for a possible entrance.
+      pass_text: The Lodge members are delighted by your ingenuity and offer their favor.
+      fail_text: You waste fruitless hours searching.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - spawn_clue
+      pargs:
+        - text: Spawn 2 Clues
+          number: 2
+      fail:
+        - request_card
+      fargs:
+        - text: Gain Hallucinations
+          kind: conditions
+          name: hallucinations
+      test_text: Inside the Herefordshire Asylum, a patient asks you if you've seen the Yellow Sign. You listen to his story of the King in Yellow.
+      pass_text: You gain valuable insight from his words.
+      fail_text: His gibberish imprints itself onto your subconscious.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          mod: -1
+          fail: no_effect
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain 1 Clue
+      test_text: You peruse The Scoop, a tabloid paper that specializes in strange and lurid stories.
+      pass_text: You find a vital bit of information.
+    - test: None
+      pass:
+        - request_card
+        - set_buttons
+      pargs:
+        - kind: conditions
+          name: debt
+          step: clue
+          text: Gain Debt; gain 2 Clues
+          check: True
+        - text: No money to spare (pass)
+          key: finish
+      clue:
+        - gain_clue
+      cargs:
+        - skip: True
+          step: next
+      next:
+        - gain_clue
+      nargs:
+        - skip: True
+      pass_text: In exchange for a generous donation, the Penhew Foundation will happily show the results of its global explorations.
+    - test: None
+      pass:
+        - spawn_clue
+      pargs:
+        - skip: True
+          text: Click on location
+          click: True
+          step: strength
+      strength:
+        - skill
+      sargs:
+        - stat: 3
+          step: no_effect
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: detained
+          text: Become Detained
+      pass_text: Impulsively, you look through the inspector's files while his back is turned. Spawn 1 Clue on a space of your choice.
+      strength_text: Unfortunately, he sees you, and you'll need to fight your way out of Scotland Yard.
+      fail_text: There is no shortage of police to arrest you.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - spawn_clue
+      pargs:
+        - skip: True
+          text: Click on location
+          click: True
+      fail:
+        - hp_san
+      fargs:
+        - san: -1
+          skip: True
+      test_text: You meet an eccentric painter in Soho who offers to show you his work. Amid his bizarre, alien landscapes, you notice some familiar details.
+      pass_text: Spawn 1 Clue on a space of your choice.
+      fail_text: You see nothing but horrors.
+    - test: None
+      pass:
+        - spawn_clue
+      pargs:
+        - text: Spawn 2 Clues
+          number: 2
+          step: obs
+      obs:
+        - skill
+      oargs:
+        - stat: 2
+          step: no_effect
+          skip: True
+      fail:
+        - request_card
+      fargs:
+        - text: Gain an Internal Injury
+          kind: conditions
+          name: internal_injury
+      pass_text: At the lecture of a noted achaeologist, he reveals startling information!
+      obs_text: During the presentation, a stranger tries to sneak a scarab into your pocket.
+      fail_text: It is inscribed with the words, "Cursed be he who moves my body. To him shall come fire, water, and pestilence."
+    - test: None
+      pass:
+        - spawn_clue
+        - set_buttons
+      pargs:
+        - number: 2
+          text: Become Delayed; Spawn 2 Clues
+          step: delay
+        - text: Defer the invitation (pass)
+          key: finish
+      delay:
+        - delayed
+      dargs:
+        - skip: True
+      pass_text: You are invited to journey down to Oxford to examine John Dee's translation of the Necronomicon.

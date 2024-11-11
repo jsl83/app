@@ -7,7 +7,7 @@ from util import *
 ENCOUNTERS = {}
 MYTHOS = {}
 
-for color in ['generic', 'green']:
+for color in ['generic', 'green', 'orange']:
     with open('encounters/' + color + '.yaml') as stream:
         ENCOUNTERS[color] = yaml.safe_load(stream)
 with open('encounters/mythos.yaml') as stream:
@@ -44,6 +44,7 @@ class EncounterPane():
             'set_buttons': self.set_buttons
         }
         self.req_dict = {
+            'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
             'spend_clue': lambda *args: len(self.investigator.clues) > 0,
             'discard': lambda *args: len([item for item in self.investigator.possessions[args[0]['kind']] if args[0]['tag'] == 'any' or args[0]['tag'] in item.tags]) > 0,
             'gain_asset': lambda *args: not args[0].get('reserve', False) or len([item for item in self.hub.info_panes['reserve'].reserve if args[0]['tag'] == 'any' or args[0]['tag'] in item['tags']]) > 0
@@ -54,6 +55,7 @@ class EncounterPane():
         self.layout.add(self.phase_button)
         self.is_mythos = False
         self.move_action = None
+        self.click_action = None
         self.allowed_locs = {}
         self.wait_step = None
 
@@ -148,6 +150,7 @@ class EncounterPane():
                 self.set_buttons(fail)
         next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=confirm_test)
         self.rolls = self.hub.run_test(stat, mod, self.hub.encounter_pane, [next_button])
+        #self.rolls = [1]
 
     def reroll(self, new, old):
         self.rolls.remove(old)
@@ -196,8 +199,11 @@ class EncounterPane():
                     args = self.encounter[key[0] + 'args'][x]
                     buttons[x].text = args.get('text', '')
                     buttons[x].enable()
-                    if 'text' in args:
-                        del args['text']
+                    if actions[x] in self.req_dict and not self.req_dict[actions[x]](args) and len(actions) > 0:
+                        buttons[x].disable()
+                    for arg in ['text', 'check']:
+                        if arg in args:
+                            del args[arg]
                     if actions[x] == 'skill' or args.get('skip', None) != None:
                         if 'skip' in args:
                             del args['skip']
@@ -207,8 +213,6 @@ class EncounterPane():
                     else:
                         buttons[x].action = self.action_dict[actions[x]]
                         buttons[x].action_args = args
-                    if actions[x] in self.req_dict and not self.req_dict[actions[x]](args) and len(actions) > 0:
-                        buttons[x].disable()
                     self.layout.add(buttons[x])
             self.hub.info_manager.trigger_render()
 
@@ -275,9 +279,19 @@ class EncounterPane():
             self.investigator.sanity += san
             self.set_buttons(step)
 
-    def spawn_clue(self, step='finish', random=True):
-        self.wait_step = step
-        self.hub.networker.publish_payload({'message': 'spawn', 'value': 'clues', 'number': 1}, self.investigator.name)
+    def spawn_clue(self, step='finish', click=False, number=1):
+        if not click:
+            self.wait_step = step
+            self.hub.networker.publish_payload({'message': 'spawn', 'value': 'clues', 'number': number}, self.investigator.name)
+        else:
+            def clue_click(loc):
+                if not self.hub.location_manager.locations[loc]['clue']:
+                    self.wait_step = step
+                    map_name = self.hub.map.name
+                    self.hub.networker.publish_payload({'message': 'spawn', 'value': 'clues', 'number': number, 'location':map_name + ':' + loc}, self.investigator.name)
+                    self.click_action = None
+                    self.set_buttons(step)
+            self.click_action = clue_click
 
     def gain_clue(self, step='finish'):
         self.wait_step = step

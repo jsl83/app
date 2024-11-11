@@ -356,10 +356,14 @@ class Networker(threading.Thread, BanyanBase):
                             #advance doom
                             pass
             case 'clues':
-                for x in range(0, number):
-                    token = random.choice(self.decks[piece])
-                    #self.decks[piece].remove(token)
-                    self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
+                if location != None:
+                    #self.decks[piece].remove(location)
+                    self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': location.split(':')[1], 'map': location.split(':')[0]}, 'server_update')
+                else:
+                    for x in range(0, number):
+                        token = random.choice(self.decks[piece])
+                        #self.decks[piece].remove(token)
+                        self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
             case 'monsters':
                 for x in range(0, number):
                     monster = random.choice(self.decks['monsters'])

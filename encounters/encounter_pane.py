@@ -79,6 +79,7 @@ class EncounterPane():
             self.hub.show_overlay()
         elif not combat_only:
             self.phase_button.text = 'Encounter Phase'
+            self.text_button.text = 'Choose Encounter'
             for encounter in self.encounters:
                 payload = {'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}
                 choices.append(ActionButton(texture='encounters/' + encounter + '.png', action=self.hub.networker.publish_payload,
@@ -142,6 +143,11 @@ class EncounterPane():
 
     def mists(self):
         self.monsters = []
+        self.first_fight = False
+        self.hub.clear_overlay()
+        self.layout.clear()
+        self.layout.add(self.text_button)
+        self.layout.add(self.phase_button)
         self.encounter_phase()
 
     def skill_test(self, stat, mod=0, step='pass', fail='fail'):

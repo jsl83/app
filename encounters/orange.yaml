@@ -302,4 +302,144 @@
       pass_text: You are invigorated by a visit to a magnificent cathedral.
       will_text: In the basement, you find a mosaic depicting robed men bowing before a great fire. To your horror, it is surrounded by scorch marks that resemble human silhouettes.
       fail_text: Visions of flames haunt your dreams.
-    
+  istanbul:
+    - test:
+        - skill
+      targs:
+        - stat: 1
+          mod: -1
+      pass:
+        - improve_skill
+      pargs:
+        - skill: '01234'
+          skip: True
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: debt
+          text: Gain Debt
+      test_text: Inside the loud hustle and bustle of the Grand Bazaar, you negotiate to find a skilled instructor to tutor you.
+      pass_text: The master imparts his knowledge to you.
+      fail_text: The instructor teaches you nothing, yet still demands pay for his lessons.
+    - test: None
+      pass:
+        - improve_skill
+        - set_buttons
+      pargs:
+        - skill: '01234'
+          step: delay
+          text: Become Delayed; improve any Skill
+        - key: finish
+          text: You're clean enough (pass)
+      delay:
+        - delayed
+      dargs:
+        - skip: True
+      pass_text: People from every walk of life can be found enjoying the cleansing steam of the Turkish baths. Inside, you'll eventually find an expert in any given field.
+    - test:
+        - skill
+      targs:
+        - stat: 0
+          fail: no_effect
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 1
+          text: Improve Influence
+      test_text: Professor Azap at the Topkapi Museum is not easily impressed. Only serious scholars can earn his respect.
+      pass_text: He offers you any help the institute can provide.
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 1
+          text: Improve Influence
+      fail:
+        - request_card
+      fargs:
+        - text: Gain a Madness Condition
+          kind: conditions
+          tag: madness
+      test_text: You see a horrid apparition slowly ascending the stairs and have the immediate impulse to run away.
+      pass_text: You discover that it wants only to take revenge on the murderous cultists for all of their victims.
+      fail_text: You are overcome by terror.
+    - test: None
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - text: Spend 1 Clue; improve Influence
+          step: improve
+        - text: Every man for himself (pass)
+          key: finish
+      improve:
+        - improve_skill
+      iargs:
+        - skill: 1
+          skip: True 
+      pass_text: The British Ambassador Sir Douglas Rutherford's child has been abducted by the Brothers of the Skin. He begs for your help finding the cultists and recovering the boy.
+    - test: None
+      pass:
+        - improve_skill
+      pargs:
+        - text: Improve Influence
+          skill: 1
+          step: will
+      will:
+        - skill
+      wargs:
+        - skip: True
+          stat: 4
+          step: no_effect
+      fail:
+        - hp_san
+      fargs:
+        - skip: True
+          hp: -2
+      pass_text: Members of the Turkish parliament offer you help in exchange for clearing a group of cultists out of the Shunned Mosque.
+      will_text: Inside you interrupt a ritual and must resist the effect of its magical energies.
+      fail_text: Your skin writhes across your body.
+    - test: None
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 0
+          step: will
+          text: Improve Lore
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          skip: True
+          step: no_effect
+      fail:
+        - hp_san
+      fargs:
+        - san: -2
+          skip: True
+      pass_text: A secret group of scholars has taken an interest in you.
+      will_text: They show you a shocking, ancient text written by Theodorus Philetas regarding his translation of the Necronomicon.
+      fail_text: His words deeply disturb you.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - request_card
+      pargs:
+        - text: Become Blessed
+          kind: conditions
+          name: blessed
+      fail:
+        - request_card
+      fargs:
+        - text: Gain a Back Injury
+          kind: conditions
+          name: back_injury
+      test_text: You suspect that you are being followed. You use a reflective window to watch the poeple walking behind you.
+      pass_text: You spot someone stalking you and escape into a mosque, and the imam there prays for your safety.
+      fail_text: The assassin finds you first.

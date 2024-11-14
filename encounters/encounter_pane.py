@@ -46,7 +46,7 @@ class EncounterPane():
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
             'spend_clue': lambda *args: len(self.investigator.clues) > 0,
-            'discard': lambda *args: len([item for item in self.investigator.possessions[args[0]['kind']] if args[0]['tag'] == 'any' or args[0]['tag'] in item.tags]) > 0,
+            'discard': lambda *args: self.discard_check(args[0]['kind'], args[0].get('tag', 'any'), args[0].get('name', None)),
             'gain_asset': lambda *args: not args[0].get('reserve', False) or len([item for item in self.hub.info_panes['reserve'].reserve if args[0]['tag'] == 'any' or args[0]['tag'] in item['tags']]) > 0
         }
         self.encounter = None
@@ -58,6 +58,11 @@ class EncounterPane():
         self.click_action = None
         self.allowed_locs = {}
         self.wait_step = None
+
+    def discard_check(self, kind, tag='any', name=None):
+        items = self.investigator.possessions[kind]
+        items = [item for item in items if tag in item.tags] if tag != 'any' else [item for item in items if name == item.name] if name != None else items
+        return len(items) > 0
 
     def encounter_phase(self, combat_only=False):
         location = self.investigator.location
@@ -72,7 +77,7 @@ class EncounterPane():
                 text='Mists of Releh', action=self.mists, width=100, height=50)]
             self.hub.choice_layout = create_choices('Choose Monster', choices=choices, options=options)
             self.hub.show_overlay()
-        elif len(self.hub.location_manager.locations[location]['monsters']) == 0 and not combat_only:
+        elif not combat_only:
             self.phase_button.text = 'Encounter Phase'
             for encounter in self.encounters:
                 payload = {'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}
@@ -136,7 +141,8 @@ class EncounterPane():
         self.encounter_phase()
 
     def mists(self):
-        pass
+        self.monsters = []
+        self.encounter_phase()
 
     def skill_test(self, stat, mod=0, step='pass', fail='fail'):
         for button in [self.proceed_button, self.option_button, self.last_button]:
@@ -232,9 +238,9 @@ class EncounterPane():
             self.wait_step = step
             self.hub.request_card('assets', name, tag=tag)
 
-    def discard(self, kind, step='finish', tag='any', amt='one'):
+    def discard(self, kind, step='finish', tag='any', amt='one', name=None):
         items = self.investigator.possessions[kind]
-        items = items if tag == 'any' else [item for item in items if tag in item.tags]
+        items = [item for item in items if tag in item.tags] if tag != 'any' else [item for item in items if name == item.name] if name != None else items
         if len(items) == 0:
             self.set_buttons(step)
         else:
@@ -246,7 +252,7 @@ class EncounterPane():
                     self.hub.info_panes['possessions'].setup()
                     self.set_buttons(step)
             choices = [ActionButton(texture=item.texture, width=120, height=185, action=next_step, action_args={'card': item, 'step': step}) for item in items]
-            self.hub.choice_layout = create_choices(choices = choices, options = options, title='Discard ' + kind + ': ' + amt[0].upper() + amt[1:])
+            self.hub.choice_layout = create_choices(choices = choices, options = options, title='Discard ' + (name[0].upper() + name[1:] if name != None else kind) + ': ' + amt[0].upper() + amt[1:])
             self.hub.show_overlay()
 
     def spend_clue(self, step='finish'):
@@ -297,7 +303,7 @@ class EncounterPane():
         self.wait_step = step
         self.hub.networker.publish_payload({'message': 'get_clue'}, self.investigator.name)
 
-    def improve_skill(self, skill, step='finish', amt=1):
+    def improve_skill(self, skill, step='finish', amt=1, option=None):
         if len(str(skill)) == 1:
             self.investigator.improve_skill(skill, amt)
             self.hub.info_panes['investigator'].calc_skill(skill)
@@ -313,7 +319,10 @@ class EncounterPane():
                 button = ActionButton(width=80, height=80, texture='icons/' + skills[int(char)] + '.png', action=improve, action_args={'stat': int(char)})
                 if self.investigator.skill_tokens[int(char)] < 2:
                     choices.append(button)
-            self.hub.choice_layout = create_choices(choices=choices, title='Improve a Skill')
+            options = []
+            if option != None:
+                options = [ActionButton(height=50, texture='buttons/placeholder.png', text='Skip', action=self.set_buttons, action_args={'key': option})]
+            self.hub.choice_layout = create_choices(choices=choices, title='Improve a Skill', options=options)
             self.hub.show_overlay()
 
     def allow_move(self, distance, step='finish', same_loc=True, must_move=False):

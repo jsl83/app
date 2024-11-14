@@ -120,7 +120,7 @@ class HubScreen(arcade.View):
         self.request_card('assets', 'arcane_tome')
         self.investigator.sanity -= 3
         self.investigator.clues.append('world:arkham')
-        #self.request_card('conditions', 'debt')
+        #self.request_card('conditions', 'blessed')
         #END TESTING
         
     def on_draw(self):
@@ -281,8 +281,6 @@ class HubScreen(arcade.View):
             self.ui_manager.trigger_render()
 
     def set_listener(self, topic, payload):
-        if self.encounter_pane.wait_step != None:
-            self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
         match payload['message']:
             case 'spawn':
                 name = payload.get('name', '')
@@ -366,6 +364,8 @@ class HubScreen(arcade.View):
                 self.set_omen(int(payload['value']))
             case 'doom':
                 self.set_doom(int(payload['value']))
+        if self.encounter_pane.wait_step != None:
+            self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max

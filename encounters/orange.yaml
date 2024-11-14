@@ -146,3 +146,160 @@
       dargs:
         - skip: True
       pass_text: You are invited to journey down to Oxford to examine John Dee's translation of the Necronomicon.
+  rome:
+    - test:
+        - skill
+      targs:
+        - stat: 1
+          fail: no_effect
+      pass:
+        - improve_skill
+      pargs:
+        - text: Improve Will
+          skill: 4
+      test_text: The Vatican Library is so vast! You ask a librarian for a recommendation.
+      pass_text: He leads you to a codex that recounts how worshipers of Shub-Niggurath were driven out of Rome, and the story renews your confidence.
+    - test: None
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 4
+          step: influence
+          text: Improve Will
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: no_effect
+      fail:
+        - hp_san
+      fargs:
+        - hp: -1
+          san: -1
+          skip: True
+      pass_text: You have an inspirational dream in which you are a proud Roman quaestor.
+      influence_text: Your reverie is interrupted by a band of small, primitive men running wild outside. You try to negotiate with this lost tribe of Miri Nigri.
+      fail_text: They continue their pursuit of some ancient grudge.
+    - test:
+        - skill
+      targs:
+        - stat: 1
+          mod: -1
+      pass:
+        - request_card
+      pargs:
+        - text: Become Blessed
+          kind: conditions
+          name: blessed
+      fail:
+        - hp_san
+      fargs:
+        - san: -1
+          skip: True
+          step: discard
+      discard:
+        - discard
+      dargs:
+        - skip: True
+          name: blessed
+          kind: conditions
+      test_text: You speak to a number of Vatican authorities about your investigations. They carefully consider your story.
+      pass_text: You are thanked for doing good work.
+      fail_text: You are demoralized by their rejection.
+    - test: None
+      pass:
+        - request_card
+        - set_buttons
+      pargs:
+        - text: Become Delayed; become Blessed
+          kind: conditions
+          name: blessed
+          step: delay
+        - key: finish
+          text: Let the city handle it (pass)
+      delay:
+        - delayed
+      dargs:
+        - skip: True
+      pass_text: You discover a hidden shrine to Cybele in an ancient catacomb. It will be a long process to excavate the find, but removing such a blight from Rome's foundations will grand you a higher reward.
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - improve_skill
+      pargs:
+        - text: Improve Will
+          skill: 4
+      fail:
+        - hp_san
+      fargs:
+        - skip: True
+          san: -1
+      test_text: Ever since arriving in Rome, you've had nightmares about being betrayed. You try to assure yourself that they are only dreams.
+      pass_text: The nightmare stops.
+      fail_text: The nightmares continue.
+    - test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - request_card
+      pargs:
+        - text: Become Blessed
+          kind: conditions
+          name: blessed
+      fail:
+        - request_card
+      fargs:
+        - text: Become Detained
+          kind: conditions
+          name: detained
+      test_text: A group of Blackshirts are interrogating an old priest, and you try to intervene.
+      pass_text: They let the priest go, and he is eternally grateful.
+      fail_text: You are shoved against a wall and arrested.
+    - test: None
+      pass:
+        - improve_skill
+      pargs:
+        - skill: '01234'
+          option: finish
+          step: will
+          skip: True
+      will:
+        - skill
+      wargs:
+        - step: no_effect
+          stat: 4
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: cursed
+          text: Become Cursed
+      pass_text: A witch cult must have used this villa to conduct their rituals. They've left behind a number of small potions. You decide whether to drink one.
+      will_text: You must resist the ill effects of the elixir.
+      fail_text: You feel the concoction change something inside you.
+    - test: None
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 4
+          step: will
+          text: Improve Will
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          mod: -1
+          step: no_effect
+      fail:
+        - request_card
+      fargs:
+        - text: Become Paranoid
+          kind: conditions
+          name: paranoia
+      pass_text: You are invigorated by a visit to a magnificent cathedral.
+      will_text: In the basement, you find a mosaic depicting robed men bowing before a great fire. To your horror, it is surrounded by scorch marks that resemble human silhouettes.
+      fail_text: Visions of flames haunt your dreams.
+    

@@ -55,7 +55,7 @@
         - kind: conditions
           name: debt
           step: clue
-          text: Gain Debt; gain 2 Clues
+          text: Gain Debt to gain 2 Clues
           check: True
         - text: No money to spare (pass)
           key: finish
@@ -137,7 +137,7 @@
         - set_buttons
       pargs:
         - number: 2
-          text: Become Delayed; Spawn 2 Clues
+          text: Become Delayed to spawn 2 Clues
           step: delay
         - text: Defer the invitation (pass)
           key: finish
@@ -211,7 +211,7 @@
         - request_card
         - set_buttons
       pargs:
-        - text: Become Delayed; become Blessed
+        - text: Become Delayed to become Blessed
           kind: conditions
           name: blessed
           step: delay
@@ -329,7 +329,7 @@
       pargs:
         - skill: '01234'
           step: delay
-          text: Become Delayed; improve any Skill
+          text: Become Delayed to improve any Skill
         - key: finish
           text: You're clean enough (pass)
       delay:
@@ -372,7 +372,7 @@
         - spend_clue
         - set_buttons
       pargs:
-        - text: Spend 1 Clue; improve Influence
+        - text: Spend 1 Clue to improve Influence
           step: improve
         - text: Every man for himself (pass)
           key: finish

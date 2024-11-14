@@ -1,0 +1,139 @@
+---
+  shanghai:
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 0
+          text: Improve Lore
+      fail:
+        - hp_san
+      fargs:
+        - skip: true
+          san: -1
+      test_text: You search through old copies of The Shanghai Courier to find strange or unexplained stories.
+      pass_text: You discover a pattern of arcane activity in the city.
+      fail_text: No pattern emerges from all this horror.
+    - test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - improve_skill
+      pargs:
+        - skill: '01234'
+          skip: True
+      fail:
+        - hp_san
+      fargs:
+        - hp: -1
+          skip: True
+      test_text: You try to convince Chu Min to help your cause.
+      pass_text: He uses New China's vast resources to provide you with any sort of instruction you require.
+      fail_text: His men force you out onto the street.
+    - test: None
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 0
+          step: will
+          text: Improve Lore
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          step: no_effect
+      fail:
+        - request_card
+      fargs:
+        - text: Gain Hallucinations
+          kind: conditions
+          name: hallucinations
+      pass_text: The shrine holds an abundance of ancient relics.
+      will_text: Your eye catches strange figures written on the ceiling. You find it hard to look away.
+      fail_text: The writing seems to move on its own.
+    - test:
+        - skill
+      targs:
+        - stat: 1
+          fail: no_effect
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 0
+          text: Improve Lore
+      test_text: The Shanghai Museum recommends you speak to Mu Hsien, a preeminent scholar of the occult. You send him a message that you hope will convince him to help.
+      pass_text: He shares his wealth of knowledge.
+    - test: None
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - text: Spend 1 Clue to improve Lore
+          step: lore
+        - text: Best to avoid criminals (pass)
+          key: finish
+      lore:
+        - improve_skill
+      largs:
+        - skill: 0
+          skip: True
+      pass_text: The decadent crime lord, Lin Tang-Yu, offers you access to his library of occult treasures in exchange for information.
+    - test: None
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 0
+          text: Improve Lore
+          step: obs
+      obs:
+        - skill
+      oargs:
+        - stat: 2
+          step: no_effect
+      fail:
+        - delayed
+      fargs:
+        - text: Become Delayed
+      pass_text: You break into a warehouse filled with ancient wonders and learn much by studying its content.
+      obs_text: You must remain silent to avoid being caught.
+      fail_text: They question you for days.
+    - test: None
+      pass:
+        - delayed
+        - set_buttons
+      pargs:
+        - text: Become Delayed to improve any Skill
+          step: improve
+        - key: finish
+          text: What a foul smell! (pass)
+      improve:
+        - improve_skill
+      iargs:
+        - skill: '01234'
+          skip: True
+      pass_text: The old man offers to make tea for you. You see him mix in a strange, green powder that he calls "tyuk". You decide whether to wait for it to brew.
+      improve_text: The tyuk seems to heighten all of your senses.
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - request_card
+      pargs:
+        - kind: conditions
+          name: blessed
+          text: Become Blessed
+      fail:
+        - request_card
+      fargs:
+        - text: Become Detained
+          kind: conditions
+          name: detained
+      test_text: You spot an odd, fish-like man pull a young monk underwater! You dive in to rescue him, holding your breath as long as you can.
+      pass_text: The grateful monk prays over you.
+      fail_text: You are implicated in his disappearance.
+  

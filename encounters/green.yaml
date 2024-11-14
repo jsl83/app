@@ -7,7 +7,7 @@
         - kind: spells
           tag: incantation
           step: skill
-          text: Gain an Incantation
+          text: Gain an Incantation Spell
       skill:
         - skill
       sargs:
@@ -30,7 +30,7 @@
         - kind: spells
           tag: incantation
           step: skill
-          text: Gain an Incantation
+          text: Gain an Incantation Spell
       skill:
         - skill
       sargs:
@@ -73,7 +73,7 @@
       sargs:
         - kind: spells
           tag: incantation
-          text: Gain an Incantation
+          text: Gain an Incantation Spell
       pass_text: An anonymous patient in the asylum pleads with you to share what you've learned.
       spell_text: The man begins chanting in a long-dead language.
     - test:
@@ -85,7 +85,7 @@
       pargs:
         - kind: spells
           tag: incantation
-          text: Gain an Incantation
+          text: Gain an Incantation Spell
       fail:
         - hp_san
       fargs:
@@ -101,7 +101,7 @@
       pass:
         - request_card
       pargs:
-        - text: Gain an Incantation
+        - text: Gain an Incantation Spell
           kind: spells
           tag: incantation
       fail:
@@ -118,7 +118,7 @@
         - delayed
         - set_buttons
       pargs:
-        - text: Become Delayed; Gain 2 Spells
+        - text: Become Delayed to gain 2 Spells
           step: spells
         - text: You'd rather not (pass)
           key: finish
@@ -159,7 +159,7 @@
         - spend_clue
         - set_buttons
       pargs:
-        - text: Spend 1 Clue; improve Observation
+        - text: Spend 1 Clue to improve Observation
           step: improve
         - text: Ignore him (pass)
           key: finish
@@ -231,7 +231,7 @@
         - set_buttons
       pargs:
         - skill: '01234'
-          text: Become Delayed; Improve any Skill
+          text: Become Delayed to improve any Skill
           step: delay
           skip: True
         - text: Leave posthaste (pass)
@@ -367,7 +367,7 @@
         - set_buttons
       pargs:
         - step: spell
-          text: Spend 1 Clue; Gain a Ritual
+          text: Spend 1 Clue to gain a Ritual Spell
         - text: Refuse to share (pass)
           key: finish
       spell:
@@ -381,7 +381,7 @@
       pass:
         - request_card
       pargs:
-        - text: Gain a Ritual
+        - text: Gain a Ritual Spell
           step: will
           kind: spells
           tag: ritual
@@ -428,7 +428,7 @@
         - delayed
         - set_buttons
       pargs:
-        - text: Become Delayed; gain 2 Spells
+        - text: Become Delayed to gain 2 Spells
           step: spell
         - text: No time for stories (pass)
           key: finish

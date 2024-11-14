@@ -7,7 +7,7 @@ from util import *
 ENCOUNTERS = {}
 MYTHOS = {}
 
-for color in ['generic', 'green', 'orange']:
+for color in ['generic', 'green', 'orange', 'purple']:
     with open('encounters/' + color + '.yaml') as stream:
         ENCOUNTERS[color] = yaml.safe_load(stream)
 with open('encounters/mythos.yaml') as stream:
@@ -261,11 +261,13 @@ class EncounterPane():
             self.hub.choice_layout = create_choices(choices = choices, options = options, title='Discard ' + (name[0].upper() + name[1:] if name != None else kind) + ': ' + amt[0].upper() + amt[1:])
             self.hub.show_overlay()
 
-    def spend_clue(self, step='finish'):
-        clue = random.choice(self.investigator.clues)
-        self.investigator.clues.remove(clue)
-        self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
+    def spend_clue(self, step='finish', amt=1):
+        for x in range(amt):
+            clue = random.choice(self.investigator.clues)
+            self.investigator.clues.remove(clue)
+            self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
         self.set_buttons(step)
+        self.hub.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
 
     def request_card(self, kind, step='finish', name='', tag=''):
         self.wait_step = step

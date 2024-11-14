@@ -49,9 +49,9 @@
       pargs:
         - reserve: True
           tag: item
-          text: From Reserve
+          text: Gain Item from Reserve
         - tag: item
-          text: From Deck
+          text: Gain Item from deck
       fail:
         - hp_san
       fargs:
@@ -63,7 +63,7 @@
         - kind: assets
           tag: item
       test_text: The shop is robbed while you are browsing! You attempt to fend off the thieves.
-      pass_text: The store owner is very gracious; gain an Item Asset.
+      pass_text: The store owner is very gracious.
       fail_text: Lose 1 Health and discard an Item Asset.
     - test:
         - skill
@@ -229,7 +229,7 @@
         - hp: 0
           san: -1
           step: fail
-          text: Lose 1 Sanity; gain an Item
+          text: Lose 1 Sanity to gain an Item
       pass_text: The remains of a long-dead explorer lie before you. Some of his gear still seems salvageable, and he won't miss it. You dig through the dead man's pockets.
     - test:
         - skill
@@ -277,7 +277,7 @@
       fail:
         - hp_san
       fargs:
-        - text: Lose 1 Health; Gain a Leg Injury
+        - text: Lose 1 Health and gain a Leg Injury
           hp: -1
           step: next
       next:
@@ -287,7 +287,7 @@
           name: leg_injury
           skip: True
       test_text: The terrain ahead of you looks impassable, but going around would take too long. You'll need to find some way to move forward.
-      pass_text: You discover a path.
+      pass_text: You discover a path; move 1 space.
       fail_text: You trip over the uneven ground.
     - test: None
       pass:
@@ -295,7 +295,7 @@
         - set_buttons
       pargs:
         - step: fail
-          text: Spend 1 Clue; gain Artifact
+          text: Spend 1 Clue to gain an Artifact
         - key: finish
           text: Give Up (pass)
       fail:
@@ -329,7 +329,7 @@
       fail:
         - delayed
       fargs:
-        - text: Become Delayed; Gain Madness
+        - text: Become Delayed and gain a Madness Condition
           step: madness
       madness:
         - request_card
@@ -408,7 +408,7 @@
           san: 3
         - kind: conditions
           tag: madness
-          text: Discard Madness
+          text: Discard a Madness Condition
           step: delay
         - text: Keep moving (pass)
           key: finish
@@ -465,7 +465,7 @@
           san: -1
           text: Lose 1 Sanity
           step: fail
-      pass_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles.
+      pass_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles. Move 1 space.
     - test:
         - skill
       targs:
@@ -478,7 +478,7 @@
         - kind: conditions
           name: blessed
           step: heal
-          text: Become Blessed; Recover 1 Health and Sanity
+          text: Become Blessed and recover 1 Health and Sanity
       heal:
         - hp_san
       hargs:
@@ -516,7 +516,7 @@
         - set_buttons
       pargs:
         - step: asset
-          text: Become Delayed; gain Artifact
+          text: Become Delayed to gain an Artifact
         - text: Keep sailing (pass)
           key: finish
       asset:
@@ -549,7 +549,7 @@
       pass:
         - hp_san
       pargs:
-        - text: Lose 1 Sanity; gain a Back Injury
+        - text: Lose 1 Sanity and gain a Back Injury
           san: -1
           step: fail
       fail:
@@ -563,7 +563,7 @@
       pass:
         - hp_san
       pargs:
-        - text: Lose 1 Sanity; gain a Back Injury
+        - text: Lose 1 Sanity and gain a Back Injury
           san: -1
           step: fail
       fail:

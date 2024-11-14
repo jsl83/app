@@ -120,6 +120,7 @@ class HubScreen(arcade.View):
         self.request_card('assets', 'arcane_tome')
         self.investigator.sanity -= 3
         self.investigator.clues.append('world:arkham')
+        self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
         #self.request_card('conditions', 'blessed')
         #END TESTING
         
@@ -339,7 +340,7 @@ class HubScreen(arcade.View):
                         self.remaining_actions = 2
                         #FOR TESTING
                         self.remaining_actions = 3
-                        self.ticket_move('akachi_onyele', 'rome', 0, 0, 'space_15')
+                        self.ticket_move('akachi_onyele', 'shanghai', 0, 0, 'space_15')
                         self.info_panes['investigator'].focus_action()
                         #END TESTING
                 elif payload['value'] == 'encounter':
@@ -355,7 +356,7 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.show_encounter_pane()
                 #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('orange:0')
+                self.encounter_pane.start_encounter('purple:7')
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()

@@ -42,7 +42,7 @@
       fargs:
         - kind: conditions
           name: paranoia
-          text: Become Paranoid
+          text: Gain a Paranoia Condition
       pass_text: During the night, you have a nightmare about the old witch, Keziah Mason. In the dream, she shares her power with you.
       skill_text: When you wake up, you fear that the old witch will someday ask you for a favor in return.
       fail_text: You cannot stop seeing the witch in every shadow.
@@ -147,7 +147,7 @@
       fail:
         - request_card
       fargs:
-        - text: Become Paranoid
+        - text: Gain a Paranoia Condition
           kind: conditions
           name: paranoia
       test_text: A fortune teller in Independence Square warns you of dire events. You try to interpret her words.
@@ -202,7 +202,7 @@
       fargs:
         - kind: conditions
           name: debt
-          text: Gain a Debt Condition
+          text: Gain a Debt Condition Condition
       test_text: You meet Hammett, a former Pinkerton Agent, on the street car and try to convince him to teach you how to be a detective.
       pass_text: He agrees.
       fail_text: He's too distracted by his financial woes. You help support his family.
@@ -221,7 +221,7 @@
       fargs:
         - kind: conditions
           name: detained
-          text: Become Detained
+          text: Gain a Detained Condition
       test_text: You speak to a military prisoner on Alcatraz Island. He tells you his story of deserting after encountering a horrific creature.
       pass_text: He thanks you for believing him and blesses your name.
       fail_text: The story throws you into a hysterical fit, and the guards arrest you.
@@ -357,7 +357,7 @@
       fargs:
         - kind: conditions
           name: debt
-          text: Gain a Debt Condition
+          text: Gain a Debt Condition Condition
       test_text: The museum's curator shows you a unique golden jewel that was recovered from the sea. You believe that the symbols on it indicate that something is hidden inside.
       pass_text: You reveal a small scroll.
       fail_text: You damage the jewel and must pay for the repairs.
@@ -395,7 +395,7 @@
         - request_card
       fargs:
         - kind: conditions
-          text: Become Detained
+          text: Gain a Detained Condition
           name: detained
       pass_text: You sneak aboard a ship loaded with stolen antiquities, including an ancient stone tablet, which you read.
       will_text: Memorizing the words, you feel yourself slipping into a trance.
@@ -417,7 +417,7 @@
       fail:
         - request_card
       fargs:
-        - text: Become Paranoid
+        - text: Gain a Paranoia Condition
           kind: conditions
           name: paranoia
       pass_text: An old woman warns you that you've angered Yig and teaches you a protective chant.

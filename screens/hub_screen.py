@@ -345,7 +345,7 @@ class HubScreen(arcade.View):
                         self.remaining_actions = 2
                         #FOR TESTING
                         self.remaining_actions = 3
-                        self.ticket_move('akachi_onyele', 'tokyo', 0, 0, 'space_15')
+                        self.ticket_move('akachi_onyele', 'sydney', 0, 0, 'space_15')
                         self.info_panes['investigator'].focus_action()
                         #END TESTING
                 elif payload['value'] == 'encounter':
@@ -389,7 +389,7 @@ class HubScreen(arcade.View):
         choices = []
         rolls = []
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
-        dice = self.investigator.skills[3 if skill == 5 else skill] + mod
+        dice = self.investigator.skills[3 if skill == 5 else skill] + mod + self.investigator.skill_tokens[skill]
         for x in range(dice if dice > 1 else 1):
             roll = random.randint(1, 6)
             rolls.append(roll)

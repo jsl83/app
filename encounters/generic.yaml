@@ -18,7 +18,7 @@
       fargs:
         - name: detained
           kind: conditions
-          text: Become Detained
+          text: Gain a Detained Condition
       test_text: You make sure no one is watching before sneaking out of the shop with your stolen goods.
       pass_text: Gain an Item Asset.
       fail_text: You are caught by the store owner and arrested.
@@ -35,7 +35,7 @@
       fargs:
         - name: debt
           kind: conditions
-          text: Gain a Debt
+          text: Gain a Debt Condition
       test_text: Corrupt members of the police force pressure you for a bribe. You speak to some people you know to take care of the problem.
       pass_text: The police are apologetic and share their leads with you.
       fail_text: Pay the bribe.
@@ -92,7 +92,7 @@
       fargs:
         - kind: conditions
           name: detained
-          text: Become Detained
+          text: Gain a Detained Condition
       test_text: A shady figure offers to sell you a weapon, no questions asked. You speak with him to determine his motives.
       pass_text: He provides you a weapon for cheap to aid your cause.
       fail_text: The undercover policeman arrests you.
@@ -122,7 +122,7 @@
       fail:
         - request_card
       fargs:
-        - text: Gain a Debt Condition
+        - text: Gain a Debt Condition Condition
           kind: conditions
           name: debt
       test_text: A friendly game of cards ends with a very high-stakes hand.
@@ -194,7 +194,7 @@
       fail:
         - request_card
       fargs:
-        - text: Become Paranoid
+        - text: Gain a Paranoia Condition
           kind: conditions
           name: paranoia
       test_text: Legends say that this cemetery is haunted. Exploring the headstones, you encounter an angry specter, eager to share his story. The experience is nerve-wracking, but you try to listen.
@@ -506,7 +506,7 @@
       fargs:
         - kind: conditions
           name: paranoia
-          text: Become Paranoid
+          text: Gain a Paranoia Condition
       test_text: You discover a signal fire on a small island, but don't find any people. You search the beach for signs of life.
       pass_text: You spot a person hiding behind some large stones.
       fail_text: The mystery remains unsolved.

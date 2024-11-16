@@ -55,7 +55,7 @@
         - kind: conditions
           name: debt
           step: clue
-          text: Gain a Debt Condition to gain 2 Clues
+          text: Gain a Debt Condition Condition to gain 2 Clues
           check: True
         - text: No money to spare (pass)
           key: finish
@@ -87,7 +87,7 @@
       fargs:
         - kind: conditions
           name: detained
-          text: Become Detained
+          text: Gain a Detained Condition
       pass_text: Impulsively, you look through the inspector's files while his back is turned. Spawn 1 Clue on a space of your choice.
       strength_text: Unfortunately, he sees you, and you'll need to fight your way out of Scotland Yard.
       fail_text: There is no shortage of police to arrest you.
@@ -252,7 +252,7 @@
       fail:
         - request_card
       fargs:
-        - text: Become Detained
+        - text: Gain a Detained Condition
           kind: conditions
           name: detained
       test_text: A group of Blackshirts are interrogating an old priest, and you try to intervene.
@@ -296,7 +296,7 @@
       fail:
         - request_card
       fargs:
-        - text: Become Paranoid
+        - text: Gain a Paranoia Condition
           kind: conditions
           name: paranoia
       pass_text: You are invigorated by a visit to a magnificent cathedral.
@@ -318,7 +318,7 @@
       fargs:
         - kind: conditions
           name: debt
-          text: Gain a Debt Condition
+          text: Gain a Debt Condition Condition
       test_text: Inside the loud hustle and bustle of the Grand Bazaar, you negotiate to find a skilled instructor to tutor you.
       pass_text: The master imparts his knowledge to you.
       fail_text: The instructor teaches you nothing, yet still demands pay for his lessons.

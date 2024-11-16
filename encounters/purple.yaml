@@ -12,7 +12,7 @@
       fail:
         - hp_san
       fargs:
-        - skip: true
+        - skip: True
           san: -1
       test_text: You search through old copies of The Shanghai Courier to find strange or unexplained stories.
       pass_text: You discover a pattern of arcane activity in the city.
@@ -130,7 +130,7 @@
       fail:
         - request_card
       fargs:
-        - text: Become Detained
+        - text: Gain a Detained Condition
           kind: conditions
           name: detained
       test_text: You spot an odd, fish-like man pull a young monk underwater! You dive in to rescue him, holding your breath as long as you can.
@@ -191,7 +191,7 @@
       fail:
         - request_card
       fargs:
-        - text: Become Detained
+        - text: Gain a Detained Condition
           kind: conditions
           name: detained
       test_text: The reigning Emperor has been plagued by nightmares. His advisors ask your opinion and you assure them that these horrors are real.
@@ -210,7 +210,7 @@
       fail:
         - request_card
       fargs:
-        - text: Become Detained
+        - text: Gain a Detained Condition
           kind: conditions
           name: detained
       test_text: Captain Isoge Taro of the Imperial Japanese Navy takes particular interest in your investigations. Youd escribe the threats that the world is facing.
@@ -266,4 +266,149 @@
           skip: True
       test_text: A translation of The Tao Immortality is kept in the Tokyo University Library. If you are deemed trustworthy, you are granted access to the ancient text.
       pass_text: You can use the arcane manual to move 1 Monster of your choice from any space to another space of your choice.
-    
+  sydney:
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - improve_skill
+      pargs:
+        - text: Improve Strength
+          skill: 3
+      fail:
+        - hp_san
+      fargs:
+        - skip: True
+          san: -1
+      test_text: You dream of crossing a vast desert hunted by an enormous winged creature. In the dream, you turn to face your fears.
+      pass_text: You wake up feeling more alive than ever.
+      fail_text: The fear lingers.
+    - test: None
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 3
+          step: strength
+          text: Improve Strength
+      strength:
+        - skill
+      sargs:
+        - stat: 3
+          mod: -1
+          step: no_effect
+      fail:
+        - hp_san
+      fargs:
+        - hp: -2
+          skip: True
+      pass_text: A group of hunters provide you with the skills to track down a bunyip.
+      strength_text: When you find the massive four-legged creature, your weapons cannot pierce its leathery hide.
+      fail_text: You try to protect yourself from the beast's terrible claws and teeth.
+    - test: None
+      pass:
+        - improve_skill
+      pargs:
+        - text: Improve Strength
+          skill: 3
+          step: influence
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: no_effect
+      fail:
+        - request_card
+      fargs:
+        - text: Gain a Detained Condition
+          kind: conditions
+          name: detained
+      pass_text: Your money and passport have been stolen! You work on the Sydney Harbor Bridge to pay the bills.
+      influence_text: You meet the job's rigorous demands, but when your passport is found at the scene of a crime, you need to prove your innocence.
+      fail_text: You fail to convince the police, and are held as a suspect.
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 3
+          text: Improve Strength
+      fail:
+        - hp_san
+      fargs:
+        - san: -1
+          skip: True
+      test_text: Several passengers on an underground train have been trapped by a tunnel collapse. The dark and claustrohpobic climb through the rubble is terrifying.
+      pass_text: Your nerves hold out enough to help dig a clear path for the survivors.
+      fail_text: Your nerves get the better of you.
+    - test: None
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - text: Spend 1 Clue to improve Strength
+          step: strength
+        - text: You have nothing to share (pass)
+          key: finish
+      strength:
+        - improve_skill
+      sargs:
+        - skill: 3
+          text: Improve Strength
+      pass_text: The Theosophical Society is excited to hear what knowledge you have gained during your travels.
+      strength_text: They gratefully provide you with an exercise and diet regimen that fortifies your vitality.
+    - test:
+        - skill
+      targs:
+        - stat: 1
+          mod: -1
+      pass:
+        - gain_asset
+      pargs:
+        - text: Gain 1 random Weapon Asset
+          tag: weapon
+      fail:
+        - request_card
+      fargs:
+        - text: Gain a Debt Condition
+          kind: conditions
+          name: debt
+      test_text: Due to a city-wide shortage of supplies, shopkeepers won't even show you their wares unless you prove that you can pay top dollar.
+      pass_text: Your words (and cash) convince them of the worthiness of your cause.
+      fail_text: You are roped into a devious scheme.
+    - test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - request_card
+      pargs:
+        - text: Become Blessed
+          kind: conditions
+          name: blessed
+      fail:
+        - request_card
+      fargs:
+        - text: Gain a Detained Condition
+          kind: conditions
+          name: detained
+      test_text: An old, aboriginal man is on trial for a murder that you know he didn't commit. You agree to testify to prove his innocence.
+      pass_text: He speaks to the spirits on your behalf.
+      fail_text: You are accused of perjury.
+    - test: None
+      pass:
+        - delayed
+        - set_buttons
+      pargs:
+        - text: Become Delayed to gain 1 random Weapon Asset
+          step: weapon
+        - key: finish
+          text: It's not worth waiting for (pass)
+      weapon:
+        - gain_asset
+      wargs:
+        - skip: True
+          tag: weapon
+      pass_text: The constable sees you admire the abandoned weapon. "Give it a bit to see if anyone claims it," he says. "If not, you can help yourself."

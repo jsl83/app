@@ -143,7 +143,7 @@ class EncounterPane():
     def resolve_combat(self, monster):
         self.hub.clear_overlay()
         successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
-        monster.on_damage(successes, self.hub.location_manager, self.investigator)
+        self.hub.damage_monster(monster, successes)
         self.hub.show_encounter_pane()
         if self.ambush != None:
             self.ambush(**self.ambush_args)

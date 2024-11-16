@@ -49,9 +49,9 @@
       pargs:
         - reserve: True
           tag: item
-          text: Gain Item from Reserve
+          text: Gain an Item Asset from the Reserve
         - tag: item
-          text: Gain Item from deck
+          text: Gain an Item Asset from the deck
       fail:
         - hp_san
       fargs:
@@ -75,7 +75,7 @@
       fargs:
         - kind: conditions
           name: leg_injury
-          text: Gain Leg Injury
+          text: Gain a Leg Injury Condition
       test_text: A group of intimidating Syndicate members demand you pay them for protection. You offer the well-dressed men what you can afford.
       fail_text: They make sure you meet with an accident.
     - test:
@@ -85,7 +85,7 @@
       pass:
         - gain_asset
       pargs:
-        - text: Gain Weapon
+        - text: Gain a Weapon Asset
           tag: weapon
       fail:
         - request_card
@@ -94,7 +94,7 @@
           name: detained
           text: Become Detained
       test_text: A shady figure offers to sell you a weapon, no questions asked. You speak with him to determine his motives.
-      pass_text: Gain a random weapon.
+      pass_text: He provides you a weapon for cheap to aid your cause.
       fail_text: The undercover policeman arrests you.
     - test:
         - skill
@@ -105,7 +105,7 @@
       pass:
         - request_card
       pargs:
-        - text: Gain Tome Artifact
+        - text: Gain a Tome Artifact
           tag: tome
           kind: artifacts
       test_text: You wander through the aisles of an antique book store. Although many extremely rare books can be found here, the organizational system is almost impossible to decipher.
@@ -156,7 +156,7 @@
       pass:
         - gain_asset
       pargs:
-        - text: Gain an Ally
+        - text: Gain an Ally Asset
           tag: ally
       fail:
         - hp_san
@@ -229,7 +229,7 @@
         - hp: 0
           san: -1
           step: fail
-          text: Lose 1 Sanity to gain an Item
+          text: Lose 1 Sanity to gain an Item Asset
       pass_text: The remains of a long-dead explorer lie before you. Some of his gear still seems salvageable, and he won't miss it. You dig through the dead man's pockets.
     - test:
         - skill
@@ -260,9 +260,9 @@
         - gain_clue
         - request_card
       pargs:
-        - text: Gain Clue
+        - text: Gain 1 Clue
         - kind: spells
-          text: Gain Spell
+          text: Gain a Spell
       test_text: You scrape away years of moss and lichen from the stone altar, uncovering a series of prehistoric symbols.
       pass_text: You think you can interpret the carvings.
     - test:
@@ -277,7 +277,7 @@
       fail:
         - hp_san
       fargs:
-        - text: Lose 1 Health and gain a Leg Injury
+        - text: Lose 1 Health and gain a Leg Injury Condition
           hp: -1
           step: next
       next:
@@ -392,7 +392,7 @@
       fail:
         - request_card
       fargs:
-        - text: Gain Hallucinations
+        - text: Gain a Hallucinations Condition
           kind: conditions
           name: hallucinations
       test_text: Extreme conditions have left you fevered and delirious. You force yourself to keep moving, putting a terrible strain on your body.
@@ -495,7 +495,7 @@
         - gain_clue
       pargs:
         - step: asset
-          text: Gain 1 Clue and an Ally
+          text: Gain 1 Clue and an Ally Asset
       asset:
         - gain_asset
       aargs:
@@ -549,7 +549,7 @@
       pass:
         - hp_san
       pargs:
-        - text: Lose 1 Sanity and gain a Back Injury
+        - text: Lose 1 Sanity and gain a Back Injury Condition
           san: -1
           step: fail
       fail:
@@ -563,7 +563,7 @@
       pass:
         - hp_san
       pargs:
-        - text: Lose 1 Sanity and gain a Back Injury
+        - text: Lose 1 Sanity and gain a Back Injury Condition
           san: -1
           step: fail
       fail:

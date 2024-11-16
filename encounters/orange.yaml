@@ -29,7 +29,7 @@
       fail:
         - request_card
       fargs:
-        - text: Gain Hallucinations
+        - text: Gain a Hallucinations Condition
           kind: conditions
           name: hallucinations
       test_text: Inside the Herefordshire Asylum, a patient asks you if you've seen the Yellow Sign. You listen to his story of the King in Yellow.
@@ -55,7 +55,7 @@
         - kind: conditions
           name: debt
           step: clue
-          text: Gain Debt to gain 2 Clues
+          text: Gain a Debt Condition to gain 2 Clues
           check: True
         - text: No money to spare (pass)
           key: finish
@@ -125,7 +125,7 @@
       fail:
         - request_card
       fargs:
-        - text: Gain an Internal Injury
+        - text: Gain an Internal Injury Condition
           kind: conditions
           name: internal_injury
       pass_text: At the lecture of a noted achaeologist, he reveals startling information!
@@ -318,7 +318,7 @@
       fargs:
         - kind: conditions
           name: debt
-          text: Gain Debt
+          text: Gain a Debt Condition
       test_text: Inside the loud hustle and bustle of the Grand Bazaar, you negotiate to find a skilled instructor to tutor you.
       pass_text: The master imparts his knowledge to you.
       fail_text: The instructor teaches you nothing, yet still demands pay for his lessons.
@@ -437,7 +437,7 @@
       fail:
         - request_card
       fargs:
-        - text: Gain a Back Injury
+        - text: Gain a Back Injury Condition
           kind: conditions
           name: back_injury
       test_text: You suspect that you are being followed. You use a reflective window to watch the poeple walking behind you.

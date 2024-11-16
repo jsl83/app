@@ -46,9 +46,6 @@ class LocationPane():
         self.monster_layout = arcade.gui.UILayout(x=1000, y=450, width=280, height=120)
 
         self.selected = None
-
-        self.investigators = {}
-
         self.description_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
         self.monster_close = ActionButton(x=1260, y=780, width=20, height=20, text='X', texture='buttons/placeholder.png', action=self.close_monster)
         self.monster_picture = arcade.gui.UITextureButton(x=1040, y=560, height=200, width=200, texture=self.blank)
@@ -134,12 +131,8 @@ class LocationPane():
             offset = (280 - (row_num * 49 + (row_num - 1) * 12)) / 2 if row_num < 4 else 24
             for unit in self.location_manager.locations[self.selected][kind]:
                 column = i % 4
-                if kind == 'investigators':
-                    button = self.investigators[unit]
-                else:
-                    name = unit.name
-                    texture = 'monsters/' + name + '.png'
-                    button = ActionButton(texture=texture, scale=0.25, action=self.show_monster, action_args={'unit':unit})
+                texture = 'monsters/' + unit.name + '.png' if kind == 'monsters' else 'investigators/' + unit.name + '_portrait.png'
+                button = ActionButton(texture=texture, action=self.show_monster if kind == 'monsters' else self.trade, action_args={'unit':unit}, scale=0.25 if kind == 'monsters' else 0.2)
                 layout.add(button)
                 button.move(1000 + offset + column * 61 - button.x, y - button.y)
                 if i % 4 == 3:
@@ -148,9 +141,9 @@ class LocationPane():
                     row_num = number - row * 4
                     offset = (280 - (row_num * 49 + (row_num - 1) * 12)) / 2 if row_num < 4 else 24
                 i += 1
-    
-    def add_investigator(self, name):
-        self.investigators[name] = ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.2)
+
+    def trade(self, unit):
+        pass
 
     def update_all(self):
         self.update_tokens()

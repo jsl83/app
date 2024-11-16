@@ -14,12 +14,12 @@ TOKEN_DICT = {
         'scale': 0.4,
         'zoom_scale': 0.2
     },
-    'investigator': {
+    'investigators': {
         'size': 247,
         'scale': 0.4,
         'zoom_scale': 0.2
     },
-    'monster': {
+    'monsters': {
         'size': 200,
         'scale': 0.3,
         'zoom_scale': 0.15
@@ -46,8 +46,8 @@ class Map():
         self.layouts = {
             'gate': arcade.gui.UILayout(width=1280, height=800),
             'clue': arcade.gui.UILayout(width=1280, height=800),
-            'investigator': arcade.gui.UILayout(width=1280, height=800),
-            'monster': arcade.gui.UILayout(width=1280, height=800)
+            'investigators': arcade.gui.UILayout(width=1280, height=800),
+            'monsters': arcade.gui.UILayout(width=1280, height=800)
         }
         self.zoom_layout = arcade.gui.UILayout(width=1280, height=800)
 
@@ -56,7 +56,7 @@ class Map():
         
     def move(self, x, y):
         self.map.move(x, y)
-        for item in self.layouts['gate'].children + self.layouts['clue'].children + self.layouts['investigator'].children + self.layouts['monster'].children:
+        for item in self.layouts['gate'].children + self.layouts['clue'].children + self.layouts['investigators'].children + self.layouts['monsters'].children:
             item.move(x, y)
 
     def get_location(self):
@@ -66,7 +66,7 @@ class Map():
         self.map.scale(factor)
         self.token_manager.children = {0:[]}
         if factor == 2:
-            for layout in [self.layouts['gate'], self.layouts['monster'], self.layouts['investigator'], self.layouts['clue']]:
+            for layout in [self.layouts['gate'], self.layouts['monsters'], self.layouts['investigators'], self.layouts['clue']]:
                 for item in layout.children:
                     item.reset_position()
                     item.move(x, y)
@@ -84,8 +84,7 @@ class Map():
         path = None
         offset = 0
         match kind:
-            case 'investigator':
-                location['investigators'].append(name)
+            case 'investigators':
                 path = 'investigators/' + name + '_portrait.png'
                 offset = 1
             case 'clue':
@@ -94,20 +93,18 @@ class Map():
             case 'gate':
                 path = 'maps/' + location_name + '_gate.png'
                 location['gate'] = True
-            case 'monster':
+            case 'monsters':
                 path = 'monsters/' + name + '.png'
             case 'expedition':
                 path = 'maps/expedition.png'
         item = TOKEN_DICT[kind]
         button = ActionButton(location['x'] * 2 - item['size'] * item['scale'] / 2, location['y'] * 2 - item['size'] * item['scale'] / 2 - offset * 45,
                                 texture=path, scale=item['scale'], name=location_name)
-        button.kind = kind
         button.item_name = name
         self.layouts['gate' if kind == 'expedition' else kind].add(button)
         button.move(self.map.x, self.map.y + 400)
         zoom_button = ActionButton(location['x'] - item['size'] * item['zoom_scale'] / 2, location['y'] - item['size'] * item['zoom_scale'] / 2 - offset * 25,
                                     texture=path, scale=item['zoom_scale'], name=location_name)
-        zoom_button.kind = kind
         zoom_button.item_name = name
         self.zoom_layout.add(zoom_button)
 
@@ -115,7 +112,7 @@ class Map():
         buttons = self.get_tokens(kind, location, name)
         zoom_in = buttons[0]
         zoom_out = buttons[1]
-        offset = 1 if kind == 'investigator' else 0
+        offset = 1 if kind == 'investigators' else 0
         item = TOKEN_DICT[kind]
         zoom_in.name = dest_name
         zoom_out.name = dest_name
@@ -133,3 +130,8 @@ class Map():
         zoom_out = next((button for button in self.zoom_layout.children if button.name == location and (True if name == None else button.item_name == name)), None)
 
         return (zoom_in, zoom_out)
+
+    def remove_tokens(self, kind, unit):
+        tokens = self.get_tokens(kind, unit.location, unit.name)
+        self.zoom_layout.children.remove(tokens[1])
+        self.layouts[kind].children.remove(tokens[0])

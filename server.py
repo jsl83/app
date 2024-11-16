@@ -360,16 +360,16 @@ class Networker(threading.Thread, BanyanBase):
                     #self.decks[piece].remove(location)
                     self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': location.split(':')[1], 'map': location.split(':')[0]}, 'server_update')
                 else:
-                    for x in range(0, number):
+                    for x in range(number):
                         token = random.choice(self.decks[piece])
                         #self.decks[piece].remove(token)
                         self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
             case 'monsters':
-                for x in range(0, number):
+                for x in range(number):
                     monster = random.choice(self.decks['monsters'])
                     #self.decks['monsters'].remove(monster)
                     self.publish_payload({'message': 'spawn',
-                                        'value': 'monster',
+                                        'value': 'monsters',
                                         'location': location.split(':')[1],
                                         'map': location.split(':')[0],
                                         'name': monster
@@ -389,7 +389,7 @@ class Networker(threading.Thread, BanyanBase):
             self.spawn(kinds[i], self.reference[i])
         self.restock_reserve()
         for x in self.selected_investigators:
-            self.publish_payload({'message': 'spawn', 'value': 'investigator', 'name': x, 'location': INVESTIGATORS[x]['location'], 'map': 'world'}, 'server_update')
+            self.publish_payload({'message': 'spawn', 'value': 'investigators', 'name': x, 'location': INVESTIGATORS[x]['location'], 'map': 'world'}, 'server_update')
 
     def restock_reserve(self, removed=[], discard=False):
         removed_items = ':'.join(removed)

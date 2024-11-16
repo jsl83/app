@@ -19,7 +19,7 @@
       fargs:
         - kind: conditions
           name: hallucinations
-          text: Gain Hallucinations
+          text: Gain a Hallucinations Condition
       pass_text: In the restricted section of Miskatonic University's library, you study an esoteric tome.
       skill_text: You try to decode a note written in the margins.
       fail_text: The words put strange visions into your mind.
@@ -109,7 +109,7 @@
       fargs:
         - kind: conditions
           name: amnesia
-          text: Gain Amnesia
+          text: Gain an Amnesia Condition
       test_text: Inside Ye Olde Magick Shoppe, Miriam Beecher talks to you about the finer points of the occult.
       pass_text: You impress her with your acumen, and she gives you a rare text.
       fail_text: You lose track of time and can't seem to remember when you departed.
@@ -184,7 +184,7 @@
       fargs:
         - kind: conditions
           name: leg_injury
-          text: Gain a Leg Injury
+          text: Gain a Leg Injury Condition
       test_text: You find the husk of a squid-like creature in a tunnel. Just seeing it terrifies you.
       pass_text: You identify the cthonian; scientists clamor to contribute to its study.
       fail_text: You run headlong through the tunnel.
@@ -202,7 +202,7 @@
       fargs:
         - kind: conditions
           name: debt
-          text: Gain Debt
+          text: Gain a Debt Condition
       test_text: You meet Hammett, a former Pinkerton Agent, on the street car and try to convince him to teach you how to be a detective.
       pass_text: He agrees.
       fail_text: He's too distracted by his financial woes. You help support his family.
@@ -331,7 +331,7 @@
       pass:
         - request_card
       pargs:
-        - text: Gain a Ritual
+        - text: Gain a Ritual Spell
           kind: spells
           tag: ritual
       fail:
@@ -357,7 +357,7 @@
       fargs:
         - kind: conditions
           name: debt
-          text: Gain Debt
+          text: Gain a Debt Condition
       test_text: The museum's curator shows you a unique golden jewel that was recovered from the sea. You believe that the symbols on it indicate that something is hidden inside.
       pass_text: You reveal a small scroll.
       fail_text: You damage the jewel and must pay for the repairs.
@@ -407,7 +407,7 @@
         - kind: spells
           tag: ritual
           step: lore
-          text: Gain a Ritual
+          text: Gain a Ritual Spell
       lore:
         - skill
       largs:
@@ -454,6 +454,6 @@
       pargs:
         - kind: spells
           tag: ritual
-          text: Gain a Ritual
+          text: Gain a Ritual Spell
       test_text: A copy of the Necronomicon is kept at the University of Buenos Aires, but the librarian tells you that it's not available for viewing at this time. You try to convince him of the book's importance.
       pass_text: He relents and allows you a brief look at the book.

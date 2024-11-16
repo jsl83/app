@@ -41,7 +41,9 @@ class EncounterPane():
             'allow_move': self.allow_move,
             'discard': self.discard,
             'spend_clue': self.spend_clue,
-            'set_buttons': self.set_buttons
+            'set_buttons': self.set_buttons,
+            'damage_monsters': self.damage_monsters,
+            'move_monster': self.move_monster
         }
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
@@ -58,6 +60,8 @@ class EncounterPane():
         self.click_action = None
         self.allowed_locs = {}
         self.wait_step = None
+        self.ambush = None
+        self.ambush_args = None
 
     def discard_check(self, kind, tag='any', name=None):
         items = self.investigator.possessions[kind]
@@ -66,7 +70,8 @@ class EncounterPane():
 
     def encounter_phase(self, combat_only=False):
         location = self.investigator.location
-        self.monsters = [monster for monster in self.hub.location_manager.locations[location]['monsters']] if self.first_fight else self.monsters
+        monsters = self.hub.location_manager.locations[location]['monsters']
+        self.monsters = [monster for monster in monsters] if self.first_fight else self.monsters
         self.encounters = self.hub.location_manager.get_encounters(location)
         self.phase_button.text = 'Combat Phase'
         choices = []
@@ -77,21 +82,25 @@ class EncounterPane():
                 text='Mists of Releh', action=self.mists, width=100, height=50)]
             self.hub.choice_layout = create_choices('Choose Monster', choices=choices, options=options)
             self.hub.show_overlay()
-        elif not combat_only:
-            self.phase_button.text = 'Encounter Phase'
-            self.text_button.text = 'Choose Encounter'
-            for encounter in self.encounters:
-                payload = {'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}
-                choices.append(ActionButton(texture='encounters/' + encounter + '.png', action=self.hub.networker.publish_payload,
-                                            action_args={'topic': self.investigator.name, 'payload': payload}, scale=0.3))
-            self.hub.choice_layout = create_choices('Choose Encounter', choices=choices)
-            self.hub.show_overlay()
+        elif not combat_only and len(monsters) == 0:
+            self.choose_encounter()
         else:
             if self.proceed_button not in self.layout.children:
                 self.layout.add(self.proceed_button)
             self.proceed_button.text = 'End Combat'
             self.proceed_button.action = self.finish
             self.proceed_button.action_args = {}
+
+    def choose_encounter(self):
+        choices = []
+        self.phase_button.text = 'Encounter Phase'
+        self.text_button.text = 'Choose Encounter'
+        for encounter in self.encounters:
+            payload = {'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}
+            choices.append(ActionButton(texture='encounters/' + encounter + '.png', action=self.hub.networker.publish_payload,
+                                        action_args={'topic': self.investigator.name, 'payload': payload}, scale=0.3))
+        self.hub.choice_layout = create_choices('Choose Encounter', choices=choices)
+        self.hub.show_overlay()
 
     def start_encounter(self, value):
         self.hub.clear_overlay()
@@ -134,12 +143,13 @@ class EncounterPane():
     def resolve_combat(self, monster):
         self.hub.clear_overlay()
         successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
-        monster.damage += successes
-        if monster.damage >= monster.toughness:
-            self.hub.location_manager.locations[self.investigator.location]['monsters'].remove(monster)
-        self.monsters.remove(monster)
+        monster.on_damage(successes, self.hub.location_manager, self.investigator)
         self.hub.show_encounter_pane()
-        self.encounter_phase()
+        if self.ambush != None:
+            self.ambush(**self.ambush_args)
+        else:
+            self.monsters.remove(monster)
+            self.encounter_phase()
 
     def mists(self):
         self.monsters = []
@@ -148,7 +158,7 @@ class EncounterPane():
         self.layout.clear()
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
-        self.encounter_phase()
+        self.choose_encounter()
 
     def skill_test(self, stat, mod=0, step='pass', fail='fail'):
         for button in [self.proceed_button, self.option_button, self.last_button]:
@@ -186,6 +196,8 @@ class EncounterPane():
         self.hub.switch_info_pane('investigator')
         self.hub.select_ui_button(0)
         self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+        self.ambush = None
+        self.ambush_args = None
 
     def set_buttons(self, key):
         self.wait_step = None
@@ -279,7 +291,8 @@ class EncounterPane():
     def monster_heal(self, amt):
         for location in self.hub.location_manager.locations:
             for monster in self.hub.location_manager.locations[location]['monsters']:
-                monster.heal(amt)
+                #monster.heal(amt)
+                pass
 
     def delay(self, step='finish'):
         self.investigator.delayed = True
@@ -306,6 +319,86 @@ class EncounterPane():
                     self.click_action = None
                     self.set_buttons(step)
             self.click_action = clue_click
+    
+    def damage_monsters(self, damage, step='finish', single=True, epic=True):
+        if len(self.hub.location_manager.get_all('monsters', True)) == 0:
+            self.set_buttons(step)
+        else:
+            if self.encounter.get(step + '_text', None) != None:
+                self.text_button.text = self.encounter.get(step + '_text')
+            self.layout.clear()
+            self.proceed_button.disable()
+            self.proceed_button.text = 'Select Monster'
+            for button in [self.text_button, self.phase_button, self.proceed_button]:
+                self.layout.add(button)
+            if not single:
+                def damage_all(loc, dmg):
+                    for monster in self.hub.location_manager.locations[loc]['monsters']:
+                        self.hub.damage_monster(monster, damage)
+                    self.set_buttons(step)
+                    self.click_action = None
+                self.proceed_button.action = damage_all
+                self.proceed_button.text = 'Select Location'
+            def select(monster, dmg):
+                self.hub.damage_monster(monster, damage)
+                self.set_buttons(step)
+                self.click_action = None
+            def damage_loc(loc):
+                self.proceed_button.disable()
+                choices = []
+                options = []
+                monsters = [monster for monster in self.hub.location_manager.locations[loc]['monsters'] if epic or not monster.epic]
+                if len(monsters) > 0:
+                    self.proceed_button.action_args = {'loc': loc, 'dmg': damage}
+                    self.proceed_button.enable()
+                    for monster in monsters:
+                        choices.append(ActionButton(
+                            width=100, height=100, texture='monsters/' + monster.name + '.png', action=select if single else lambda: None, action_args={'monster': monster, 'dmg': damage} if single else None))
+                        options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
+                    self.hub.clear_overlay()
+                    self.hub.choice_layout = create_choices(title='Select Monster(s)', subtitle='Damage: ' + str(damage), choices=choices, options=options)
+                    self.hub.show_overlay()
+            self.click_action = damage_loc
+
+    def move_monster(self, step='finish', encounter=True, move_to='self', optional=False):
+        if len(self.hub.location_manager.get_all('monsters', True)) == 0:
+            self.set_buttons(step)
+        else:
+            def move(monster, encounter, loc):
+                self.hub.move_unit(monster,loc, kind='monsters')
+                if encounter:
+                    self.combat_will(monster)
+                    self.ambush = self.set_buttons
+                    self.ambush_args = {'key': step}
+                else:
+                    self.set_buttons(step)
+                self.click_action = None
+            def move_any(monster, encounter):
+                self.proceed_button.text += 'Selected: ' + human_readable(monster.name)
+                if move_to == 'self':
+                    move(monster, encounter, self.investigator.location)
+                else:
+                    self.click_action = lambda locat: move(monster, encounter, locat)
+                    self.hub.clear_overlay()
+                
+            def select(loc):
+                choices = []
+                options = []
+                monsters = self.hub.location_manager.locations[loc]['monsters']
+                if len(monsters) > 0:
+                    for monster in monsters:
+                        choices.append(ActionButton(
+                            width=100, height=100, texture='monsters/' + monster.name + '.png', action=move_any, action_args={'monster': monster, 'encounter': encounter}))
+                        options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
+                    self.hub.clear_overlay()
+                    self.hub.choice_layout = create_choices(title='Move Monster(s)', choices=choices, options=options)
+                    self.hub.show_overlay()
+            self.click_action = select
+            if optional:
+                self.layout.add(self.option_button)
+                self.option_button.text = 'Pass'
+                self.option_button.action = self.set_buttons
+                self.option_button.action_args = {'key': step}
 
     def gain_clue(self, step='finish'):
         self.wait_step = step

@@ -2,12 +2,14 @@ import yaml
 from util import *
 import astar
 from monsters.monster import Monster
+from investigators.investigator import Investigator
 
 class LocationManager():
     def __init__(self):
 
         self.locations = {}
         self.clue_count = 0
+        self.all_investigators = []
         try:
             with open('locations/locations.yaml') as stream:
                 self.locations = yaml.safe_load(stream)
@@ -36,7 +38,15 @@ class LocationManager():
         return astar.find_path(start, goal, neighbors)
     
     def spawn_monster(self, name, location):
-        self.locations[location]['monsters'].append(Monster(name))
+        monster = Monster(name)
+        monster.location = location
+        self.locations[location]['monsters'].append(monster)
+
+    def spawn_investigator(self, name, location):
+        investigator = Investigator(name)
+        investigator.location = location
+        self.all_investigators.append(investigator)
+        self.locations[location]['investigators'].append(investigator)
 
     def get_location_coord(self, key):
         loc = self.locations[key]
@@ -46,11 +56,10 @@ class LocationManager():
         location = self.locations[key]
         return (location['x'] * 2 + map_location[0], (location['y'] + 200) * 2 + map_location[1])
     
-    def move_investigator(self, name, destination):
-        key = next((loc for loc in self.locations if name in self.locations[loc]['investigators']))
-        self.locations[key]['investigators'].remove(name)
-        self.locations[destination]['investigators'].append(name)
-        return key
+    def move_unit(self, unit, kind, destination):
+        self.locations[unit.location][kind].remove(unit)
+        self.locations[destination][kind].append(unit)
+        return unit.location
     
     def get_encounters(self, location):
         encounters = ['generic']
@@ -60,3 +69,12 @@ class LocationManager():
             if self.locations[location][kind]:
                 encounters.append(kind)
         return encounters
+    
+    def get_all(self, kind, is_array=False):
+        count = []
+        for loc in self.locations:
+            if not is_array and self.locations[loc][kind]:
+                count.append(loc)
+            elif is_array:
+                count += self.locations[loc][kind]
+        return count

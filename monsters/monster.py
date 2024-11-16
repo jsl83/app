@@ -7,6 +7,7 @@ with open('monsters/monsters.yaml') as stream:
 class Monster():
     def __init__(self, name):
         self.name = name
+        self.epic = False
         for key in MONSTERS[name]:
             setattr(self, key, MONSTERS[name][key])
 
@@ -38,3 +39,7 @@ class Monster():
     def heal(self, amt=1):
         self.damage -= amt
         self.damage = 0 if self.damage < 0 else self.damage
+
+    def on_damage(self, amt, investigator=None):
+        self.damage += amt
+        return self.damage >= self.toughness

@@ -317,4 +317,160 @@
       influence_text: The rest of the expedition crew is too terrified to approach and you beg them for help.
       artifact_text: They spot something buried in the ice.
       health_text: You crawl back to camp.
-    
+  the_heart_of_africa:
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - set_doom
+      pargs:
+        - text: Retreat Doom by 1
+          step: lore
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          step: no_effect
+          fail: amnesia
+      amnesia:
+        - request_card
+      aargs:
+        - kind: conditions
+          name: amnesia
+          text: Gain an Amnesia Condition
+      fail:
+        - hp_san
+      fargs:
+        - skip: True
+          hp: -1
+          step: injury
+      injury:
+        - request_card
+      iargs:
+        - kind: conditions
+          name: back_injury
+          skip: True
+          step: observation
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          mod: -1
+          step: doom
+          fail: no_effect
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      test_text: The whole jungle shakes, and the ground splits beneath your feet. You fall through the crevice into a vast subterranean tunnel.
+      pass_text: You follow the tunnel to the ancient city of G'harne.
+      lore_text: If you have about G'harne, you know to leave quickly.
+      amnesia_text: You wake up in the jungle with no memory.
+      fail_text: You land painfully on your spine. Lose 1 Health and gain a Back Injury Condition.
+      observation_text: While you're stuck here, you examine this tunnel.
+      doom_text: You see that it was dug out by a large creature.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: artifact
+          fail: hallucinations
+      artifact:
+        - request_card
+      aargs:
+        - text: Gain 1 Artifact
+          kind: artifacts
+      hallucinations:
+        - request_card
+      hargs:
+        - text: Gain a Hallucinations Condition
+          kind: conditions
+          name: hallucinations
+      fail:
+        - skill
+      fargs:
+        - stat: 3
+          mod: -1
+          step: clue
+          fail: detained
+      clue:
+        - gain_clue
+      cargs:
+        - text: Gain 2 Clues
+          step: next
+      next:
+        - gain_clue
+      nargs:
+        - skip: True
+      detained:
+        - request_card
+      dargs:
+        - kind: conditions
+          name: detained
+          text: Gain a Detained Condition
+      test_text: The old N'bangu man's map to the gray city of the white god relies on landmarks that are now overgrown by the dense jungle. You search carefully to recognize anything familiar
+      pass_text: You find the remains of a white ape and study the bones.
+      artifact_text: You find a hastily drawn map that leads you to a hidden treasure.
+      hallucinations_text: Something about this creature makes you doubt your own humanity.
+      fail_text: Stumbling across a copper mine, you are immediately accused of being a thief or saboteur. You fight to escape into the jungle.
+      clue_text: You find the gray city.
+      detained_text: You are caught!
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - request_card
+      pargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+          step: observation
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          mod: -1
+          step: no_effect
+          fail: sanity
+      sanity:
+        - hp_san
+      sargs:
+        - san: -1
+          skip: True
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: leg_injury
+          text: Gain a Leg Injury Condition
+          step: influence
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: artifact
+          fail: health
+      artifact:
+        - request_card
+      aargs:
+        - text: Gain 1 Artifact
+          kind: artifacts
+      health:
+        - hp_san
+      hargs:
+        - hp: -2
+          skip: True
+      test_text: Suddenly, you are surrounded by leopard men! They quickly capture you, tie you up, and take you back to their village. On the way, you try to free yourself from the ropes that bind you.
+      pass_text: At their village, you spot a rare item sitting on an altar.
+      observation_text: You escape and flee from the village as quickly as possible wihtout watching where you are going.
+      sanity_text: You collide with a statue of Tsathoggua.
+      fail_text: Your escape attempt does more harm than good.
+      influence_text: You try to convince the leopard men that you are a messenger from their god.
+      artifact_text: They let you go, bequeathing a gift to you.
+      health_text: The leopard men attack you with primitive weapons as you escape.
+  

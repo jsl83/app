@@ -115,7 +115,12 @@ class Networker(threading.Thread, BanyanBase):
 
         for key in MONSTERS.keys():
             if MONSTERS[key] != None:
-                self.decks['epic_monsters'].append(key)
+                try:
+                    count = int(MONSTERS[key])
+                    for x in range(count):
+                        self.decks['monsters'].append(key)
+                except:
+                    self.decks['epic_monsters'].append(key)
             else:
                 self.decks['monsters'].append(key)
 
@@ -384,7 +389,7 @@ class Networker(threading.Thread, BanyanBase):
                     for x in range(len(self.encounters[loc])):
                         locations.append(loc)
                 location = random.choice(locations)
-                location = 'the_heart_of_africa'
+                location = 'the_pyramids'
                 self.publish_payload({'message': 'spawn', 'value': 'expedition', 'location': location, 'map': 'world'}, 'server_update')
 
     def initiate_gameboard(self):

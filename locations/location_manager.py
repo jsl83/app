@@ -37,10 +37,12 @@ class LocationManager():
         neighbors = lambda name: list(map(lambda route: list(route.keys())[0], self.locations[name]['routes']))
         return astar.find_path(start, goal, neighbors)
     
-    def spawn_monster(self, name, location):
+    def spawn_monster(self, name, location, world):
         monster = Monster(name)
         monster.location = location
+        monster.map = world
         self.locations[location]['monsters'].append(monster)
+        return monster
 
     def spawn_investigator(self, name, location):
         investigator = Investigator(name)

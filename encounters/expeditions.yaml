@@ -473,4 +473,156 @@
       influence_text: You try to convince the leopard men that you are a messenger from their god.
       artifact_text: They let you go, bequeathing a gift to you.
       health_text: The leopard men attack you with primitive weapons as you escape.
-  
+  the_himalayas:
+    - test: None
+      pass:
+        - spawn_fight
+      pargs:
+        - text: Spawn 1 Monster and encounter it
+      ambush:
+        - ambush
+      aargs:
+        - step: doom
+          fail: observation
+          skip: True
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1.
+          step: lore
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          step: no_effect
+      fail:
+        - hp_san
+      fargs:
+        - san: -2
+          skip: True
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          step: retreat
+          fail: sanity
+      retreat:
+        - set_doom
+      rargs:
+        - text: Retreat Doom by 1 and discard the Monster
+          step: kill
+      kill:
+        - damage_monsters
+      kargs:
+        - damage: 99
+          skip: True
+          ambush: True
+      sanity:
+        - hp_san
+      sargs:
+        - san: -1
+          skip: True
+      pass_text: A horrifying beast suddenly attacks you, almost as if it had stepped right out of your nightmares.
+      doom_text: The creature from your dreams is defeated.
+      lore_text: You look into local legends to find the link between this area and the Dreamlands.
+      fail_text: Your uncertainty unhinges your mind.
+      observation_text: Unable to overcome the threat, you run away and look for a place to hide.
+      retreat_text: You watch as the fiend disappears back to whence it came.
+      sanity_text: You cower in fear.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - skill
+      pargs:
+        - stat: 4
+          step: artifact
+          fail: madness
+      artifact:
+        - request_card
+      aargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+      madness:
+        - request_card
+      margs:
+        - kind: conditions
+          name: paranoia
+          text: Gain a Paranoia Condition
+      fail:
+        - skill
+      fargs:
+        - stat: 3
+          mod: -1
+          step: clue
+          fail: injury
+      clue:
+        - gain_clue
+      cargs:
+        - text: Gain 2 Clues
+          step: next
+      next:
+        - gain_clue
+      nargs:
+        - skip: True
+      injury:
+        - request_card
+      iargs:
+        - kind: conditions
+          name: internal_injury
+          text: Gain an Internal Injury Condition
+      test_text: You duck into a cave to find shelter from the deadly snowstorm. Inside, the tunnels twist and turn in the dark, making it almost impossible to navigate.
+      pass_text: Inside a well-lit laboratory, you find a human brain inside a cylinder. You can speak to the brain, but it disturbs you to do so.
+      artifact_text: It tells you where the mi-go store their equipment.
+      madness_text: You retreat from all human contact.
+      fail_text: Large, winged, crab-like beings surround you. You're going to have to fight if you want to escape.
+      clue_text: You subdue the mi-go for study.
+      injury_text: The creatures inject you with a glowing serum.
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - request_card
+      pargs:
+        - kind: artifacts
+          step: lore
+          text: Gain 1 Artifact
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          mod: -1
+          step: no_effect
+          fail: sanity
+      sanity:
+        - hp_san
+      sargs:
+        - san: -2
+          skip: True
+      fail:
+        - skill
+      fargs:
+        - stat: 1
+          step: artifact
+          fail: madness
+      artifact:
+        - request_card
+      aargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+      madness:
+        - request_card
+      margs:
+        - text: Gain a Paranoia Condition
+          kind: conditions
+          name: paranoia
+      test_text: The gnoph-keh summons a terrible blizzard to destroy you and your expedition. You'll have to survive the storm before you can continue.
+      pass_text: You weather the storm in a cave and find a statue of a three-eyed horror, surrounded by odd relics.
+      lore_text: You try to determine the statue's origins.
+      sanity_text: You do not recognize Rhan-Tegoth, and the icon remains a mystery that haunts your dreams.
+      fail_text: Trapped by the storm, the other members of your expedition panic. You try to calm them.
+      artifact_text: They are willing to continue, and you make a discovery.
+      madness_text: Their refusal fills you with doubts.
+    

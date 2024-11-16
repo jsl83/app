@@ -2,6 +2,7 @@ import arcade, arcade.gui
 import yaml
 import random
 from screens.action_button import ActionButton
+from monsters.monster import Monster
 from util import *
 
 ENCOUNTERS = {}
@@ -44,7 +45,9 @@ class EncounterPane():
             'set_buttons': self.set_buttons,
             'damage_monsters': self.damage_monsters,
             'move_monster': self.move_monster,
-            'set_doom': self.set_doom
+            'set_doom': self.set_doom,
+            'ambush': self.ambush,
+            'spawn_fight': self.spawn_fight
         }
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
@@ -61,8 +64,8 @@ class EncounterPane():
         self.click_action = None
         self.allowed_locs = {}
         self.wait_step = None
-        self.ambush = None
-        self.ambush_args = None
+        self.ambush_steps = None
+        self.ambush_monster = None
 
     def discard_check(self, kind, tag='any', name=None):
         items = self.investigator.possessions[kind]
@@ -114,6 +117,15 @@ class EncounterPane():
         else:
             self.set_buttons('pass')
 
+    def spawn_fight(self):
+        self.wait_step = 'ambush'
+        location = self.investigator.map + ':' + self.investigator.location
+        self.hub.networker.publish_payload({'message': 'spawn', 'value': 'monsters', 'location': location}, self.investigator.name)
+
+    def ambush(self, step='finish', fail='finish'):
+        self.ambush_steps = (step, fail)
+        self.combat_will(self.ambush_monster)
+
     def combat_will(self, monster):
         self.first_fight = False
         self.hub.info_manager.children = {0:[]}
@@ -146,10 +158,12 @@ class EncounterPane():
         self.hub.clear_overlay()
         successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
         self.hub.damage_monster(monster, successes)
-        self.hub.show_encounter_pane()
-        if self.ambush != None:
-            self.ambush(**self.ambush_args)
+        if self.ambush_steps != None:
+            self.set_buttons(self.ambush_steps[0] if successes >= monster.toughness else self.ambush_steps[1])
+            self.ambush_steps = None
+            self.hub.show_encounter_pane()
         else:
+            self.hub.show_encounter_pane()
             self.monsters.remove(monster)
             self.encounter_phase()
 
@@ -174,7 +188,6 @@ class EncounterPane():
                 self.set_buttons(fail)
         next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=confirm_test)
         self.rolls = self.hub.run_test(stat, mod, self.hub.encounter_pane, [next_button])
-        #self.rolls = [1]
 
     def reroll(self, new, old):
         self.rolls.remove(old)
@@ -193,13 +206,12 @@ class EncounterPane():
         self.first_fight = True
         self.is_mythos = False
         self.rolls = []
+        self.ambush_monster = None
         self.hub.clear_overlay()
         self.hub.gui_set(True)
         self.hub.switch_info_pane('investigator')
         self.hub.select_ui_button(0)
         self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-        self.ambush = None
-        self.ambush_args = None
 
     def set_buttons(self, key):
         self.wait_step = None
@@ -322,8 +334,11 @@ class EncounterPane():
                     self.set_buttons(step)
             self.click_action = clue_click
     
-    def damage_monsters(self, damage, step='finish', single=True, epic=True):
-        if len(self.hub.location_manager.get_all('monsters', True)) == 0:
+    def damage_monsters(self, damage, step='finish', single=True, epic=True, ambush=False):
+        if ambush:
+            self.hub.damage_monster(self.ambush_monster, damage)
+            self.set_buttons(step)
+        elif len(self.hub.location_manager.get_all('monsters', True)) == 0:
             self.set_buttons(step)
         else:
             if self.encounter.get(step + '_text', None) != None:
@@ -370,8 +385,7 @@ class EncounterPane():
                 self.hub.move_unit(monster,loc, kind='monsters')
                 if encounter:
                     self.combat_will(monster)
-                    self.ambush = self.set_buttons
-                    self.ambush_args = {'key': step}
+                    self.ambush_steps = (step, step)
                 else:
                     self.set_buttons(step)
                 self.click_action = None

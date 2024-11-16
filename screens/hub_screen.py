@@ -292,7 +292,7 @@ class HubScreen(arcade.View):
                     if name != self.investigator.name:
                         self.location_manager.spawn_investigator(name, payload['location'])
                 elif payload['value'] == 'monsters':
-                    self.location_manager.spawn_monster(name, payload['location'])
+                    self.encounter_pane.ambush_monster = self.location_manager.spawn_monster(name, payload['location'], payload['map'])
                 if payload['location'] == self.info_panes['location'].selected:
                     self.info_panes['location'].update_all()
             case 'spells':
@@ -345,7 +345,7 @@ class HubScreen(arcade.View):
                         self.remaining_actions = 2
                         #FOR TESTING
                         self.remaining_actions = 3
-                        self.ticket_move('akachi_onyele', 'antarctica', 0, 0, 'space_15')
+                        self.ticket_move('akachi_onyele', 'the_pyramids', 0, 0, 'space_15')
                         self.info_panes['investigator'].focus_action()
                         #END TESTING
                 elif payload['value'] == 'encounter':
@@ -361,7 +361,7 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.show_encounter_pane()
                 #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('antarctica:2')
+                self.encounter_pane.start_encounter('the_pyramids:0')
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -440,7 +440,7 @@ class HubScreen(arcade.View):
         def autofail():
             self.encounter_pane.rolls = [1]
         def succeed():
-            self.encounter_pane.rolls = [6]
+            self.encounter_pane.rolls = [6,6,6,6,6]
         options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
         options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
         #END TESTING
@@ -616,3 +616,4 @@ class HubScreen(arcade.View):
         if dead:
             self.location_manager.locations[monster.location]['monsters'].remove(monster)
             self.map.remove_tokens('monsters', monster)
+            self.map.token_manager.trigger_render()

@@ -37,6 +37,7 @@ class Investigator():
         self.ship_tickets = 0
         self.rail_tickets = 0
         self.location = INVESTIGATORS[name]['location']
+        self.map = 'world'
         self.initial_items = INVESTIGATORS[name]['possessions']
         self.success = 5
         self.passive = INVESTIGATORS[name]['passive']

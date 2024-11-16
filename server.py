@@ -198,6 +198,7 @@ class Networker(threading.Thread, BanyanBase):
                     self.current_phase = 0
                     self.ancient_one['mythos'] = [{},{},{}]
                     self.mythos_setup()
+                    self.ancient_one['doom'] = 15
                     #END TESTING
                     self.initiate_gameboard()
                     self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
@@ -383,7 +384,7 @@ class Networker(threading.Thread, BanyanBase):
                     for x in range(len(self.encounters[loc])):
                         locations.append(loc)
                 location = random.choice(locations)
-                location = 'the_amazon'
+                location = 'the_heart_of_africa'
                 self.publish_payload({'message': 'spawn', 'value': 'expedition', 'location': location, 'map': 'world'}, 'server_update')
 
     def initiate_gameboard(self):

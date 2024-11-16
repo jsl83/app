@@ -406,7 +406,7 @@ class EncounterPane():
         self.wait_step = step
         self.hub.networker.publish_payload({'message': 'get_clue'}, self.investigator.name)
 
-    def set_doom(self, increment, step='finish'):
+    def set_doom(self, increment=1, step='finish'):
         self.hub.networker.publish_payload({'message': 'doom_change', 'value': increment}, self.investigator.name)
         self.set_buttons(step)
 

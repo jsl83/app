@@ -161,4 +161,160 @@
       injury_text: You yell for help.
       artifact_text: The rescue party's flashlights reveal what you tripped over.
       health_text: You return to your camp alone in the cold and dark.
-  
+  antarctica:
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - set_doom
+      pargs:
+        - text: Retreat Doom by 1
+          step: will
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          step: no_effect
+          fail: amnesia
+      amnesia:
+        - request_card
+      aargs:
+        - kind: conditions
+          name: amnesia
+          text: Gain an Amnesia Condition
+      fail:
+        - hp_san
+      fargs:
+        - hp: -1
+          step: injury
+          skip: True
+      injury:
+        - request_card
+      iargs:
+        - kind: conditions
+          name: back_injury
+          skip: True
+          step: observation
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          mod: -1
+          step: doom
+          fail: no_effect
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      test_text: Flying over the area, you see evidence of an ancient stone city. You land your plane as close as you can and climb across the ice to reach the strange architecture.
+      pass_text: The murals inside the city tell the story of the elder things.
+      will_text: However, your studies take a toll on your mind.
+      amnesia_text: You block everything you've learned from your mind.
+      fail_text: You fall through the ice into a stone chamber. Lose 1 Health and gain a Back Injury Condition.
+      observation_text: You search the dark chamber.
+      doom_text: You find the husk of an elder thing for study.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - skill
+      pargs:
+        - stat: 4
+          step: artifact
+          fail: hallucinations
+      artifact:
+        - request_card
+      aargs:
+        - text: Gain 1 Artifact
+          kind: artifacts
+      hallucinations:
+        - request_card
+      hargs:
+        - kind: conditions
+          text: Gain a Hallucinations Condition
+          name: hallucinations
+      fail:
+        - skill
+      fargs:
+        - stat: 3
+          mod: -1
+          step: clue
+          fail: injury
+      clue:
+        - gain_clue
+      cargs:
+        - text: Gain 2 Clues
+          step: next
+      next:
+        - gain_clue
+      nargs:
+        - skip: True
+      injury:
+        - request_card
+      iargs:
+        - text: Gain a Leg Injury Condition
+          kind: conditions
+          name: leg_injury
+      test_text: You hear a faint sound echoing up from the caves that lead down into the darkness. You listen carefully to discern the sound's origin.
+      pass_text: You identify the sound of shoggoths. You escape, but can barely keep yourself conscious waiting for a rescue.
+      artifact_text: You spot something on the cave floor.
+      hallucinations_text: You pass out and hear the sounds of shoggoths everywhere you go.
+      fail_text: '"Tekeli-li! Tekeli-Li!" You recognize it too late. The shoggoths overwhelm you.'
+      clue_text: You overcome the threat.
+      injury_text: You escape by jumping off a ledge.
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - request_card
+      pargs:
+        - text: Gain 1 Artifact
+          kind: artifacts
+          step: observation
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          mod: -1
+          step: no_effect
+          fail: sanity
+      sanity:
+        - hp_san
+      sargs:
+        - san: -1
+          skip: True
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          text: Gain a Leg Injury Condition
+          name: leg_injury
+          step: influence
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: artifact
+          fail: health
+      artifact:
+        - request_card
+      aargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+      health:
+        - hp_san
+      hargs:
+        - hp: -2
+          skip: True
+      test_text: You find what you believe to be star-shaped burial mounds in the snow. It is physically exhausting, but you try to dig the bodies out of the ice and snow.
+      pass_text: An odd relic lies next to the creature's corpse.
+      observation_text: You examine the body.
+      sanity_text: Your mind reels after staring too long on this alien horror.
+      fail_text: Chipping through the ice, you slip and injure yourself.
+      influence_text: The rest of the expedition crew is too terrified to approach and you beg them for help.
+      artifact_text: They spot something buried in the ice.
+      health_text: You crawl back to camp.
+    

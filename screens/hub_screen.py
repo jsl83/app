@@ -345,7 +345,7 @@ class HubScreen(arcade.View):
                         self.remaining_actions = 2
                         #FOR TESTING
                         self.remaining_actions = 3
-                        self.ticket_move('akachi_onyele', 'the_amazon', 0, 0, 'space_15')
+                        self.ticket_move('akachi_onyele', 'antarctica', 0, 0, 'space_15')
                         self.info_panes['investigator'].focus_action()
                         #END TESTING
                 elif payload['value'] == 'encounter':
@@ -361,7 +361,7 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.show_encounter_pane()
                 #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('the_amazon:2')
+                self.encounter_pane.start_encounter('antarctica:2')
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -436,6 +436,14 @@ class HubScreen(arcade.View):
                     item_button = ActionButton(action=reroll, action_args={'kind': x, 'option_index': option_index}, texture='buttons/placeholder.png', text=human_readable(x))
                     options.append(item_button)
                     option_index += 1
+        #FOR TESTING
+        def autofail():
+            self.encounter_pane.rolls = [1]
+        def succeed():
+            self.encounter_pane.rolls = [6]
+        options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
+        options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
+        #END TESTING
         self.choice_layout = create_choices(choices = choices, title=titles[3 if skill == 5 else skill] + ' Test', options=options, offset=(0,150), subtitle=subtitle)
         self.show_overlay()
         return rolls

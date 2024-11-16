@@ -1,0 +1,164 @@
+---
+  the_amazon:
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - set_doom
+      pargs:
+        - text: Retreat Doom by 1
+          increment: 1
+          step: lore
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          step: no_effect
+          fail: amnesia
+      amnesia:
+        - request_card
+      aargs:
+        - kind: conditions
+          name: amnesia
+          text: Gain an Amnesia Condition
+      fail:
+        - hp_san
+      fargs:
+        - hp: -1
+          skip: True
+          step: internal
+      internal:
+        - request_card
+      iargs:
+        - skip: True
+          kind: conditions
+          name: internal_injury
+          step: observation
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          mod: -1
+          step: doom
+          fail: no_effect
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+          increment: 1
+      test_text: You see the vine-covered temple ahead of you, but you're going to have to fight your way through a thick tangle of venomous snakes between yourself and the entrance.
+      pass_text: You enter the Temple of Yig.
+      lore_text: Strange runes are inscribed on the wall in a serpentine design. You must interpret their meaning to avoid their hypnotic effect.
+      amnesia_text: Visions of snakes run through your head.
+      fail_text: You've been bit! Lose 1 Health and gain an Internal Injury Condition.
+      observation_text: Something about the snakes is odd. You try to identify what makes them unique.
+      doom_text: You notice a crescent on the snake's head.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: artifact
+          fail: sanity
+      artifact:
+        - request_card
+      aargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+      sanity:
+        - hp_san
+      sargs:
+        - san: -2
+          skip: True
+      fail:
+        - skill
+      fargs:
+        - stat: 3
+          mod: -1
+          step: clue
+          fail: injury
+      clue:
+        - gain_clue
+      cargs:
+        - text: Gain 2 Clues
+          step: next
+      next:
+        - gain_clue
+      nargs:
+        - skip: True
+      injury:
+        - request_card
+      iargs:
+        - kind: conditions
+          name: back_injury
+          text: Gain a Back Injury Condition
+      test_text: As you slip into a deep trance and touch the odd stone, the jungle around you subtly changes in appearance. You look for hints regarding this new jungle terrain.
+      pass_text: You are in some other dimension. You use your arcane skills to return home.
+      artifact_text: You wake up back in the jungle next to a strange item.
+      sanity_text: The journey back unsettles you.
+      fail_text: A towering, larva-like thing grabs you with its tendrils. You struggle fiercely to break free.
+      clue_text: You retrieve a sample of the creature.
+      injury_text: It throws you high into the air.
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - request_card
+      pargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+          step: observation
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          mod: -1
+          step: clue
+          fail: sanity
+      clue:
+        - gain_clue
+      cargs:
+        - text: Gain 1 Clue
+      sanity:
+        - hp_san
+      sargs:
+        - san: -1
+          skip: True
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          text: Gain a Leg Injury Condition
+          name: leg_injury
+          step: injury
+      injury:
+        - skill
+      iargs:
+        - stat: 1
+          step: artifact
+          fail: health
+      artifact:
+        - request_card
+      aargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+      health:
+        - hp_san
+      hargs:
+        - hp: -2
+          skip: True
+      test_text: You've heard rumors that a particular secret of the ancients is visible from the top of a hill. You find that climbing the hillside is not an easy task.
+      pass_text: You find a lost treasure.
+      observation_text: From this height, you can survey the land for miles.
+      clue_text: You see drawings that are hundreds of feet across.
+      sanity_text: Vertigo sets in.
+      fail_text: You take too long climbing and you stumble around in the dark.
+      injury_text: You yell for help.
+      artifact_text: The rescue party's flashlights reveal what you tripped over.
+      health_text: You return to your camp alone in the cold and dark.
+  

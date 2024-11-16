@@ -345,7 +345,7 @@ class HubScreen(arcade.View):
                         self.remaining_actions = 2
                         #FOR TESTING
                         self.remaining_actions = 3
-                        self.ticket_move('akachi_onyele', 'sydney', 0, 0, 'space_15')
+                        self.ticket_move('akachi_onyele', 'the_amazon', 0, 0, 'space_15')
                         self.info_panes['investigator'].focus_action()
                         #END TESTING
                 elif payload['value'] == 'encounter':
@@ -361,7 +361,7 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.show_encounter_pane()
                 #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('purple:7')
+                self.encounter_pane.start_encounter('the_amazon:2')
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -389,6 +389,7 @@ class HubScreen(arcade.View):
         choices = []
         rolls = []
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
+        subtitle = subtitle if subtitle != '' else '' if mod == 0 else 'Mod: ' + str(mod)
         dice = self.investigator.skills[3 if skill == 5 else skill] + mod + self.investigator.skill_tokens[skill]
         for x in range(dice if dice > 1 else 1):
             roll = random.randint(1, 6)
@@ -491,11 +492,11 @@ class HubScreen(arcade.View):
         self.networker.publish_payload({'message': 'spawn', 'value': kind, 'location': location, 'name': name, 'number': number}, self.investigator.name)
 
     def set_doom(self, number):
-        if number <= self.ancient_one.doom and number >= 0:
-            self.doom_counter.move(10 + (20 - number) * 42.3 - self.doom_counter.x, 0)
-            self.doom = number
-            if number == 0:
-                self.ancient_one.awaken()
+        number = 0 if number < 0 else number
+        self.doom_counter.move(10 + (20 - number) * 42.3 - self.doom_counter.x, 0)
+        self.doom = number
+        if number == 0:
+            self.ancient_one.awaken()
 
     def set_omen(self, index):
         positions = [(921, 757), (956, 737), (937, 703), (904, 724)]

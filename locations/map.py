@@ -97,6 +97,7 @@ class Map():
                 path = 'monsters/' + name + '.png'
             case 'expedition':
                 path = 'maps/expedition.png'
+                location['expedition'] = True
         item = TOKEN_DICT[kind]
         button = ActionButton(location['x'] * 2 - item['size'] * item['scale'] / 2, location['y'] * 2 - item['size'] * item['scale'] / 2 - offset * 45,
                                 texture=path, scale=item['scale'], name=location_name)

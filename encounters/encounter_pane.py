@@ -7,7 +7,7 @@ from util import *
 ENCOUNTERS = {}
 MYTHOS = {}
 
-for color in ['generic', 'green', 'orange', 'purple']:
+for color in ['generic', 'green', 'orange', 'purple', 'expeditions']:
     with open('encounters/' + color + '.yaml') as stream:
         ENCOUNTERS[color] = yaml.safe_load(stream)
 with open('encounters/mythos.yaml') as stream:
@@ -43,7 +43,8 @@ class EncounterPane():
             'spend_clue': self.spend_clue,
             'set_buttons': self.set_buttons,
             'damage_monsters': self.damage_monsters,
-            'move_monster': self.move_monster
+            'move_monster': self.move_monster,
+            'set_doom': self.set_doom
         }
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
@@ -106,6 +107,7 @@ class EncounterPane():
         self.hub.clear_overlay()
         choice = value.split(':')
         loc = self.investigator.location if self.investigator.location.find('space') == -1 and choice[0] != 'generic' else self.hub.location_manager.locations[self.investigator.location]['kind']
+        choice[0] = 'expeditions' if choice[0] in ['the_amazon', 'the_pyramids', 'the_heart_of_africa', 'antarctica', 'tunguska', 'the_himalayas'] else choice[0]
         self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
         if self.encounter['test'] != 'None':
             self.set_buttons('test')
@@ -403,6 +405,10 @@ class EncounterPane():
     def gain_clue(self, step='finish'):
         self.wait_step = step
         self.hub.networker.publish_payload({'message': 'get_clue'}, self.investigator.name)
+
+    def set_doom(self, increment, step='finish'):
+        self.hub.networker.publish_payload({'message': 'doom_change', 'value': increment}, self.investigator.name)
+        self.set_buttons(step)
 
     def improve_skill(self, skill, step='finish', amt=1, option=None):
         if len(str(skill)) == 1:

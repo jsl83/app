@@ -233,7 +233,7 @@ class Networker(threading.Thread, BanyanBase):
                             self.decks[payload['kind']].append(payload['value'])
                     case 'get_clue':
                         clue = random.choice(self.decks['clues'])
-                        self.decks['clues'].remove(clue)
+                        #self.decks['clues'].remove(clue)
                         self.publish_payload({'message': 'receive_clue', 'value': clue}, topic + '_server')
                     case 'spawn':
                         self.spawn(payload['value'], payload.get('name', None), payload.get('location', None), int(payload.get('number', 1)))
@@ -289,6 +289,8 @@ class Networker(threading.Thread, BanyanBase):
                         if kind in self.expeditions:
                             self.spawn('expedition')
                         self.publish_payload({'message': 'encounter_choice', 'value': kind + ':' + str(encounter)}, topic + '_server')
+                    case 'doom_change':
+                        self.move_doom(int(payload['value']))
 
     def asset_request(self, command, name, tag=''):
         match command:
@@ -345,7 +347,7 @@ class Networker(threading.Thread, BanyanBase):
                         if len(self.decks['gates']['deck']) > 0:
                             gate = random.choice(self.decks['gates']['deck'])
                             #self.decks['gates']['deck'].remove(gate)
-                            self.decks['gates']['board'].append(gate)
+                            #self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
                             self.spawn('monsters', location=gate)
                         elif len(self.decks['gates']['discard']) > 0:
@@ -376,8 +378,12 @@ class Networker(threading.Thread, BanyanBase):
                                         },
                                         'server_update')
             case 'expedition':
-                locations = [loc for loc in self.expeditions if len(self.encounters[loc][1]) > 0]
+                locations = []
+                for loc in self.expeditions:
+                    for x in range(len(self.encounters[loc])):
+                        locations.append(loc)
                 location = random.choice(locations)
+                location = 'the_amazon'
                 self.publish_payload({'message': 'spawn', 'value': 'expedition', 'location': location, 'map': 'world'}, 'server_update')
 
     def initiate_gameboard(self):

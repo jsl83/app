@@ -786,4 +786,163 @@
       influence_text: You cry out for help.
       artifact_text: The men who come to find you distract the beast, allowing you to procure the relic.
       damage_text: You have to walk without receiving medical attention.
-  
+  tunguska:
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: doom
+          fail: amnesia
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      amnesia:
+        - request_card
+      aargs:
+        - kind: conditions
+          name: amnesia
+          text: Gain an Amnesia Condition
+      fail:
+        - hp_san
+      fargs:
+        - hp: -1
+          step: injury
+          skip: True
+      injury:
+        - request_card
+      iargs:
+        - kind: conditions
+          name: leg_injury
+          step: observation
+          skip: True
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          mod: -1
+          step: retreat
+          fail: no_effect
+      retreat:
+        - set_doom
+      rargs:
+        - text: Retreat Doom by 1
+      test_text: A strange color that you've never seen before permeates the air. It crawls like a phosphorescent mist along every surface. You can feel its corrosive effect on your skin, and you struggle to escape the area.
+      pass_text: Behind you, the color flies up into space. You try to interpret what you've seen.
+      doom_text: You're sure the threat has passed.
+      amnesia_text: Your mind cannot accept what you've seen.
+      fail_text: The ground shakes and you are knocked off your feet. Lose 1 Health and gain a Leg Injury Condition.
+      observation_text: Gray dust fills the air, but you think you see a light.
+      retreat_text: You see the color fly up into the air.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - skill
+      pargs:
+        - stat: 4
+          step: artifact
+          fail: madness
+      artifact:
+        - request_card
+      aargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+      madness:
+        - request_card
+      margs:
+        - kind: conditions
+          name: paranoia
+          text: Gain a Paranoia Condition
+      fail:
+        - skill
+      fargs:
+        - stat: 3
+          mod: -1
+          step: clue
+          fail: injury
+      clue:
+        - gain_clue
+      cargs:
+        - text: Gain 2 Clues
+          step: next
+      next:
+        - gain_clue
+      nargs:
+        - skip: True
+      injury:
+        - request_card
+      iargs:
+        - kind: conditions
+          name: back_injury
+          text: Gain a Back Injury Condition
+      test_text: A small piece of the stone you are standing on crumbles away, revealing a hollowed-out chamber beneath you. You look for a safe way to get inside.
+      pass_text: You find a temple with scorched humans remains. You try to resist the urge to run away.
+      artifact_text: You uncover a long-buried treasure.
+      madness_text: The symbols of Cthugha compel you to run away in a mad panic.
+      fail_text: The ground beneath your feet collapses, and you scramble to avoid being trapped.
+      clue_text: You find a mural of Cthugha.
+      injury_text: A boulder falls on you.
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - request_card
+      pargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+          step: observation
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          mod: -1
+          step: clue
+          fail: sanity
+      clue:
+        - gain_clue
+      cargs:
+        - text: Gain 1 Clue
+      sanity:
+        - hp_san
+      sargs:
+        - san: -1
+          skip: True
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: internal_injury
+          text: Gain an Internal Injury Condition
+          step: influence
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: artifact
+          fail: health
+      artifact:
+        - request_card
+      aargs:
+        - text: Gain 1 Artifact
+          kind: artifacts
+      health:
+        - hp_san
+      hargs:
+        - hp: -2
+          skip: True
+      test_text: As you approach the crater described in Rasputin's notes, toxic fumes pour out of a fissure in the earth. You struggle to stay conscious and continue your descent.
+      pass_text: You find the remains of the monk's camp.
+      observation_text: You then search the crater.
+      clue_text: You find traces of the comet.
+      sanity_text: The shattered landscape is difficult to look at.
+      fail_text: The fumes burn your lungs and you cough up blood.
+      influence_text: You try to convince your guides to help.
+      artifact_text: They rescue you and recover Rasputin's possessions.
+      health_text: You have to crawl out on your own.

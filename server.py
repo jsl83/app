@@ -389,7 +389,6 @@ class Networker(threading.Thread, BanyanBase):
                     for x in range(len(self.encounters[loc])):
                         locations.append(loc)
                 location = random.choice(locations)
-                location = 'the_pyramids'
                 self.publish_payload({'message': 'spawn', 'value': 'expedition', 'location': location, 'map': 'world'}, 'server_update')
 
     def initiate_gameboard(self):

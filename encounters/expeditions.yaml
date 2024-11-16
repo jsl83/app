@@ -625,4 +625,165 @@
       fail_text: Trapped by the storm, the other members of your expedition panic. You try to calm them.
       artifact_text: They are willing to continue, and you make a discovery.
       madness_text: Their refusal fills you with doubts.
-    
+  the_pyramids:
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - set_doom
+      pargs:
+        - step: lore
+          text: Retreat Doom by 1
+      lore:
+        - skill
+      largs:
+        - step: no_effect
+          fail: amnesia
+          stat: 0
+      amnesia:
+        - request_card
+      aargs:
+        - kind: conditions
+          name: amnesia
+          text: Gain an Amnesia Condition
+      fail:
+        - hp_san
+      fargs:
+        - skip: True
+          hp: -1
+          step: injury
+      injury:
+        - request_card
+      iargs:
+        - kind: conditions
+          name: internal_injury
+          skip: True
+          step: observation
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          mod: -1
+          step: doom
+          fail: no_effect
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      test_text: Bandits tie your hands and blindfold you. They lower you into catacombs deep under the pyramids and leave you there to die. You try to free yourself from your bonds.
+      pass_text: You see now that you are in the Temple of Sphinx.
+      lore_text: You use your knowledge of Egyptology to find an exit.
+      amnesia_text: You wake up with no memory of how you escaped.
+      fail_text: While struggling with your bonds, you feel undead hands tearing at you. Lose 1 Health and gain an Internal Injury Condition.
+      observation_text: You gaze into the darkness.
+      doom_text: You identify mummies with the heads of animals.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: artifact
+          fail: sanity
+      artifact:
+        - request_card
+      aargs:
+        - text: Gain 1 Artifact
+          kind: artifacts
+      sanity:
+        - hp_san
+      sargs:
+        - san: -2
+          skip: True
+      fail:
+        - skill
+      fargs:
+        - stat: 3
+          mod: -1
+          step: clue
+          fail: health
+      clue:
+        - gain_clue
+      cargs:
+        - text: Gain 2 Clues
+          step: next
+      next:
+        - gain_clue
+      nargs:
+        - skip: True
+      health:
+        - hp_san
+      hargs:
+        - hp: -1
+          skip: True
+          step: injury
+      injury:
+        - request_card
+      iargs:
+        - kind: conditions
+          name: internal_injury
+          skip: True
+      test_text: Inside the pyramid, you find a hidden passage leading to an undiscoverd throne room. You explore the room for indications of its history.
+      pass_text: You see a star map adjacent to a world map on the wall. You use the star map to determine a location on the world map.
+      artifact_text: You discover a hidden cabinet built into the wall.
+      sanity_text: The maps remain a mystery.
+      fail_text: As you search, Nephren-Ka appears! With a wave of his hand, you are overcome by pain.
+      clue_text: You crawl away.
+      health_text: Your body succumbs to the evil magic. Lose 1 Health and gain an Internal Injury Condition.
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - request_card
+      pargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+          step: observation
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          mod: -1
+          step: no_effect
+          fail: health
+      health:
+        - hp_san
+      hargs:
+        - hp: -1
+          skip: True
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: leg_injury
+          text: Gain a Leg Injury Condition
+          step: influence
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: artifact
+          fail: damage
+      artifact:
+        - request_card
+      aargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+      damage:
+        - hp_san
+      dargs:
+        - hp: -2
+          skip: True
+      test_text: You reach for the ancient relic when a small white cat jumps in front of you. To your horror, the cat transforms into a demonic, feline creature and attacks.
+      pass_text: The demon shrivels down to a husk, leaving the relic unguarded.
+      observation_text: Examining the item, you may be too distracted to notice the warning hieroglyph.
+      health_text: You aren't prepared to evade the poisoned barb.
+      fail_text: The creature leaves you badly wounded.
+      influence_text: You cry out for help.
+      artifact_text: The men who come to find you distract the beast, allowing you to procure the relic.
+      damage_text: You have to walk without receiving medical attention.
+  

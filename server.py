@@ -92,7 +92,8 @@ class Networker(threading.Thread, BanyanBase):
             'the_heart_of_africa': [3, list(range(3))],
             'antarctica': [3, list(range(3))],
             'tunguska': [3, list(range(3))],
-            'the_himalayas': [3, list(range(3))]
+            'the_himalayas': [3, list(range(3))],
+            'gate': [24, list(range(24))]
         }
         self.expeditions = ['the_amazon', 'the_pyramids', 'the_heart_of_africa', 'antarctica', 'tunguska', 'the_himalayas']
 
@@ -204,6 +205,7 @@ class Networker(threading.Thread, BanyanBase):
                     self.ancient_one['mythos'] = [{},{},{}]
                     self.mythos_setup()
                     self.ancient_one['doom'] = 15
+                    self.decks['gates']['board'] = []
                     #END TESTING
                     self.initiate_gameboard()
                     self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
@@ -277,7 +279,7 @@ class Networker(threading.Thread, BanyanBase):
                                         break
                                 #Trigger no mythos deck
                         if self.current_phase == 3 and self.yellow_card:
-                            self.spawn('gates', number=self.reference[0])
+                            #self.spawn('gates', number=self.reference[0])
                             self.yellow_card = False
                         if self.current_phase == 4:
                             self.current_phase = 0
@@ -297,6 +299,10 @@ class Networker(threading.Thread, BanyanBase):
                         self.publish_payload({'message': 'encounter_choice', 'value': kind + ':' + str(encounter)}, topic + '_server')
                     case 'doom_change':
                         self.move_doom(int(payload['value']))
+                    case 'remove_gate':
+                        self.decks['gates']['board'].remove(payload['value'])
+                        self.decks['gates']['discard'].append(payload['value'])
+                        self.publish_payload({'message': 'gate_removed', 'value': payload['value']}, 'server_update')
 
     def asset_request(self, command, name, tag=''):
         match command:
@@ -352,10 +358,11 @@ class Networker(threading.Thread, BanyanBase):
                     elif location == None:
                         if len(self.decks['gates']['deck']) > 0:
                             gate = random.choice(self.decks['gates']['deck'])
+                            gate='world:arkham'
                             #self.decks['gates']['deck'].remove(gate)
-                            #self.decks['gates']['board'].append(gate)
+                            self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
-                            self.spawn('monsters', location=gate)
+                            #self.spawn('monsters', location=gate)
                         elif len(self.decks['gates']['discard']) > 0:
                             self.decks['gates']['deck'].append(item for item in self.decks['gates']['discard'])
                             self.decks['gates']['discard'] = []

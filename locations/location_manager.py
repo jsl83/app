@@ -80,3 +80,6 @@ class LocationManager():
             elif is_array:
                 count += self.locations[loc][kind]
         return count
+    
+    def get_map_name(self, loc):
+        return 'world'

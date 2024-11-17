@@ -1,0 +1,42 @@
+---
+  gate:
+    - test:
+        - skill
+      targs:
+        - stat: 4
+          mod: -1
+          clue_mod: True
+          text: +1 per Clue
+      pass:
+        - skill
+      pargs:
+        - stat: 3
+          step: close
+          fail: health
+      close:
+        - close_gate
+      cargs:
+        - text: Close Gate
+      health:
+        - hp_san
+      hargs:
+        - skip: True
+          hp: -2
+          step: delay
+      delay:
+        - delayed
+      dargs:
+        - skip: True
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          text: Become Delayed and gain a Hallucinations Condition
+          name: hallucinations
+          step: delay
+      test_text: In the cavern of flame, the bearded priests Nasht and Kaman-Thah warn you that it is too dangerous to continue. You insist that you possess the knowledge you need and are resolved to enter the Dreamlands.
+      pass_text: After gaining access to the Dreamlands, you find yourself fighting moonbeasts on a black galley sailing to the moon.
+      close_text: You steal their treasure and area able to barter with it.
+      health_text: You become lost in a forest on the moon. Lose 2 Health and become Delayed.
+      fail_text: The gods of dreams exile you back to the waking world and punish you for your overreaching ambition. Your dream and the waking world become indistinguishable.
+    

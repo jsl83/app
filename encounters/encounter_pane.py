@@ -8,9 +8,9 @@ from util import *
 ENCOUNTERS = {}
 MYTHOS = {}
 
-for color in ['generic', 'green', 'orange', 'purple', 'expeditions']:
-    with open('encounters/' + color + '.yaml') as stream:
-        ENCOUNTERS[color] = yaml.safe_load(stream)
+for kind in ['generic', 'green', 'orange', 'purple', 'expeditions', 'gate']:
+    with open('encounters/' + kind + '.yaml') as stream:
+        ENCOUNTERS[kind] = yaml.safe_load(stream)
 with open('encounters/mythos.yaml') as stream:
     MYTHOS = yaml.safe_load(stream)
 
@@ -47,7 +47,8 @@ class EncounterPane():
             'move_monster': self.move_monster,
             'set_doom': self.set_doom,
             'ambush': self.ambush,
-            'spawn_fight': self.spawn_fight
+            'spawn_fight': self.spawn_fight,
+            'close_gate': self.close_gate
         }
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
@@ -109,7 +110,7 @@ class EncounterPane():
     def start_encounter(self, value):
         self.hub.clear_overlay()
         choice = value.split(':')
-        loc = self.investigator.location if self.investigator.location.find('space') == -1 and choice[0] != 'generic' else self.hub.location_manager.locations[self.investigator.location]['kind']
+        loc = 'gate' if choice[0] == 'gate' else self.investigator.location if self.investigator.location.find('space') == -1 and choice[0] != 'generic' else self.hub.location_manager.locations[self.investigator.location]['kind']
         choice[0] = 'expeditions' if choice[0] in ['the_amazon', 'the_pyramids', 'the_heart_of_africa', 'antarctica', 'tunguska', 'the_himalayas'] else choice[0]
         self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
         if self.encounter['test'] != 'None':
@@ -176,11 +177,12 @@ class EncounterPane():
         self.layout.add(self.phase_button)
         self.choose_encounter()
 
-    def skill_test(self, stat, mod=0, step='pass', fail='fail'):
+    def skill_test(self, stat, mod=0, step='pass', fail='fail', clue_mod=False):
         for button in [self.proceed_button, self.option_button, self.last_button]:
             if button in self.layout.children:
                 self.layout.children.remove(button)
         self.hub.info_manager.trigger_render()
+        mod = mod if not clue_mod else mod + len(self.investigator.clues)
         def confirm_test():
             if next((roll for roll in self.rolls if roll >= self.investigator.success), None) != None:
                 self.set_buttons(step)
@@ -475,6 +477,11 @@ class EncounterPane():
                 width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.investigator.hp_san, action_args={'action': action, 'args': args})
             self.hub.choice_layout = create_choices(choices = choices, options=[next_button], title='Taking Damage' ,subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))
             self.hub.show_overlay()
+
+    def close_gate(self, step='finish'):
+        self.wait_step = step
+        map_name = self.hub.location_manager.get_map_name(self.investigator.location)
+        self.hub.networker.publish_payload({'message': 'remove_gate', 'value': map_name + ':' + self.investigator.location}, self.investigator.name)        
 
     def load_mythos(self, mythos):
         mythos = 'a_dark_power'

@@ -345,7 +345,7 @@ class HubScreen(arcade.View):
                         self.remaining_actions = 2
                         #FOR TESTING
                         self.remaining_actions = 3
-                        self.ticket_move('akachi_onyele', 'the_pyramids', 0, 0, 'space_15')
+                        self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_15')
                         self.info_panes['investigator'].focus_action()
                         #END TESTING
                 elif payload['value'] == 'encounter':
@@ -361,7 +361,7 @@ class HubScreen(arcade.View):
                 self.clear_overlay()
                 self.show_encounter_pane()
                 #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('the_pyramids:0')
+                self.encounter_pane.start_encounter('gate:0')
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -370,6 +370,8 @@ class HubScreen(arcade.View):
                 self.set_omen(int(payload['value']))
             case 'doom':
                 self.set_doom(int(payload['value']))
+            case 'gate_removed':
+                self.remove_gate(payload['value'])
         if self.encounter_pane.wait_step != None:
             self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
 
@@ -617,3 +619,11 @@ class HubScreen(arcade.View):
             self.location_manager.locations[monster.location]['monsters'].remove(monster)
             self.map.remove_tokens('monsters', monster)
             self.map.token_manager.trigger_render()
+
+    def remove_gate(self, loc):
+        loc = loc.split(':')
+        map_name = loc[0]
+        location = loc[1]
+        self.location_manager.locations[location]['gate'] = False
+        self.maps[map_name].remove_gate(location)
+        self.map.token_manager.trigger_render()

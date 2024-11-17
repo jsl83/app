@@ -136,3 +136,8 @@ class Map():
         tokens = self.get_tokens(kind, unit.location, unit.name)
         self.zoom_layout.children.remove(tokens[1])
         self.layouts[kind].children.remove(tokens[0])
+    
+    def remove_gate(self, loc):
+        tokens = self.get_tokens('gate', loc, None)
+        self.zoom_layout.children.remove(tokens[1])
+        self.layouts['gate'].children.remove(tokens[0])

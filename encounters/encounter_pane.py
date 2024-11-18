@@ -52,7 +52,7 @@ class EncounterPane():
         }
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
-            'spend_clue': lambda *args: len(self.investigator.clues) > 0,
+            'spend_clue': lambda *args: len(self.investigator.clues) >= args[0].get('amt', 1),
             'discard': lambda *args: self.discard_check(args[0]['kind'], args[0].get('tag', 'any'), args[0].get('name', None)),
             'gain_asset': lambda *args: not args[0].get('reserve', False) or len([item for item in self.hub.info_panes['reserve'].reserve if args[0]['tag'] == 'any' or args[0]['tag'] in item['tags']]) > 0
         }
@@ -113,6 +113,8 @@ class EncounterPane():
         loc = 'gate' if choice[0] == 'gate' else self.investigator.location if self.investigator.location.find('space') == -1 and choice[0] != 'generic' else self.hub.location_manager.locations[self.investigator.location]['kind']
         choice[0] = 'expeditions' if choice[0] in ['the_amazon', 'the_pyramids', 'the_heart_of_africa', 'antarctica', 'tunguska', 'the_himalayas'] else choice[0]
         self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
+        if loc == 'gate':
+            self.phase_button.text = self.encounter['world']
         if self.encounter['test'] != 'None':
             self.set_buttons('test')
         else:

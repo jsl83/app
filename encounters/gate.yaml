@@ -39,6 +39,7 @@
       close_text: You steal their treasure and area able to barter with it.
       health_text: You become lost in a forest on the moon. Lose 2 Health and become Delayed.
       fail_text: The gods of dreams exile you back to the waking world and punish you for your overreaching ambition. Your dream and the waking world become indistinguishable.
+      world: The Dreamlands
     - test:
         - skill
       targs:
@@ -85,6 +86,7 @@
       fail_text: The cats flee from you, making the people of Ulthar suspicious and they force you into the Enchanted Wood.
       observation_text: While you're out there, you must keep a careful watch to prevent the zoogs from stealing your belongings.
       item_text: The dark woods prove impossible to navigate. When you leave, you feel your pack is lighter...
+      world: The Dreamlands
     - test:
         - skill
       targs:
@@ -127,6 +129,7 @@
       pass_text: 'The child calms down, but eyes you suspiciously. "Listen carefully to what I say," you tell yourself, as the portal closes. "It might save your life..."'
       fail_text: The child screams out for help, and a man bursts into your bedroom. Your father aims his shotgun at your chest, and you attempt to wrestle it away.
       health_text: You are peppered with buckshot.
+      world: The Past
     - test:
         - skill
       targs:
@@ -164,6 +167,7 @@
       pass_text: Joseph Curwen was using this lab to revive dead wizards from their ashes and interrogate them for arcane knowledge. Using his notes, you close this Gate. The rest of his results may also prove useful.
       fail_text: These notes make no sense to you. Your reading is interrupted by a terrible moaning sound, and you find malformed creatures trapped in deep wells under the stone floor. The sight of them tears at your mind.
       mind_text: You feel your grip on reality weakening.
+      world: The Past
     - test:
         - skill
       targs:
@@ -195,6 +199,7 @@
       close_text: You return home.
       san_text: The machine shows you horrid vistas you would never want to visit.
       fail_text: The disembodied brains demand that you stay. They tell you terrible secrets they've learned about the fate of the Earth.
+      world: Yuggoth
     - test:
         - skill
       targs:
@@ -236,6 +241,7 @@
       fail_text: What was the nature of that blasphemous horror behind the mask? You consult your notes, trying to find what might disguise itself this way.
       sanity_text: Fear of the unknowable eats at your thoughts.
       gate_text: You find the data you need.
+      world: Yuggoth
     - test:
         - spend_clue
         - set_buttons
@@ -282,6 +288,7 @@
       fail_text: The creature is terrifying, but if you can keep your calm, you will be able to overpower it.
       gate_text: You subdue the creature and use it to return home.
       damage_text: Claws rend your flesh.
+      world: Yuggoth
     - test:
         - skill
       targs:
@@ -328,4 +335,683 @@
       amnesia_text: You wake up uncertain of what's happened.
       fail_text: You run from the pyramids as fast as you can. Until the mi-go return, you need to rely on your own means of survival.
       health_text: You succumb to the harsh elements of this strange world.
-    
+      world: Yuggoth
+    - test:
+        - skill
+      targs:
+        - stat: 0
+          mod: -1
+      pass:
+        - close_gate
+      pargs:
+        - skip: True
+          step: clue
+      clue:
+        - gain_clue
+        - set_buttons
+      cargs:
+        - text: Become Delayed to gain 2 Clues
+          step: next
+        - key: finish
+          text: Bravo! A splendid performance (skip)
+      next:
+        - gain_clue
+      nargs:
+        - skip: True
+      fail:
+        - skill
+      fargs:
+        - stat: 1
+          step: no_effect
+          fail: doom
+      doom:
+        - set_doom
+      dargs:
+        - text: Advance Doom by 1
+          increment: -1
+      test_text: Turning the corner, you suddenly find yourself on stage. Other actors speak their dialogue and look at you expectantly. Someone offstage passes you a script, but the text is difficult to interpret.
+      pass_text: The audience applauds your performance and curtain falls. Close this Gate. You consider sticking around for the second show in hopes of picking up details you missed the first time.
+      fail_text: The other actors glare at you, waiting for you to speak. You hope that by simple acting with confidence they'll believe it's someone else's line.
+      doom_text: The show comes to a stop, and everyone silently leaves the theater.
+      world: Lost Carcosa
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: close
+          fail: madness
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      madness:
+        - request_card
+      margs:
+        - kind: conditions
+          name: paranoia
+          text: Gain a Paranoia Condition
+      fail:
+        - delayed
+        - hp_san
+      fargs:
+        - text: Become Delayed
+        - text: Lose 2 Sanity
+          san: -2
+      test_text: You grow frustrated walking through the empty streets, able to hear people talking and laughing nearby, but unable to catch up to them. You try to focus and distinguish specific words from the mingling conversations.
+      pass_text: The words you hear sound familiar to something you've read. You try to recall their significance.
+      close_text: You use the words to return home.
+      madness_text: The words insinuate themselves into every conversation you hear.
+      fail_text: The words remain unintelligible, and you realize that you've become lost in the city while chasing after these voices. You walk, lost, through Carcosa's darkest alleyways and consider timestakingly retracing your steps.
+      world: Lost Carcosa
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: close
+          fail: san
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      san:
+        - hp_san
+      sargs:
+        - san: -1
+          skip: True
+      fail:
+        - skill
+      fargs:
+        - stat: 0
+          mod: -1
+          step: gate
+          fail: health
+      gate:
+        - close_gate
+      gargs:
+        - text: Close this Gate
+      health:
+        - hp_san
+      hargs:
+        - hp: -2
+          skip: True
+      test_text: Staring out at the cloudy water of Lake Hali, you are horrified to see the entire lake rippling, as if something at the bottom is about to surface. You are siezed by a terrible panic that paralyzes you.
+      pass_text: Through sheer will, you force yourself to run toward the door you entered through. You find the doorway has been replaced by a blank wall. You try to recall an incantation from your studies that will open the lost portal.
+      close_text: The wall blurs, then disappears. You run through.
+      san_text: You frantically scratch at the wallpaper.
+      fail_text: Suddenly, a flurry of tentacles bursts out of the water. One of the flailing limbs grabs you and tries to pull you into the water. You attempt to bind the creature with powerful magic.
+      gate_text: You run for your life.
+      health_text: You are dragged into the water.
+      world: Lost Carcosa
+    - test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - request_card
+      pargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+          step: delay
+      delay:
+        - spend_clue
+        - delayed
+      dargs:
+        - text: Spend 2 Clues to close this Gate
+          step: next
+          amt: 2
+        - text: Become Delayed
+      next:
+        - close_gate
+      nargs:
+        - text: Close this Gate
+      fail:
+        - hp_san
+      fargs:
+        - skip: True
+          san: -1
+          step: will
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          step: no_effect
+          fail: madness
+      madness:
+        - request_card
+      margs:
+        - kind: conditions
+          name: paranoia
+          text: Gain a Paranoia Condition
+      test_text: At an elaborate masquerade, you talk to decadent party-goers who are all maneuvering to be declared as the proper heir to the crown.
+      pass_text: Believing that you can help him, a guest attempts to bribe you.
+      delay_text: Seeing this, the Queen demands that you unmask. She questions you relentlessly in an attempt to discover what you've learned.
+      next_text: You gain her favor.
+      fail_text: You suddenly realize you are speaking to the Phantom of Truth.
+      will_text: Fear threatens to overwhelm you when you realize he is not wearing a mask.
+      madness_text: The sight of him pulls you to your knees.
+      world: Lost Carcosa
+    - test:
+        - skill
+      targs:
+        - stat: 4
+          mod: -1
+      pass:
+        - close_gate
+      pargs:
+        - text: Close this gate
+          step: obs
+      obs:
+        - skill
+      oargs:
+        - stat: 2
+          step: clue
+          fail: no_effect
+      clue:
+        - gain_clue
+      cargs:
+        - text: Gain 2 Clues
+          step: next
+      next:
+        - gain_clue
+      nargs:
+        - skip: True
+      fail:
+        - skill
+      fargs:
+        - stat: 0
+          step: no_effect
+          fail: san
+      san:
+        - hp_san
+      sargs:
+        - san: -6
+          skip: True
+      test_text: You stand in Times Square, New York, but not as you know it. The streets are empty, and the buildings have crumbled to dust. It appears that you will fail to save the world, and you try desperately not to fall into despair.
+      pass_text: You get to your feet and find what is left of the central library. The books you find there prove useful.
+      obs_text: Deep in the basement of the library, you dig through the archives, searching for clues about the downfall of man.
+      clue_text: The information you find is harrowing, but maybe it will help you avert this catastrophe.
+      fail_text: As you kneel sobbing on the cracked pavement, a shadow of a man falls over you. "You caused this," the man says calmly. His gold headdress looks somehow familiar.
+      san_text: You accept the truth in his words.
+      world: The Future
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: close
+          fail: health
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      health:
+        - hp_san
+      hargs:
+        - hp: -2
+          skip: True
+      fail:
+        - skill
+      fargs:
+        - stat: 3
+          step: no_effect
+          fail: amnesia
+      amnesia:
+        - request_card
+      aargs:
+        - kind: conditions
+          name: amnesia
+          text: Gain an Amnesia Condition
+      test_text: You find yourself in a familiar city, but there's no electricity. The only light comes from the greenish moon, and the only sound is distant screaming. You can feel your reason being overrun by fear.
+      pass_text: Resisting the urge to panic, you find a large metal and glass machine that has electricity sparking across its surface. You try to learn how to operate the device.
+      close_text: You return to your own time.
+      health_text: You receive an electric shock.
+      fail_text: Without thinking, you start walking with a long line of people. You hear screams from the people ahead of you. You try to escape, but the area is being guarded.
+      amnesia_text: You return home with no memory of what happened.
+      world: The Future
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          mod: -1
+      pass:
+        - close_gate
+      pargs:
+        - text: Close this Gate
+          step: lore
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          step: clue
+          fail: san
+      clue:
+        - gain_clue
+        - request_card
+      cargs:
+        - text: Gain 1 Clue
+        - text: Gain 1 Spell
+          kind: spells
+      san:
+        - hp_san
+      sargs:
+        - san: -2
+          skip: True
+      fail:
+        - spend_clue
+        - hp_san
+      fargs:
+        - text: Spend 1 Clue
+        - text: Lose 3 Sanity
+          san: -3
+      test_text: You are stunned to see a familiar face reading through tomes of dark sorcery. You try to catch a glimpse of what he's reading without alerting him to your presence.
+      pass_text: You learn what he's been reading and realize that he has opened a portal between worlds.
+      lore_text: Afterward, you examine the book that he was reading.
+      clue_text: You learn of arcane knowledge.
+      san_text: You've never encountered such horrors before.
+      fail_text: He spots you and unleashes a torrent of arcane energy that tears at your mind.
+      world: Great Hall of Celaeno
+    - test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - skill
+      pargs:
+        - stat: 4
+          step: close
+          fail: delay
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      delay:
+        - delayed
+      dargs:
+        - text: Become Delayed
+      fail:
+        - spend_clue
+        - request_card
+      fargs:
+        - text: Spend 1 Clue
+        - text: Gain an Amnesia Condition
+          kind: conditions
+          name: amnesia
+      test_text: You are forbidden to enter the library unless you bear the necessary sigil. You draw the symbol to the best of your knowledge.
+      pass_text: After you enter the Great Hall, you realize you must have confidence in your actions so others do not suspect you of trespassing.
+      close_text: You recover the book you are looking for.
+      delay_text: Your fear gives you away and you are held captive.
+      fail_text: Your drawing proves insufficient and you find yourself back on Earth, struggling to retain your memories of what happened.
+      world: Great Hall of Celaeno
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: close
+          fail: san
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      san:
+        - hp_san
+      sargs:
+        - san: -1
+          skip: True
+      fail:
+        - spend_clue
+        - delayed
+      fargs:
+        - text: Spend 1 Clue to close this Gate
+          step: gate
+        - text: Become Delayed
+      gate:
+        - close_gate
+      gargs:
+        - skip: True
+      test_text: The book you are looking for is not on its proper shelf. You search the surrounding area, but after long hours you have lost the will to keep searching.
+      pass_text: The tome was hidden at the back of the shelf. Opening it up you find a series of handwritten instructions scrawled in the margin. You follow the instructions to the best of your understanding.
+      close_text: You carry out the instructions perfectly, or at least enough to return home.
+      san_text: You become frustrated.
+      fail_text: You cannot find the book, but perhaps you unknowingly already have the information you need.
+      world: Great Hall of Celaeno
+    - test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - request_card
+      pargs:
+        - kind: spells
+          step: influence
+          text: Gain 1 Spell
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          mod: -1
+          step: close
+          fail: delay
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      delay:
+        - delayed
+      dargs:
+        - text: Become Delayed
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: hallucinations
+          text: Gain a Hallucinations Condition
+          step: will
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          step: no_effect
+          fail: health
+      health:
+        - hp_san
+      hargs:
+        - hp: -2
+          skip: True
+      test_text: The book you are reading describes complex rituals in very abstract terms. You do your best to comprehend the dense material.
+      pass_text: You gradually begin to see a pattern emerge.
+      influence_text: After staring so long at the book, however, you've forgotten how to get back home. You ask others in the library for help.
+      close_text: An alien creature comes to your aid.
+      delay_text: You wander the Great Hall.
+      fail_text: The opaque descriptions twist your mind with horrid imagery.
+      will_text: In your unsteady state, you are overcome by vertigo as you descend the stairs to leave. You must focus to keep your footing.
+      health_text: You stumble, and fall the rest of the way down.
+      world: Great Hall of Celaeno
+    - test:
+        - skill
+      targs:
+        - stat: 0
+          mod: -1
+      pass:
+        - close_gate
+      pargs:
+        - text: Close this Gate
+          step: will
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          step: clue
+          fail: no_effect
+      clue:
+        - gain_clue
+      cargs:
+        - text: Gain 1 Clue
+      fail:
+        - hp_san
+        - spend_clue
+      fargs:
+        - san: -2
+          step: madness
+          text: Lose 2 Sanity and gain a Paranoia Condition
+        - text: Spend 1 Clue
+      madness:
+        - request_card
+      margs:
+        - text: Gain a Paranoia Condition
+          kind: conditions
+          name: paranoia
+          skip: True
+      test_text: On a high, stone shelf you find books containing the wisdom of both the distant past and the far-flung future. Unfortunately, the tomes were written using a series of strange curvilinear symbols. You do your best to translate the alien language.
+      pass_text: You decipher the means to return yourself to your own time.
+      will_text: After you return, you forget your time with the Great Race, but are plagued by strange dreams.
+      clue_text: You explore these visions during your sleep.
+      fail_text: The symbols make no sense to you. You fear that you will be stuck here forever and search for a way home. You feel despair eating at you.
+      world: City of the Great Race
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: close
+          fail: health
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      health:
+        - hp_san
+      hargs:
+        - hp: -2
+          skip: True
+      fail:
+        - request_card
+        - spend_clue
+      fargs:
+        - kind: conditions
+          name: hallucinations
+          text: Gain a Hallucinations Condition
+        - text: Spend 1 Clue
+      test_text: You are horrified to realize that the body you are inhabiting in this world is not your own. The shock of seeing yourself in an alien, conical shell threatens to shatter your mind.
+      pass_text: You steel yourself against the horror of this alien body and try to recall the knowledge necessary to build a device that will return you to your body.
+      close_text: The machine works.
+      health_text: The machine malfunctions.
+      fail_text: The horrible truth shakes the foundations of your mind. You try to banish any knowledge of the arcane from your thoughts, but you lose your grip on reality.
+      world: City of the Great Race
+    - test:
+        - spend_clue
+        - set_buttons
+      targs:
+        - step: pass
+          text: Spend 1 Clue (pass)
+        - key: fail
+          text: Resolve fail effect
+      pass:
+        - skill
+      pargs:
+        - stat: 4
+          step: close
+          fail: san
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      san:
+        - hp_san
+      sargs:
+        - skip: True
+          san: -1
+      fail:
+        - skill
+      fargs:
+        - stat: 3
+          step: gate
+          fail: damage
+      gate:
+        - close_gate
+      gargs:
+        - text: Close this Gate
+      damage:
+        - hp_san
+      dargs:
+        - skip: True
+          hp: -1
+          san: -1
+      test_text: You hear the sound of a terrible gust of wind and listen carefully to determine the origin of the sound.
+      pass_text: Something large and powerful is trying to break through a sealed trap door. The racket is startling, and you consider running away.
+      close_text: You resolve to fend off the terrible beast and, with the help of the Yithians, you seal the rift.
+      san_text: You flee in terror from the approaching threat.
+      fail_text: Bursting up through an opening in the floor, a flying polyp attacks.
+      gate_text: The grateful Yithians help you.
+      damage_text: The encounter leaves you bruised and shaken.
+      world: City of the Great Race
+    - test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain 2 Clues
+          step: clue
+      clue:
+        - gain_clue
+      cargs:
+        - skip: True
+          step: lore
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          mod: -1
+          step: gate
+          fail: san
+      gate:
+        - close_gate
+      gargs:
+        - text: Close this Gate
+      san:
+        - hp_san
+      sargs:
+        - san: -1
+          skip: True
+      fail:
+        - hp_san
+        - delayed
+      fargs:
+        - san: -1
+          text: Lose 1 Sanity and gain a Paranoia Condition
+          step: madness
+        - text: Become Delayed
+      madness:
+        - request_card
+      margs:
+        - kind: conditions
+          name: paranoia
+          skip: True
+      test_text: You find others who, like you, have had their consciousness pulled into alien bodies from throughout time. You try to convince them to share their knowledge.
+      pass_text: Their stories are highly illuminating.
+      lore_text: They remind you of a ritual you researched that may provide you with a solution.
+      gate_text: Together, you perform the spell and return to your bodies.
+      san_text: Your attempts only meet with failure.
+      fail_text: You gain nothing from speaking to them. Just being around them sets you on edge. Your mind might unhinge if you continue to push yourself without resting.
+      world: City of the Great Race
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - improve_skill
+      pargs:
+        - skill: 4
+          step: strength
+          text: Improve Will
+      strength:
+        - skill
+      sargs:
+        - stat: 3
+          mod: -1
+          step: close
+          fail: injury
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      injury:
+        - request_card
+      iargs:
+        - kind: conditions
+          name: back_injury
+          text: Gain a Back Injury Condition
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: leg_injury
+          step: will
+          text: Gain a Leg Injury Condition
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          step: no_effect
+          fail: damage
+      damage:
+        - hp_san
+      dargs:
+        - skip: True
+          hp: -1
+          san: -1
+      test_text: The nightgaunts seem intent on keeping you here in the darkness. You do your best to continue climbing out of these terrible depths without alerting them to your presence.
+      pass_text: You reach the trap door that leads from the Abyss to Sarkomand. The journey has only strengthened your resolve.
+      strength_text: Now it will require all of your strength to push open the door.
+      close_text: You are able to escape.
+      injury_text: The door opens, but you feel your body is weakened from the strain.
+      fail_text: The nightgaunts pick you up and toss you back to the bottom of the Abyss.
+      will_text: In this dark stony landscape, you struggle to resist fear and hunger.
+      damage_text: Both your mind and body suffer while you wander.
+      world: The Abyss
+    - test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - skill
+      pargs:
+        - stat: 4
+          step: close
+          fail: san
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      san:
+        - hp_san
+      sargs:
+        - skip: True
+          san: -1
+      fail:
+        - discard
+        - request_card
+      fargs:
+        - kind: assets
+          tag: item
+          step: gate
+          text: Discard an Item Asset to close this Gate
+        - kind: conditions
+          tag: injury
+          step: health
+          text: Lose 1 Health and gain an Injury Condition
+      gate:
+        - close_gate
+      gargs:
+        - skip: True
+      health:
+        - hp_san
+      hargs:
+        - skip: True
+          hp: -1
+      test_text: You find yourself surrounded by ghouls. However, they don't seem to be antagonistic toward you. In fact, you believe you could persuade them to help you.
+      pass_text: The ghouls direct you into the Tower of Koth in the City of the Gugs. As you ascend the tower's stairs, an enormous gug chases after you. The sound of the monstrosity rattles your nerves.
+      close_text: You maintain your composure and run as fast as you can.
+      san_text: You hide, waiting for it to go away.
+      fail_text: Your well-reasoned arguments seem to have no impact, but bribery might.
+      health_text: The ghouls attack you.
+      world: The Underworld

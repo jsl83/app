@@ -297,7 +297,7 @@
         - step: fail
           text: Spend 1 Clue to gain an Artifact
         - key: finish
-          text: Give Up (pass)
+          text: Give Up (skip)
       fail:
         - request_card
       fargs:
@@ -410,7 +410,7 @@
           tag: madness
           text: Discard a Madness Condition
           step: delay
-        - text: Keep moving (pass)
+        - text: Keep moving (skip)
           key: finish
       delay:
         - delayed
@@ -517,7 +517,7 @@
       pargs:
         - step: asset
           text: Become Delayed to gain an Artifact
-        - text: Keep sailing (pass)
+        - text: Keep sailing (skip)
           key: finish
       asset:
         - request_card

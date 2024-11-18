@@ -66,7 +66,7 @@
       pargs:
         - step: spell
           text: Spend 1 Clue
-        - text: Stay silent (pass)
+        - text: Stay silent (skip)
           key: finish
       spell:
         - request_card
@@ -120,7 +120,7 @@
       pargs:
         - text: Become Delayed to gain 2 Spells
           step: spells
-        - text: You'd rather not (pass)
+        - text: You'd rather not (skip)
           key: finish
       spells:
         - request_card
@@ -161,7 +161,7 @@
       pargs:
         - text: Spend 1 Clue to improve Observation
           step: improve
-        - text: Ignore him (pass)
+        - text: Ignore him (skip)
           key: finish
       improve:
         - improve_skill
@@ -234,7 +234,7 @@
           text: Become Delayed to improve any Skill
           step: delay
           skip: True
-        - text: Leave posthaste (pass)
+        - text: Leave posthaste (skip)
           key: finish
       delay:
         - delayed
@@ -368,7 +368,7 @@
       pargs:
         - step: spell
           text: Spend 1 Clue to gain a Ritual Spell
-        - text: Refuse to share (pass)
+        - text: Refuse to share (skip)
           key: finish
       spell:
         - request_card
@@ -430,7 +430,7 @@
       pargs:
         - text: Become Delayed to gain 2 Spells
           step: spell
-        - text: No time for stories (pass)
+        - text: No time for stories (skip)
           key: finish
       spell:
         - request_card

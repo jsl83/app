@@ -74,7 +74,7 @@
       pargs:
         - text: Spend 1 Clue to improve Lore
           step: lore
-        - text: Best to avoid criminals (pass)
+        - text: Best to avoid criminals (skip)
           key: finish
       lore:
         - improve_skill
@@ -109,7 +109,7 @@
         - text: Become Delayed to improve any Skill
           step: improve
         - key: finish
-          text: What a foul smell! (pass)
+          text: What a foul smell! (skip)
       improve:
         - improve_skill
       iargs:
@@ -242,7 +242,7 @@
       pargs:
         - step: damage
           text: Spend 1 Clue to eliminate 1 Monster
-        - text: You walk on by (pass)
+        - text: You walk on by (skip)
           key: finish
       damage:
         - damage_monsters
@@ -350,7 +350,7 @@
       pargs:
         - text: Spend 1 Clue to improve Strength
           step: strength
-        - text: You have nothing to share (pass)
+        - text: You have nothing to share (skip)
           key: finish
       strength:
         - improve_skill
@@ -405,7 +405,7 @@
         - text: Become Delayed to gain 1 random Weapon Asset
           step: weapon
         - key: finish
-          text: It's not worth waiting for (pass)
+          text: It's not worth waiting for (skip)
       weapon:
         - gain_asset
       wargs:

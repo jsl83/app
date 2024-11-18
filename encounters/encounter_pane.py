@@ -315,6 +315,9 @@ class EncounterPane():
         self.set_buttons(step)
 
     def hp_san(self, step='finish', hp=0, san=0):
+        self.layout.clear()
+        self.layout.add(self.text_button)
+        self.layout.add(self.phase_button)
         if hp < 0 or san < 0:
             self.take_damage(hp, san, self.set_buttons, {'key': step})
         else:

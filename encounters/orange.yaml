@@ -57,7 +57,7 @@
           step: clue
           text: Gain a Debt Condition Condition to gain 2 Clues
           check: True
-        - text: No money to spare (pass)
+        - text: No money to spare (skip)
           key: finish
       clue:
         - gain_clue
@@ -139,7 +139,7 @@
         - number: 2
           text: Become Delayed to spawn 2 Clues
           step: delay
-        - text: Defer the invitation (pass)
+        - text: Defer the invitation (skip)
           key: finish
       delay:
         - delayed
@@ -216,7 +216,7 @@
           name: blessed
           step: delay
         - key: finish
-          text: Let the city handle it (pass)
+          text: Let the city handle it (skip)
       delay:
         - delayed
       dargs:
@@ -331,7 +331,7 @@
           step: delay
           text: Become Delayed to improve any Skill
         - key: finish
-          text: You're clean enough (pass)
+          text: You're clean enough (skip)
       delay:
         - delayed
       dargs:
@@ -374,7 +374,7 @@
       pargs:
         - text: Spend 1 Clue to improve Influence
           step: improve
-        - text: Every man for himself (pass)
+        - text: Every man for himself (skip)
           key: finish
       improve:
         - improve_skill

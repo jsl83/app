@@ -39,4 +39,293 @@
       close_text: You steal their treasure and area able to barter with it.
       health_text: You become lost in a forest on the moon. Lose 2 Health and become Delayed.
       fail_text: The gods of dreams exile you back to the waking world and punish you for your overreaching ambition. Your dream and the waking world become indistinguishable.
+    - test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain 1 Clue
+          step: delay
+      delay:
+        - delayed
+        - close_gate
+      dargs:
+        - text: Become Delayed
+        - text: Lose 1 Health to close this Gate
+          step: health
+      health:
+        - hp_san
+      hargs:
+        - hp: -1
+          skip: True
+      fail:
+        - hp_san
+      fargs:
+        - hp: -1
+          step: observation
+          skip: True
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          step: no_effect
+          fail: item
+      item:
+        - discard
+      iargs:
+        - kind: assets
+          tag: item
+          skip: True
+      test_text: You are strictly admonished that in the city of Ulthar, no man may kill a cat. As a result, you see the city is filled with cats. If you know the language, you can communicate with these highly intelligent creatures.
+      pass_text: The cats are pleased to chat and share useful secrets.
+      delay_text: When the topic of food is brought up, dozens of cats take an interest. A crowd of hungry felines surround you.
+      health_text: You feed the cats your rations and go hungry yourself.
+      fail_text: The cats flee from you, making the people of Ulthar suspicious and they force you into the Enchanted Wood.
+      observation_text: While you're out there, you must keep a careful watch to prevent the zoogs from stealing your belongings.
+      item_text: The dark woods prove impossible to navigate. When you leave, you feel your pack is lighter...
+    - test:
+        - skill
+      targs:
+        - stat: 1
+          mod: -1
+      pass:
+        - close_gate
+      pargs:
+        - skip: True
+          step: delay
+      delay:
+        - delayed
+        - set_buttons
+      dargs:
+        - text: Become Delayed to gain 2 Clues
+          step: clue
+        - key: finish
+          text: Just the nonsense of children (skip)
+      clue:
+        - gain_clue
+      cargs:
+        - skip: True
+          step: next
+      next:
+        - gain_clue
+      nargs:
+        - skip: True
+      fail:
+        - skill
+      fargs:
+        - stat: 3
+          step: no_effect
+          fail: health
+      health:
+        - hp_san
+      hargs:
+        - hp: -6
+          skip: True
+      test_text: Through the slits in the closet door you see yourself as a small child, sitting up in bed. "Who's there?" ask a frightened voice. You try to calmly persuade your younger self that you're a friend.
+      pass_text: 'The child calms down, but eyes you suspiciously. "Listen carefully to what I say," you tell yourself, as the portal closes. "It might save your life..."'
+      fail_text: The child screams out for help, and a man bursts into your bedroom. Your father aims his shotgun at your chest, and you attempt to wrestle it away.
+      health_text: You are peppered with buckshot.
+    - test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - close_gate
+      pargs:
+        - step: delay
+          skip: True
+      delay:
+        - delayed
+        - set_buttons
+      dargs:
+        - text: Become Delayed to gain 1 Spell
+          step: spell
+        - text: Your eyes grow weary (skip)
+          key: finish
+      spell:
+        - request_card
+      sargs:
+        - skip: True
+          kind: spells
+      fail:
+        - skill
+      fargs:
+        - stat: 4
+          step: no_effect
+          fail: mind
+      mind:
+        - hp_san
+      margs:
+        - skip: True
+          san: -3
+      test_text: You find yourself standing in front of antique scientific equipment. According to the papers the year is 1771. You read through the notes and try to interpret the nature of the experiments.
+      pass_text: Joseph Curwen was using this lab to revive dead wizards from their ashes and interrogate them for arcane knowledge. Using his notes, you close this Gate. The rest of his results may also prove useful.
+      fail_text: These notes make no sense to you. Your reading is interrupted by a terrible moaning sound, and you find malformed creatures trapped in deep wells under the stone floor. The sight of them tears at your mind.
+      mind_text: You feel your grip on reality weakening.
+    - test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: close
+          fail: san
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate.
+      san:
+        - hp_san
+      sargs:
+        - san: -1
+          skip: True
+      fail:
+        - spend_clue
+        - hp_san
+      fargs:
+        - text: Spend 1 Clue
+        - text: Lose 2 Sanity
+          san: -2
+      test_text: You find a room filled with strange metal cylinders. Inside of each cylinder is a living brain that can communicate through a speaker box. You ask them for help.
+      pass_text: They describe how to operate the mi-go's machinery to travel between worlds. Based on what they say, you try to operate the alien devices.
+      close_text: You return home.
+      san_text: The machine shows you horrid vistas you would never want to visit.
+      fail_text: The disembodied brains demand that you stay. They tell you terrible secrets they've learned about the fate of the Earth.
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: close
+          fail: delay
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      delay:
+        - delayed
+      dargs:
+        - text: Become Delayed
+      fail:
+        - skill
+      fargs:
+        - stat: 0
+          mod: -1
+          step: gate
+          fail: sanity
+      gate:
+        - close_gate
+      gargs:
+        - text: Close this Gate
+      sanity:
+        - hp_san
+      sargs:
+        - san: -3
+          skip: True
+      test_text: You discover a waxen mask and artificial hands. Your mind reels as you realize that the old man you had spoken to earlier was actually some terrible creature disguised as a human.
+      pass_text: You realize now that the old man's words carry a secondary meaning. You attempt to decrypt what he said.
+      close_text: You understand the man's implied instructions.
+      delay_text: His words lead you in circles.
+      fail_text: What was the nature of that blasphemous horror behind the mask? You consult your notes, trying to find what might disguise itself this way.
+      sanity_text: Fear of the unknowable eats at your thoughts.
+      gate_text: You find the data you need.
+    - test:
+        - spend_clue
+        - set_buttons
+      targs:
+        - text: Spend 1 Clue (pass)
+          step: pass
+        - key: fail
+          text: Resolve fail effect
+      pass:
+        - skill
+      pargs:
+        - stat: 0
+          step: close
+          fail: hallucinations
+      close:
+        - close_gate
+      cargs:
+        - text: Close this Gate
+      hallucinations:
+        - request_card
+      hargs:
+        - kind: conditions
+          name: hallucinations
+          text: Gain a Hallucinations Condition
+      fail:
+        - skill
+      fargs:
+        - stat: 4
+          step: gate
+          fail: damage
+      gate:
+        - close_gate
+      gargs:
+        - text: Close this Gate
+      damage:
+        - hp_san
+      dargs:
+        - skip: True
+          hp: -1
+      test_text: You discover a fetid creature with wings and webbed feet. The beast is strange, like something from your wildest dreams.
+      pass_text: You believe you've read of a way to use this beast to travel through space.
+      close_text: You remember that by drinking space-mead you can safely use this byakhee to return home.
+      hallucinations_text: You drink something you shouldn't have.
+      fail_text: The creature is terrifying, but if you can keep your calm, you will be able to overpower it.
+      gate_text: You subdue the creature and use it to return home.
+      damage_text: Claws rend your flesh.
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - request_card
+      pargs:
+        - kind: artifacts
+          text: Gain 1 Artifact
+          step: obs
+      obs:
+        - skill
+      oargs:
+        - stat: 2
+          mod: -1
+          step: close
+          fail: amnesia
+      close:
+        - close_gate
+      cargs:
+        - text: Close this gate
+      amnesia:
+        - request_card
+      aargs:
+        - kind: conditions
+          name: amnesia
+          text: Gain an Amnesia Condition
+      fail:
+        - skill
+      fargs:
+        - stat: 3
+          step: no_effect
+          fail: health
+      health:
+        - hp_san
+      hargs:
+        - hp: -1
+          san: -1
+          skip: True
+      test_text: The mi-go refuse to go near the city of green pyramids. You summon your courage and explore this abandoned area.
+      pass_text: You find lost treasure!
+      obs_text: You hear sounds coming from within the pyramids and look for a place to hide.
+      close_text: You stay out of sight until the threat is gone.
+      amnesia_text: You wake up uncertain of what's happened.
+      fail_text: You run from the pyramids as fast as you can. Until the mi-go return, you need to rely on your own means of survival.
+      health_text: You succumb to the harsh elements of this strange world.
     

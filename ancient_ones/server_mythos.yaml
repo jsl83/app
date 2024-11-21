@@ -1,55 +1,116 @@
 ---
   -
-    a_proposition: 0
-    blood_flows: 1
-    buying_information: 0
-    calling_the_elder_things: 1
-    dimensional_instability: 1
-    driven_to_bankruptcy: 1
-    from_beyond: 2
-    heart_of_corruption: 0
-    legitimate_banking: 1
-    no_peace_for_the_fallen: 1
-    patrolling_the_border: 1
-    rising_terror: 2
-    strange_sightings: 2
-    support_of_the_church: 0
-    that_which_consumes: 0
-    tied_to_a_dark_purpose: 2
-    torn_asunder: 2
-    unexpected_betrayal: 1
+    a_proposition:
+      difficulty: 0
+      lead_only: True
+    blood_flows:
+      difficulty: 1
+    buying_information:
+      difficulty: 0
+    calling_the_elder_things:
+      difficulty: 1
+    dimensional_instability:
+      difficulty: 1
+    driven_to_bankruptcy:
+      difficulty: 1
+    from_beyond:
+      difficulty: 2
+    heart_of_corruption:
+      difficulty: 0
+    legitimate_banking:
+      difficulty: 1
+    no_peace_for_the_fallen:
+      difficulty: 1
+    patrolling_the_border:
+      difficulty: 1
+    rising_terror:
+      difficulty: 2
+    strange_sightings:
+      difficulty: 2
+    support_of_the_church:
+      difficulty: 0
+    that_which_consumes:
+      difficulty: 0
+    tied_to_a_dark_purpose:
+      difficulty: 2
+    torn_asunder:
+      difficulty: 2
+    unexpected_betrayal:
+      difficulty: 1
   -
-    a_dark_power: 1
-    all_for_nothing: 2
-    ancient_guardians: 1
-    arrests_made_in_murder_case!: 1
-    burden_of_greed: 1
-    desparate_times: 2
-    everyone_has_a_price: 0
-    eyes_everywhere: 2
-    from_bad_to_worse: 1
-    haunting_nightmares: 1
-    heat_wave_singes_the_globe: 1
-    omen_of_good_fortune: 0
-    perplexing_stars: 2
-    rally_the_people: 0
-    silver_twilight_aid: 0
-    the_bermuda_triangle: 1
-    the_storm: 2
-    the_world_fights_back: 0
-    the_world_shakes: 1
-    tide_of_despair: 1
-    treacherous_magic: 1
+    a_dark_power:
+      difficulty: 1
+      actions:
+        - heal_monsters
+      args:
+        - amt: -99
+    all_for_nothing:
+      difficulty: 2
+      actions:
+        - group_pay
+      args:
+        - kind: clues
+          amt: 2
+    ancient_guardians:
+      difficulty: 1
+    arrests_made_in_murder_case!:
+      difficulty: 1
+    burden_of_greed:
+      difficulty: 1
+    desparate_times:
+      difficulty: 2
+    everyone_has_a_price:
+      difficulty: 0
+    eyes_everywhere:
+      difficulty: 2
+    from_bad_to_worse:
+      difficulty: 1
+    haunting_nightmares:
+      difficulty: 1
+    heat_wave_singes_the_globe:
+      difficulty: 1
+    omen_of_good_fortune:
+      difficulty: 0
+    perplexing_stars:
+      difficulty: 2
+    rally_the_people:
+      difficulty: 0
+    silver_twilight_aid:
+      difficulty: 0
+    the_bermuda_triangle:
+      difficulty: 1
+    the_storm:
+      difficulty: 2
+    the_world_fights_back:
+      difficulty: 0
+    the_world_shakes:
+      difficulty: 1
+    tide_of_despair:
+      difficulty: 1
+    treacherous_magic:
+      difficulty: 1
   -
-    dimensions_collide: 2
-    faded_from_society: 1
-    fractured_reality: 0
-    growing_madness: 0
-    lost_knowledge: 0
-    mysterious_lights: 2
-    return_of_the_ancient_ones: 1
-    secrets_of_the_past: 0
-    spreading_sickness: 2
-    stars_aligned: 1
-    the_wind_walker: 1
-    web_between_worlds: 2
+    dimensions_collide:
+      difficulty: 2
+    faded_from_society:
+      difficulty: 1
+    fractured_reality:
+      difficulty: 0
+    growing_madness:
+      difficulty: 0
+    lost_knowledge:
+      difficulty: 0
+    mysterious_lights:
+      difficulty: 2
+    return_of_the_ancient_ones:
+      difficulty: 1
+    secrets_of_the_past:
+      difficulty: 0
+    spreading_sickness:
+      difficulty: 2
+    stars_aligned:
+      difficulty: 1
+    the_wind_walker:
+      difficulty: 1
+    web_between_worlds:
+      difficulty: 2

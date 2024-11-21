@@ -12,13 +12,11 @@ def create_choices(title='', subtitle='', choices=[], size=(1000,658), pos=(0,14
 
     choice_gui = arcade.gui.UILayout(width=size[0], height=size[1], x=pos[0], y=pos[1]).with_background(arcade.load_texture(background))
     index = 1
-    if title:
+    if title != '':
         choice_gui.add(arcade.gui.UITextureButton(y=size[1]-100, width=size[0], height=50, align='center', text=title))
-        choice_gui.children[1].title = title
         index += 1
-    if subtitle:
+    if subtitle != '':
         choice_gui.add(arcade.gui.UITextureButton(y=size[1]-150, width=size[0], height=50, align='center', text=subtitle))
-        choice_gui.children[index].subtitle = subtitle
         index += 1
 
     start_y = size[1] - offset[1] - (50 if subtitle != '' else 0)

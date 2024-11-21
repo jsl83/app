@@ -1,11 +1,4 @@
-import arcade
-import threading
-import sys
-import subprocess
-import signal
-import argparse
-import yaml
-import random
+import arcade, threading, sys, subprocess, signal, argparse, yaml, random, math
 from python_banyan.banyan_base import BanyanBase
 from screens.server_loading import ServerLoadingScreen
 
@@ -61,6 +54,8 @@ class Networker(threading.Thread, BanyanBase):
 
         self.ancient_one = None
         self.mythos_deck = [{},{},{}]
+        self.mysteries = {}
+        self.solved_mysteries = []
         self.omen = 0
 
         self.decks = {
@@ -127,8 +122,12 @@ class Networker(threading.Thread, BanyanBase):
 
         self.triggers = {}
         self.action_dict = {
-            'strengthen_ao': self.strengthen_ao
+            'strengthen_ao': self.strengthen_ao,
+            'heal_monsters': self.heal_monsters,
+            'group_pay': self.group_pay,
+            'shuffle_mystery': self.shuffle_mystery
         }
+        self.group_pay_info = {'needed': 0, 'paid': 0, 'investigators': {}, 'info_received': 0, 'waiting': False, 'kind': ''}
 
         # temporary variables set for testing - DELETE LATER
         self.set_subscriber_topic('akachi_onyele')
@@ -182,6 +181,7 @@ class Networker(threading.Thread, BanyanBase):
                     self.publish_payload({'message': 'investigators', 'value': payload['value']}, 'server_update')
                 case 'investigators_selected':
                     self.selected_investigators.append(payload['value'])
+                    self.group_pay_info['investigators'][payload['value']] = 0
                     self.set_subscriber_topic(payload['value'])
                     self.screen.add_investigator(payload['value'])
                     if len(self.selected_investigators) == self.player_count:
@@ -206,6 +206,7 @@ class Networker(threading.Thread, BanyanBase):
                     self.mythos_setup()
                     self.ancient_one['doom'] = 15
                     self.decks['gates']['board'] = []
+                    self.group_pay_info['waiting'] = False
                     #END TESTING
                     self.initiate_gameboard()
                     self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
@@ -259,11 +260,19 @@ class Networker(threading.Thread, BanyanBase):
                         if self.current_player == self.lead_investigator:
                             self.current_phase += 1
                             if self.current_phase == 2:
+                                mythos = None
                                 for x in range(3):
                                     if len(self.mythos_deck[x]) > 0:
-                                        mythos = random.choice(list(self.mythos_deck[x].keys()))
-                                        self.publish_payload({'message': 'mythos', 'value': mythos}, 'server_update')
-                                        kind = self.mythos_deck[x][mythos]
+                                        name = random.choice(list(self.mythos_deck[x].keys()))
+                                        #FOR TESTING
+                                        name = 'all_for_nothing'
+                                        #END TESTING
+                                        mythos = self.mythos_deck[x][name]
+                                        self.publish_payload({'message': 'mythos', 'value': name}, 'server_update')
+                                        if mythos.get('actions', None) != None:
+                                            for x in range(len(mythos['actions'])):
+                                                self.action_dict[mythos['actions'][x]](**mythos['args'][x])
+                                        kind = mythos['color']
                                         if kind == 0:
                                             self.current_phase += 1
                                             self.set_omen()
@@ -275,23 +284,26 @@ class Networker(threading.Thread, BanyanBase):
                                         elif kind == 2:
                                             self.current_phase += 1
                                             self.spawn('clues', number=self.reference[1])
-                                        #del self.mythos_deck[x][mythos]
+                                        #del self.mythos_deck[x][name]
                                         break
-                                #Trigger no mythos deck
+                                if mythos == None:
+                                    pass #Trigger no mythos deck
                         if self.current_phase == 3 and self.yellow_card:
-                            #self.spawn('gates', number=self.reference[0])
+                            self.spawn('gates', number=self.reference[0])
                             self.yellow_card = False
                         if self.current_phase == 4:
-                            self.current_phase = 0
-                            self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
-                        else:
-                            self.publish_payload({'message': 'player_turn', 'value': self.phases[self.current_phase]},
-                                                 self.selected_investigators[self.current_player] + '_server')
+                            self.end_mythos()
+                        elif not self.group_pay_info['waiting']:
+                            topic = ''
+                            if self.current_phase == 2 and mythos != None and mythos.get('lead_only', None) != None:
+                                topic = 'server_update'
+                            else:
+                                topic = self.selected_investigators[self.current_player] + '_server'
+                            self.publish_payload({'message': 'player_turn', 'value': self.phases[self.current_phase]}, topic)
                     case 'get_encounter':
                         kind = payload['value']
-                        #encounter = random.choice(self.encounters[kind][1])
-                        #self.encounters[kind][1].remove(encounter)
-                        encounter = 0
+                        encounter = random.choice(self.encounters[kind][1])
+                        self.encounters[kind][1].remove(encounter)
                         if len(self.encounters[kind][1]) == 0:
                             self.encounters[kind][1] = list(range(self.encounters[kind][0]))
                         if kind in self.expeditions:
@@ -303,6 +315,58 @@ class Networker(threading.Thread, BanyanBase):
                         self.decks['gates']['board'].remove(payload['value'])
                         self.decks['gates']['discard'].append(payload['value'])
                         self.publish_payload({'message': 'gate_removed', 'value': payload['value']}, 'server_update')
+                    case 'damage_monster':
+                        self.publish_payload({'message': 'monster_damaged', 'value': payload['value'], 'damage': payload['damage']}, 'server_update')
+                    case 'solve_rumor':
+                        self.publish_payload({'message': 'rumor_solved', 'value': payload['value']}, 'server_update')
+                    case 'send_info':
+                        self.group_pay_info['investigators'][topic] = payload['value']
+                        self.group_pay_info['info_received'] += 1
+                        if self.group_pay_info['info_received'] == len(self.selected_investigators):
+                            for investigator in self.selected_investigators:
+                                payments = self.calc_group_payments(investigator)
+                                self.publish_payload({'message': 'group_pay_update', 'max': payments[1], 'min': payments[0], 'first': True}, investigator + '_server')
+                    case 'payment_made':
+                        self.group_pay_info['paid'] += int(payload['value'])
+                        if self.group_pay_info['paid'] == self.group_pay_info['needed']:
+                            self.end_mythos()
+                        else:
+                            del self.group_pay_info['investigators'][payload['name']]
+                            for investigator in self.group_pay_info['investigators'].keys():
+                                payments = self.calc_group_payments(investigator)
+                                self.publish_payload({'message': 'group_pay_update', 'max': payments[1], 'min': payments[0]}, investigator + '_server')
+                    case 'end_mythos':
+                        if payload['value'] != '':
+                            self.action_dict[payload['value']]()
+                        self.end_mythos()
+
+    def end_mythos(self):
+        self.group_pay_info['waiting'] = False
+        self.current_phase = 0
+        self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
+
+    def calc_group_payments(self, name):
+        max_pay = self.group_pay_info['needed'] - self.group_pay_info['paid']
+        min_pay = 0
+        remaining = 0
+        investigators = [investigator for investigator in self.group_pay_info['investigators'].keys() if investigator != name]
+        for investigator in investigators:
+            remaining += self.group_pay_info['investigators'][investigator]
+        min_pay = max_pay - remaining
+        min_pay = 0 if min_pay < 0 else min_pay
+        return (min_pay, max_pay)
+
+    def heal_monsters(self, amt):
+        self.publish_payload({'message': 'monster_damaged', 'value': -1, 'damage': amt}, 'server_update')
+
+    def group_pay(self, kind, count='investigators', amt=1):
+        self.group_pay_info['needed'] = math.ceil((len(self.selected_investigators) if count == 'investigators' else len(self.decks['gates']['board'])) / amt)
+        self.group_pay_info['paid'] = 0
+        self.group_pay_info['info_received'] = 0
+        self.group_pay_info['waiting'] = True
+        self.group_pay_info['kind'] = kind
+        self.publish_payload({'message': 'start_group_pay', 'value': self.group_pay_info['kind']}, 'server_update')
+        self.publish_payload({'message': 'info_request', 'value': kind}, 'server_update')
 
     def asset_request(self, command, name, tag=''):
         match command:
@@ -358,11 +422,10 @@ class Networker(threading.Thread, BanyanBase):
                     elif location == None:
                         if len(self.decks['gates']['deck']) > 0:
                             gate = random.choice(self.decks['gates']['deck'])
-                            gate='world:arkham'
                             #self.decks['gates']['deck'].remove(gate)
                             self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
-                            #self.spawn('monsters', location=gate)
+                            self.spawn('monsters', location=gate)
                         elif len(self.decks['gates']['discard']) > 0:
                             self.decks['gates']['deck'].append(item for item in self.decks['gates']['discard'])
                             self.decks['gates']['discard'] = []
@@ -429,9 +492,14 @@ class Networker(threading.Thread, BanyanBase):
             cards = yaml.safe_load(stream)
         for x in range(3):
             for character in self.ancient_one['mythos'][x]:
-                card = random.choice(list(cards[int(character)].keys()))
-                self.mythos_deck[x][card] = int(character)
-                del cards[int(character)][card]
+                color = int(character)
+                card = random.choice(list(cards[color].keys()))
+                #FOR TESTING
+                if color == 1:
+                    card = 'all_for_nothing'
+                #END TESTING
+                self.mythos_deck[x][card] = cards[color][card]
+                self.mythos_deck[x][card]['color'] = color
 
     def set_omen(self, pos=None, trigger=True):
         if pos != None:
@@ -461,6 +529,14 @@ class Networker(threading.Thread, BanyanBase):
     
     def strengthen_ao(self, amt=1):
         self.ancient_one.eldritch += amt
+
+    def shuffle_mystery(self):
+        if len(self.solved_mysteries) > 0:
+            mystery = random.choice(self.solved_mysteries)
+            self.solved_mysteries.remove(mystery)
+            self.publish_payload({'message': 'mystery_count', 'value': len(self.solved_mysteries)}, 'server_update')
+        else:
+            self.move_doom()
 
 def set_up_network(screen):
     parser = argparse.ArgumentParser()

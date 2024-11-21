@@ -10,6 +10,8 @@ class LocationManager():
         self.locations = {}
         self.clue_count = 0
         self.all_investigators = []
+        self.monster_id = 0
+        self.all_monsters = []
         try:
             with open('locations/locations.yaml') as stream:
                 self.locations = yaml.safe_load(stream)
@@ -38,9 +40,11 @@ class LocationManager():
         return astar.find_path(start, goal, neighbors)
     
     def spawn_monster(self, name, location, world):
-        monster = Monster(name)
+        monster = Monster(name, self.monster_id)
+        self.monster_id += 1
         monster.location = location
         monster.map = world
+        self.all_monsters.append(monster)
         self.locations[location]['monsters'].append(monster)
         return monster
 

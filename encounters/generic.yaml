@@ -57,6 +57,7 @@
       fargs:
         - hp: -1
           step: next
+          skip: True
       next:
         - discard
       nargs:

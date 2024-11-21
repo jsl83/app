@@ -113,10 +113,16 @@ class HubScreen(arcade.View):
             'action': None,
             'args': {}
         }
+        self.info_requests = {
+            'clues': lambda: len(self.investigator.clues),
+            'hp': lambda: self.investigator.health,
+            'san': lambda: self.investigator.sanity
+        }
 
         self.networker.publish_payload({'message': 'ready'}, 'login')
         self.location_manager.locations[self.investigator.location]['investigators'].append(self.investigator)
         self.location_manager.all_investigators.append(self.investigator)
+        self.rumors = {}
 
         #FOR TESTING
         self.request_card('assets', 'arcane_tome')
@@ -124,6 +130,8 @@ class HubScreen(arcade.View):
         self.investigator.clues.append('world:arkham')
         self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
         #self.request_card('conditions', 'blessed')
+        self.rumors = {'TEST': {'location': 'space_15', 'eldritch': 4}}
+        self.location_manager.locations['space_15']['rumor'] = True
         #END TESTING
         
     def on_draw(self):
@@ -267,19 +275,19 @@ class HubScreen(arcade.View):
         self.info_manager.children = {0:[]}
         self.info_pane = self.encounter_pane
         self.info_manager.add(self.info_pane.layout)
+        self.info_manager.trigger_render()
         self.gui_set(False)
 
     def toggle_overlay(self):
         if len(self.choice_layout.children) > 0:
             if self.overlay_showing:
                 self.choice_manager.clear()
-                button = next((button for button in self.choice_layout.children if hasattr(button, 'title')), None)
-                title = 'SHOW OVERLAY' if button == None else button.title
+                title = 'Show Overlay'
                 self.overlay_toggle.text = title
                 self.overlay_showing = False
             else:
                 self.choice_manager.add(self.choice_layout)
-                self.overlay_toggle.text = 'HIDE OVERLAY'
+                self.overlay_toggle.text = 'Hide Overlay'
                 self.overlay_showing = True
             self.ui_manager.trigger_render()
 
@@ -321,11 +329,12 @@ class HubScreen(arcade.View):
                 investigator = next((investigator for investigator in self.location_manager.all_investigators if investigator.name == payload['value']))
                 self.move_unit(investigator, payload['destination'])
             case 'choose_lead':
+                self.encounter_pane.finish(True)
                 portraits = []
                 for investigator in self.location_manager.all_investigators:
                     name = investigator.name
                     portraits.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.4, action=self.networker.publish_payload,
-                                                  action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
+                                                action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
                 self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
                 self.show_overlay()
                 #FOR TESTING
@@ -335,33 +344,32 @@ class HubScreen(arcade.View):
                 self.lead_investigator = payload['value']
                 self.clear_overlay()
             case 'player_turn':
-                if payload['value'] == 'action':
-                    if self.investigator.delayed:
-                        #self.investigator.delayed = False
-                        #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                        self.remaining_actions = 2
-                        print('delayed')
-                    else:
-                        self.remaining_actions = 2
-                        #FOR TESTING
-                        self.remaining_actions = 3
-                        self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_15')
-                        self.info_panes['investigator'].focus_action()
-                        #END TESTING
-                elif payload['value'] == 'encounter':
-                    self.show_encounter_pane()
-                    self.encounter_pane.encounter_phase()
-                elif payload['value'] == 'reckoning':
-                    #self.reckonings()
-                    pass
-                else:
-                    #self.encounter_pane.activate_mythos()
-                    pass
+                match payload['value']:
+                    case 'action':
+                        if self.investigator.delayed:
+                            #self.investigator.delayed = False
+                            #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                            self.remaining_actions = 2
+                            print('delayed')
+                        else:
+                            self.remaining_actions = 2
+                            #FOR TESTING
+                            self.remaining_actions = 3
+                            self.ticket_move('akachi_onyele', 'space_1', 0, 0, 'space_15')
+                            self.info_panes['investigator'].focus_action()
+                            #END TESTING
+                    case 'encounter':
+                        self.show_encounter_pane()
+                        self.encounter_pane.encounter_phase()
+                    case 'reckoning':
+                        #self.reckonings()
+                        pass
+                    case 'mythos':
+                        self.encounter_pane.activate_mythos()
             case 'encounter_choice':
                 self.clear_overlay()
                 self.show_encounter_pane()
-                #self.encounter_pane.start_encounter(payload['value'])
-                self.encounter_pane.start_encounter('gate:0')
+                self.encounter_pane.start_encounter(payload['value'])
             case 'mythos':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -372,6 +380,32 @@ class HubScreen(arcade.View):
                 self.set_doom(int(payload['value']))
             case 'gate_removed':
                 self.remove_gate(payload['value'])
+            case 'monster_damaged':
+                monster_id = int(payload['value'])
+                damage = int(payload['damage'])
+                def damage_monster(monster, damage):
+                    dead = monster.on_damage(damage)
+                    if dead:
+                        self.location_manager.locations[monster.location]['monsters'].remove(monster)
+                        self.location_manager.all_monsters.remove(monster)
+                        self.map.remove_tokens('monsters', monster)
+                        self.map.token_manager.trigger_render()
+                if monster_id < 0:
+                    for monster in self.location_manager.all_monsters:
+                        damage_monster(monster, damage)
+                else:
+                    monster = next((monster for monster in self.location_manager.all_monsters if monster.monster_id == int(payload['value'])))
+                    damage_monster(monster, damage)
+            case 'rumor_solved':
+                self.location_manager.locations[self.rumors[payload['value']]['location']]['rumor'] = False
+                del self.rumors[payload['value']]
+            case 'info_request':
+                self.networker.publish_payload({'message': 'send_info', 'value': self.info_requests[payload['value']]()}, self.investigator.name)
+            case 'group_pay_update':
+                self.encounter_pane.update_payments(payload['min'], payload['max'], payload.get('first', None))
+            case 'start_group_pay':
+                self.encounter_pane.start_group_pay(payload['value'])
+
         if self.encounter_pane.wait_step != None:
             self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
 
@@ -614,11 +648,7 @@ class HubScreen(arcade.View):
                 self.actions_taken[action]['taken'] = False
 
     def damage_monster(self, monster, damage):
-        dead = monster.on_damage(damage)
-        if dead:
-            self.location_manager.locations[monster.location]['monsters'].remove(monster)
-            self.map.remove_tokens('monsters', monster)
-            self.map.token_manager.trigger_render()
+        self.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
 
     def remove_gate(self, loc):
         loc = loc.split(':')

@@ -1,10 +1,36 @@
 ---
   a_dark_power:
-    actions:
-      - monster_heal
+    action:
       - combat
-    args:
-      - amt: 99
+    aargs:
       - combat_only: True
+        skip: True
     flavor: Lightning cracks across the sky. You have a sinking dread that all the good you've accomplished is about to be undone.
     text: Each Monster recovers all Health. Then each investigator immediately encounters each Monster on their space in the order of their choice.
+  a_proposition:
+    action:
+      - request_card
+      - set_buttons
+    aargs:
+      - kind: conditions
+        name: dark_pact
+        text: Conduct the ritual
+        step: rumor
+      - key: finish
+        text: A price too high (skip)
+    rumor:
+      - solve_rumor
+    rargs:
+      - skip: True
+    lead_only: True
+    font_size: 13 
+    flavor: You had told everyone the parchment was indecipherable, but you were lying. You know the ritual necessary to summon and bind the dark power. You could strike a bargain with it. The situation is desperate, but you know that a solution is within its power. But what will it ask of you in return?
+    text: The Lead Investigator may gain a Dark Pact Condition to immediately solve 1 Rumor Mythos card in play.
+  all_for_nothing:
+    action: end_mythos
+    args:
+      action: shuffle_mystery
+    action_text: Your mind is blank (Don't spend)
+    font_size: 13
+    flavor: You wrap the towel around some ice and apply it to your injuries, hoping to reduce the swelling. You make a mental list of all the sacrifices that you've had to make and those that you've asked of others. All that terrible loss and you can't for the life of you think of any good that's been accomplished.
+    text: Shuffle a solved Mystery back into the deck unless investigators as a group spend Clues equal to half the number of investigators.

@@ -48,12 +48,15 @@ class EncounterPane():
             'set_doom': self.set_doom,
             'ambush': self.ambush,
             'spawn_fight': self.spawn_fight,
-            'close_gate': self.close_gate
+            'close_gate': self.close_gate,
+            'solve_rumor': self.solve_rumor,
+            'end_mythos': self.end_mythos
         }
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
             'spend_clue': lambda *args: len(self.investigator.clues) >= args[0].get('amt', 1),
             'discard': lambda *args: self.discard_check(args[0]['kind'], args[0].get('tag', 'any'), args[0].get('name', None)),
+            'solve_rumor': lambda *args: len(self.hub.rumors) > 0,
             'gain_asset': lambda *args: not args[0].get('reserve', False) or len([item for item in self.hub.info_panes['reserve'].reserve if args[0]['tag'] == 'any' or args[0]['tag'] in item['tags']]) > 0
         }
         self.encounter = None
@@ -67,13 +70,17 @@ class EncounterPane():
         self.wait_step = None
         self.ambush_steps = None
         self.ambush_monster = None
+        self.min_payment = 0
+        self.max_payment = 0
+        self.payment = 0
+        self.payment_kind = ''
 
     def discard_check(self, kind, tag='any', name=None):
         items = self.investigator.possessions[kind]
         items = [item for item in items if tag in item.tags] if tag != 'any' else [item for item in items if name == item.name] if name != None else items
         return len(items) > 0
 
-    def encounter_phase(self, combat_only=False):
+    def encounter_phase(self, combat_only=False, step='finish'):
         location = self.investigator.location
         monsters = self.hub.location_manager.locations[location]['monsters']
         self.monsters = [monster for monster in monsters] if self.first_fight else self.monsters
@@ -93,8 +100,8 @@ class EncounterPane():
             if self.proceed_button not in self.layout.children:
                 self.layout.add(self.proceed_button)
             self.proceed_button.text = 'End Combat'
-            self.proceed_button.action = self.finish
-            self.proceed_button.action_args = {}
+            self.proceed_button.action = self.set_buttons
+            self.proceed_button.action_args = {'key': step}
 
     def choose_encounter(self):
         choices = []
@@ -197,7 +204,7 @@ class EncounterPane():
         self.rolls.remove(old)
         self.rolls.append(new)
 
-    def finish(self):
+    def finish(self, skip=False):
         self.layout.clear()
         for button in [self.phase_button, self.text_button, self.proceed_button, self.option_button, self.last_button]:
             button.text = ''
@@ -208,14 +215,16 @@ class EncounterPane():
         self.monsters = []
         self.encounters = []
         self.first_fight = True
-        self.is_mythos = False
         self.rolls = []
         self.ambush_monster = None
         self.hub.clear_overlay()
-        self.hub.gui_set(True)
-        self.hub.switch_info_pane('investigator')
-        self.hub.select_ui_button(0)
-        self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+        if not self.is_mythos:
+            self.hub.gui_set(True)
+            self.hub.switch_info_pane('investigator')
+            self.hub.select_ui_button(0)
+        self.is_mythos = False
+        if not skip:
+            self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
 
     def set_buttons(self, key):
         self.wait_step = None
@@ -291,8 +300,8 @@ class EncounterPane():
             self.hub.choice_layout = create_choices(choices = choices, options = options, title='Discard ' + (name[0].upper() + name[1:] if name != None else kind) + ': ' + amt[0].upper() + amt[1:])
             self.hub.show_overlay()
 
-    def spend_clue(self, step='finish', amt=1):
-        for x in range(amt):
+    def spend_clue(self, step='finish', clues=1):
+        for x in range(clues):
             clue = random.choice(self.investigator.clues)
             self.investigator.clues.remove(clue)
             self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
@@ -306,11 +315,11 @@ class EncounterPane():
             self.wait_step = None
             self.set_buttons(step)
 
-    def monster_heal(self, amt):
+    def monster_heal(self, amt, step='finish'):
         for location in self.hub.location_manager.locations:
             for monster in self.hub.location_manager.locations[location]['monsters']:
-                #monster.heal(amt)
-                pass
+                monster.heal(amt)
+        self.set_buttons(step)
 
     def delay(self, step='finish'):
         self.investigator.delayed = True
@@ -480,27 +489,106 @@ class EncounterPane():
                 pass
             next_button = ActionButton(
                 width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.investigator.hp_san, action_args={'action': action, 'args': args})
-            self.hub.choice_layout = create_choices(choices = choices, options=[next_button], title='Taking Damage' ,subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))
+            self.hub.choice_layout = create_choices(choices = choices, options=[next_button], title='Taking Damage', subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))
             self.hub.show_overlay()
 
     def close_gate(self, step='finish'):
         self.wait_step = step
         map_name = self.hub.location_manager.get_map_name(self.investigator.location)
-        self.hub.networker.publish_payload({'message': 'remove_gate', 'value': map_name + ':' + self.investigator.location}, self.investigator.name)        
+        self.hub.networker.publish_payload({'message': 'remove_gate', 'value': map_name + ':' + self.investigator.location}, self.investigator.name)
+
+    def solve_rumor(self, step='finish'):
+        choices = []
+        def choose_rumor(key):
+            self.wait_step = step
+            self.hub.networker.publish_payload({'message': 'solve_rumor', 'value': key}, self.investigator.name)
+        for rumor in self.hub.rumors.keys():
+            choices.append(ActionButton(
+                width=100, height=300, texture='buttons/placeholder.png', text=human_readable(rumor), action=choose_rumor, action_args={'key': rumor}))
+            self.hub.choice_layout = create_choices(choices=choices, title='Select Rumor')
+            self.hub.show_overlay()
+
+    def end_mythos(self, action=''):
+        self.hub.networker.publish_payload({'message': 'end_mythos', 'value': action}, self.investigator.name)
+        self.finish(True)
+
+    def update_payments(self, minimum, maximum, is_first=None):
+        for x in range(4,7):
+            self.hub.choice_layout.children[x].enable()
+        self.min_payment = minimum
+        self.max_payment = maximum
+        owned = self.hub.info_requests[self.payment_kind]()
+        text_payment = min(maximum, owned)
+        self.hub.choice_layout.children[2].text = 'Minimum: ' + str(minimum) + '  ' + 'Required: ' + str(maximum) + '  ' + 'Owned: ' + str(owned)
+        if self.payment < minimum or self.payment > text_payment:
+            self.hub.choice_layout.children[5].disable()
+        if self.payment <= minimum:
+            self.hub.choice_layout.children[4].disable()
+        if self.payment >= text_payment:
+            self.hub.choice_layout.children[6].disable()
+        if is_first == None:
+            self.layout.children.remove(self.option_button)
+
+    def start_group_pay(self, kind):
+        self.payment = 0
+        self.payment_kind = kind
+        title = ''
+        match kind:
+            case 'clues':
+                title = 'Clues'
+            case 'hp':
+                title = 'Health'
+            case 'san':
+                title = 'Sanity'
+        choices = [ActionButton(height=100, width=100, text=str(self.payment), texture='buttons/placeholder.png')]
+        def increment(amt):
+            for x in range(4,7):
+                self.hub.choice_layout.children[x].enable()
+            self.payment += amt
+            self.hub.choice_layout.children[3].text = str(self.payment)
+            text_payment = min(self.max_payment, self.hub.info_requests[self.payment_kind]())
+            if self.payment < self.min_payment or self.payment > text_payment:
+                self.hub.choice_layout.children[5].disable()
+            if self.payment <= self.min_payment:
+                self.hub.choice_layout.children[4].disable()
+            if self.payment >= self.max_payment:
+                self.hub.choice_layout.children[6].disable()
+        def pay():
+            self.finish(True)
+            self.hub.networker.publish_payload({'message': 'payment_made', 'value': self.payment}, self.investigator.name)
+        options =[ActionButton(height=50, width=50, text='-', texture='buttons/placeholder.png', action=increment, action_args={'amt': -1}),
+                  ActionButton(height=50, width=100, text='Submit Payment', texture='buttons/placeholder.png', action=pay),
+                  ActionButton(height=50, width=50, text='+', texture='buttons/placeholder.png', action=increment, action_args={'amt': 1})]
+        self.hub.choice_layout = create_choices(choices=choices, options=options, title='Spend ' + title, subtitle='Waiting...')
+        self.hub.show_overlay()
+        self.option_button.action = self.action_dict[self.encounter['action']]
+        self.option_button.action_args = self.encounter.get('args', {})
+        self.option_button.text = self.encounter.get('action_text', '')
 
     def load_mythos(self, mythos):
-        mythos = 'a_dark_power'
+        self.encounter = MYTHOS[mythos]
+        self.encounter['name'] = mythos
         self.is_mythos = True
         self.phase_button.text = 'Mythos Phase'
-        actions = MYTHOS[mythos]['actions']
-        args = MYTHOS[mythos]['args']
         self.layout.clear()
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
-        text = MYTHOS[mythos]['flavor'] + '\n\n' + MYTHOS[mythos]['text']
+        text = human_readable(self.encounter['name']) + '\n\n' + self.encounter['flavor'] + '\n\n' + self.encounter['text']
+        if self.encounter.get('font_size', None) != None:
+            self.text_button.style = {'font_size': int(self.encounter['font_size'])}
         self.text_button.text = text
         self.hub.info_manager.trigger_render()
-        for x in range(len(args)):
-            self.action_dict[actions[x]](**args[x])
-        for y in range(len(args), len(actions) - len(args)):
-            self.action_dict[actions[y]]
+        self.option_button.action = lambda: None
+        self.option_button.action_args = None
+        self.option_button.text = 'Waiting for turn'
+        self.layout.add(self.option_button)
+
+    def activate_mythos(self):
+        self.layout.children.remove(self.option_button)
+        if self.encounter.get('lead_only', None) != None:
+            self.set_buttons('action')
+        else:
+            self.proceed_button.action = self.set_buttons
+            self.proceed_button.action_args = {'key': 'finish'}
+            self.proceed_button.text = 'Proceed'
+            self.layout.add(self.proceed_button)

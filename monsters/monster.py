@@ -5,7 +5,7 @@ with open('monsters/monsters.yaml') as stream:
     MONSTERS = yaml.safe_load(stream)
 
 class Monster():
-    def __init__(self, name):
+    def __init__(self, name, monster_id):
         self.name = name
         self.epic = False
         for key in MONSTERS[name]:
@@ -14,6 +14,7 @@ class Monster():
         self.reckoning = self.set_reckoning(self.reckoning) if hasattr(self, 'reckoning') else None
         self.spawn = self.set_spawn(self.spawn) if hasattr(self, 'spawn') else None
         self.damage = 0
+        self.monster_id = monster_id
 
     def set_reckoning(self, actions):
         pass
@@ -42,4 +43,5 @@ class Monster():
 
     def on_damage(self, amt, investigator=None):
         self.damage += amt
+        self.damage = 0 if self.damage < 0 else self.damage
         return self.damage >= self.toughness

@@ -40,10 +40,11 @@ class LocationPane():
         self.black = arcade.gui.UITextureButton(x=1000, y=425, width=280, height=120, texture=arcade.load_texture(
             IMAGE_PATH_ROOT + 'gui/overlay.png'))
         self.token_label = arcade.gui.UITextureButton(x=1000, y=555, width=280, height=20, text='TOKENS', texture=self.blank)
-        self.investigator_label = arcade.gui.UITextureButton(x=1000, y=380, width=280, height=20, text='INVESTIGATORS', texture=self.blank)
-        self.investigator_layout = arcade.gui.UILayout(x=1000, y=450, width=280, height=120)
-        self.monster_label = arcade.gui.UITextureButton(x=1000, y=555, width=280, height=20, text='MONSTERS', texture=self.blank)
-        self.monster_layout = arcade.gui.UILayout(x=1000, y=450, width=280, height=120)
+        self.investigator_label = arcade.gui.UITextureButton(x=1000, y=335, width=280, height=20, text='INVESTIGATORS', texture=self.blank)
+        self.investigator_layout = arcade.gui.UILayout(x=1000, y=405, width=280, height=120)
+        self.monster_label = arcade.gui.UITextureButton(x=1000, y=510, width=280, height=20, text='MONSTERS', texture=self.blank)
+        self.monster_layout = arcade.gui.UILayout(x=1000, y=405, width=280, height=120)
+        self.toggle_layout = arcade.gui.UILayout(x=1000, y=0, height=425, width=280)
 
         self.selected = None
         self.description_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
@@ -69,6 +70,23 @@ class LocationPane():
         self.icons = []
         for stat in ['lore', 'influence', 'observation', 'strength', 'will']:
             self.icons.append(arcade.load_texture(IMAGE_PATH_ROOT + 'icons/' + stat + '.png'))
+
+        self.toggle_rumor = ActionButton(1140, y=380, width=140, height=35, texture='buttons/placeholder.png', text='Rumors',
+                                              action=self.toggle_details, action_args={'flag': False}, texture_pressed='/buttons/pressed_placeholder.png')
+        self.toggle_info = ActionButton(1000, y=380, width=140, height=35, texture='buttons/placeholder.png', text='Details',
+                                          action=self.toggle_details, action_args={'flag': True}, texture_pressed='/buttons/pressed_placeholder.png')
+        self.rumor_details = arcade.gui.UITextureButton(x=1000, y=0, height=425, width=280, texture=self.blank)
+        self.rumors = {}
+        
+    def toggle_details(self, flag):
+        self.toggle_info.select(flag)
+        self.toggle_rumor.select(not flag)
+        self.toggle_layout.clear()
+        if flag:
+            for widget in [self.monster_layout, self.investigator_layout]:
+                self.toggle_layout.add(widget)
+        else:
+            self.toggle_layout.add(self.rumor_details)
 
     def location_select(self, key):
         location = self.location_manager.locations[key]
@@ -108,6 +126,7 @@ class LocationPane():
         self.token_layout.add(self.black)
         for icon in has:
             self.token_layout.add(self.tokens[icon])
+        return 'rumor' in has
 
     def update_list(self, kind):
         y_offset = 0
@@ -116,7 +135,7 @@ class LocationPane():
             label = self.monster_label
             inv_number = len(self.location_manager.locations[self.selected]['investigators'])
             y_offset = 0 if inv_number == 0 else 35 + (int((inv_number - 1) / 4) + 1) * 60
-            label.move(0, 380 - y_offset - label.y)
+            label.move(0, 335 - y_offset - label.y)
         else:
             layout = self.investigator_layout
             label = self.investigator_label
@@ -126,7 +145,7 @@ class LocationPane():
             layout.add(label)
             i = 0
             row = 0
-            y = 305 - y_offset + (19 if kind == 'monsters' else 0)
+            y = 260 - y_offset + (19 if kind == 'monsters' else 0)
             row_num = number - row * 4
             offset = (280 - (row_num * 49 + (row_num - 1) * 12)) / 2 if row_num < 4 else 24
             for unit in self.location_manager.locations[self.selected][kind]:
@@ -146,11 +165,19 @@ class LocationPane():
         pass
 
     def update_all(self):
-        self.update_tokens()
+        has_rumor = self.update_tokens()
         self.update_list('investigators')
         self.update_list('monsters')
-        for layout in [self.token_layout, self.investigator_layout, self.monster_layout]:
+        for layout in [self.token_layout, self.toggle_layout]:
             self.location_layout.add(layout)
+        self.location_layout.add(self.toggle_info)
+        self.location_layout.add(self.toggle_rumor)
+        self.toggle_rumor.enable()
+        if not has_rumor:
+            self.toggle_rumor.disable()
+        else:
+            self.rumor_details.text = next((rumor for rumor in self.rumors.keys() if self.rumors[rumor]['location'] == self.selected), {'text':''})['text']
+        self.toggle_details(True)
 
     def show_monster(self, unit):
         self.layout.clear()

@@ -42,3 +42,47 @@
     font_size: 13
     flavor: You wrap the towel around some ice and apply it to your injuries, hoping to reduce the swelling. You make a mental list of all the sacrifices that you've had to make and those that you've asked of others. All that terrible loss and you can't for the life of you think of any good that's been accomplished.
     text: Shuffle a solved Mystery back into the deck unless investigators as a group spend Clues equal to half the number of investigators.
+  ancient_guardians:
+    action:
+      - end_mythos
+    aargs:
+      - text: End Turn (All)
+    flavor: An article on the back page of the newspaper catches your attention. An unexplained attack on a remote outpost left no survivors. You've read about two other similar attacks happening in the same region. You can see that the forgotten corners of the globe are growing more dangerous.
+    text: 2 Monsters spawn on the Active Expedition space.
+  arrests_made_in_murder_case!:
+    action:
+      - condition_check
+    aargs:
+      - space_type: city
+        item_type: assets
+        tag: weapon
+        step: influence
+        fail: nothing
+        skip: True
+    influence:
+      - skill
+    iargs:
+      - stat: 1
+        step: no_effect
+        fail: detain
+    detain:
+      - request_card
+    dargs:
+      - skip: True
+        kind: conditions
+        name: detained
+        step: lose
+    lose:
+      - discard
+    largs:
+      - kind: assets
+        tag: weapon
+        skip: True
+    nothing:
+      - set_buttons
+    nargs:
+      - key: finish
+        text: Not under suspicion (skip)
+    font_size: 13
+    flavor: You open the door of your hotel to find several stone-faced policemen. There's been a lot of unexplained deaths and nothing attracts suspicion like being a stranger.
+    text: Each investigator on a City space with a Weapon possession tests Influence. If they fails, they discard 1 Weapon possession and gain a Detained Condition.

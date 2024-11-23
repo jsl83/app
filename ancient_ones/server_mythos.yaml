@@ -53,6 +53,12 @@
           amt: 2
     ancient_guardians:
       difficulty: 1
+      actions:
+        - spawn
+      args:
+        - piece: monsters
+          location: expedition
+          number: 2
     arrests_made_in_murder_case!:
       difficulty: 1
     burden_of_greed:

@@ -57,6 +57,7 @@ class Networker(threading.Thread, BanyanBase):
         self.mysteries = {}
         self.solved_mysteries = []
         self.omen = 0
+        self.expedition = None
 
         self.decks = {
             'conditions': [],
@@ -124,7 +125,8 @@ class Networker(threading.Thread, BanyanBase):
         self.action_dict = {
             'strengthen_ao': self.strengthen_ao,
             'heal_monsters': self.heal_monsters,
-            'group_pay': self.group_pay
+            'group_pay': self.group_pay,
+            'spawn': self.spawn
         }
         self.group_pay_info = {'needed': 0, 'paid': 0, 'investigators': {}, 'info_received': 0, 'kind': ''}
 
@@ -263,7 +265,7 @@ class Networker(threading.Thread, BanyanBase):
                                     if len(self.mythos_deck[x]) > 0:
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
-                                        name = 'all_for_nothing'
+                                        name = 'arrests_made_in_murder_case!'
                                         #END TESTING
                                         mythos = self.mythos_deck[x][name]
                                         self.publish_payload({'message': 'mythos', 'value': name}, 'server_update')
@@ -435,6 +437,8 @@ class Networker(threading.Thread, BanyanBase):
                         #self.decks[piece].remove(token)
                         self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
             case 'monsters':
+                if location == 'expedition':
+                    location = 'world:' + self.expedition
                 for x in range(number):
                     monster = random.choice(self.decks['monsters'])
                     #self.decks['monsters'].remove(monster)
@@ -450,8 +454,8 @@ class Networker(threading.Thread, BanyanBase):
                 for loc in self.expeditions:
                     for x in range(len(self.encounters[loc])):
                         locations.append(loc)
-                location = random.choice(locations)
-                self.publish_payload({'message': 'spawn', 'value': 'expedition', 'location': location, 'map': 'world'}, 'server_update')
+                self.expedition = random.choice(locations)
+                self.publish_payload({'message': 'spawn', 'value': 'expedition', 'location': self.expedition, 'map': 'world'}, 'server_update')
 
     def initiate_gameboard(self):
         self.current_phase = 0
@@ -488,7 +492,7 @@ class Networker(threading.Thread, BanyanBase):
                 card = random.choice(list(cards[color].keys()))
                 #FOR TESTING
                 if color == 1:
-                    card = 'all_for_nothing'
+                    card = 'arrests_made_in_murder_case!'
                 #END TESTING
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color

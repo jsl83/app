@@ -122,16 +122,16 @@ class HubScreen(arcade.View):
         self.networker.publish_payload({'message': 'ready'}, 'login')
         self.location_manager.locations[self.investigator.location]['investigators'].append(self.investigator)
         self.location_manager.all_investigators.append(self.investigator)
-        self.rumors = {}
 
         #FOR TESTING
         self.request_card('assets', 'arcane_tome')
+        self.request_card('assets', 'axe')
         self.investigator.sanity -= 3
         self.investigator.clues.append('world:arkham')
         self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
         #self.request_card('conditions', 'blessed')
-        self.rumors = {'TEST': {'location': 'space_15', 'eldritch': 4}}
-        self.location_manager.locations['space_15']['rumor'] = True
+        self.map.spawn('monsters', self.location_manager, 'space_1', 'avian_thrall')
+        self.location_manager.spawn_monster('avian_thrall', 'space_1', 'world')
         #END TESTING
         
     def on_draw(self):
@@ -347,10 +347,8 @@ class HubScreen(arcade.View):
                 match payload['value']:
                     case 'action':
                         if self.investigator.delayed:
-                            #self.investigator.delayed = False
-                            #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                            self.remaining_actions = 2
-                            print('delayed')
+                            self.investigator.delayed = False
+                            self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                         else:
                             self.remaining_actions = 2
                             #FOR TESTING
@@ -359,6 +357,9 @@ class HubScreen(arcade.View):
                             self.info_panes['investigator'].focus_action()
                             #END TESTING
                     case 'encounter':
+                        #FOR TESTING
+                        self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                        #END TESTING
                         self.show_encounter_pane()
                         self.encounter_pane.encounter_phase()
                     case 'reckoning':
@@ -379,7 +380,12 @@ class HubScreen(arcade.View):
             case 'doom':
                 self.set_doom(int(payload['value']))
             case 'gate_removed':
-                self.remove_gate(payload['value'])
+                loc = loc.split(':')
+                map_name = loc[0]
+                location = loc[1]
+                self.location_manager.locations[location]['gate'] = False
+                self.maps[map_name].remove_tokens('gate', location)
+                self.map.token_manager.trigger_render()
             case 'monster_damaged':
                 monster_id = int(payload['value'])
                 damage = int(payload['damage'])
@@ -396,9 +402,15 @@ class HubScreen(arcade.View):
                 else:
                     monster = next((monster for monster in self.location_manager.all_monsters if monster.monster_id == int(payload['value'])))
                     damage_monster(monster, damage)
+            case 'spawn_rumor':
+                rumor = self.encounter_pane.get_rumor(payload['value'])
+                self.map.spawn('rumor', self.location_manager, rumor['location'])
+                self.info_panes['location'].rumors[payload['value']] = {'location': rumor['location'], 'text': rumor['flavor'] + '\n\n' + rumor['text']}
             case 'rumor_solved':
-                self.location_manager.locations[self.rumors[payload['value']]['location']]['rumor'] = False
-                del self.rumors[payload['value']]
+                rumor = self.info_panes['location'].rumors[payload['value']]
+                self.location_manager.locations[rumor['location']]['rumor'] = False
+                self.maps['world'].remove_tokens('rumor', rumor['location'])
+                del self.info_panes['location'].rumors[payload['value']]
             case 'info_request':
                 self.networker.publish_payload({'message': 'send_info', 'value': self.info_requests[payload['value']]()}, self.investigator.name)
             case 'group_pay_update':
@@ -649,12 +661,4 @@ class HubScreen(arcade.View):
                 self.actions_taken[action]['taken'] = False
 
     def damage_monster(self, monster, damage):
-        self.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
-
-    def remove_gate(self, loc):
-        loc = loc.split(':')
-        map_name = loc[0]
-        location = loc[1]
-        self.location_manager.locations[location]['gate'] = False
-        self.maps[map_name].remove_gate(location)
-        self.map.token_manager.trigger_render()
+        self.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)        

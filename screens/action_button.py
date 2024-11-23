@@ -70,3 +70,9 @@ class ActionButton(arcade.gui.UITextureButton):
             self.action()
         if self.is_action:
             self.action_available(False)
+
+    def unset(self):
+        self.action = lambda: None
+        self.action_args = None
+        self.text = ''
+        self.enable()

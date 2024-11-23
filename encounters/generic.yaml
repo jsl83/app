@@ -63,6 +63,7 @@
       nargs:
         - kind: assets
           tag: item
+          skip: True
       test_text: The shop is robbed while you are browsing! You attempt to fend off the thieves.
       pass_text: The store owner is very gracious.
       fail_text: Lose 1 Health and discard an Item Asset.

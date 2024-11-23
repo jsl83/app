@@ -25,7 +25,7 @@ class EncounterPane():
         self.rolls = []
         self.phase_button = ActionButton(x=1020, width=240, y=725, height=50, texture='blank.png')
         self.text_button = ActionButton(x=1020, width=240, y=300, height=400, texture='blank.png')
-        self.proceed_button = ActionButton(1020, 200, 240, 50, 'buttons/placeholder.png')
+        self.proceed_button = ActionButton(1020, 200, 240, 50, 'buttons/pressed_placeholder.png')
         self.option_button = ActionButton(1020, 125, 240, 50, 'buttons/placeholder.png')
         self.last_button = ActionButton(1020, 50, 240, 50, 'buttons/placeholder.png')
         self.action_dict = {
@@ -50,7 +50,9 @@ class EncounterPane():
             'spawn_fight': self.spawn_fight,
             'close_gate': self.close_gate,
             'solve_rumor': self.solve_rumor,
-            'end_mythos': self.end_mythos
+            'end_mythos': self.end_mythos,
+            'group_pay': self.group_pay,
+            'shuffle_mystery': self.shuffle_mystery
         }
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
@@ -63,7 +65,6 @@ class EncounterPane():
         self.layout.add(self.text_button)
         self.layout.add(self.proceed_button)
         self.layout.add(self.phase_button)
-        self.is_mythos = False
         self.move_action = None
         self.click_action = None
         self.allowed_locs = {}
@@ -73,7 +74,6 @@ class EncounterPane():
         self.min_payment = 0
         self.max_payment = 0
         self.payment = 0
-        self.payment_kind = ''
 
     def discard_check(self, kind, tag='any', name=None):
         items = self.investigator.possessions[kind]
@@ -207,8 +207,7 @@ class EncounterPane():
     def finish(self, skip=False):
         self.layout.clear()
         for button in [self.phase_button, self.text_button, self.proceed_button, self.option_button, self.last_button]:
-            button.text = ''
-            button.enable()
+            button.unset()
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
         self.encounter = None
@@ -218,11 +217,9 @@ class EncounterPane():
         self.rolls = []
         self.ambush_monster = None
         self.hub.clear_overlay()
-        if not self.is_mythos:
-            self.hub.gui_set(True)
-            self.hub.switch_info_pane('investigator')
-            self.hub.select_ui_button(0)
-        self.is_mythos = False
+        self.hub.gui_set(True)
+        self.hub.switch_info_pane('investigator')
+        self.hub.select_ui_button(0)
         if not skip:
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
 
@@ -505,90 +502,85 @@ class EncounterPane():
         for rumor in self.hub.rumors.keys():
             choices.append(ActionButton(
                 width=100, height=300, texture='buttons/placeholder.png', text=human_readable(rumor), action=choose_rumor, action_args={'key': rumor}))
-            self.hub.choice_layout = create_choices(choices=choices, title='Select Rumor')
+        self.hub.choice_layout = create_choices(choices=choices, title='Select Rumor')
+        self.hub.show_overlay()
+
+    def end_mythos(self):
+        self.hub.networker.publish_payload({'message': 'end_mythos'}, self.investigator.name)
+
+    def group_pay(self, kind, step='finish'):
+        calc_max = min(self.max_payment, self.hub.info_requests[kind]())
+        if calc_max == 0:
+            self.set_buttons(step)
+        else:
+            self.payment = self.min_payment
+            title = ''
+            match kind:
+                case 'clues':
+                    title = 'Clues'
+                case 'hp':
+                    title = 'Health'
+                case 'san':
+                    title = 'Sanity'
+            payment_button = ActionButton(height=100, width=100, text=str(self.payment), texture='buttons/placeholder.png')
+            minus_button = ActionButton(height=50, width=50, text='-', texture='buttons/placeholder.png', action_args={'amt': -1})
+            submit_button = ActionButton(height=50, width=100, text='Submit Payment', texture='buttons/placeholder.png')
+            plus_button =  ActionButton(height=50, width=50, text='+', texture='buttons/placeholder.png', action_args={'amt': 1})
+            options = [minus_button, submit_button, plus_button]
+            def increment(amt):
+                for button in options:
+                    button.enable()
+                self.payment += amt
+                payment_button.text = str(self.payment)
+                if self.payment < self.min_payment or self.payment > calc_max:
+                    submit_button.disable()
+                if self.payment <= self.min_payment:
+                    minus_button.disable()
+                if self.payment >= calc_max:
+                    plus_button.disable()
+            def pay():
+                self.hub.networker.publish_payload({'message': 'payment_made', 'value': self.payment}, self.investigator.name)
+                if kind == 'clues':
+                    self.spend_clue(step, self.payment)
+                elif kind == 'hp':
+                    self.hp_san(step, self.payment)
+                else:
+                    self.hp_san(step, 0, self.payment)
+            minus_button.action = increment
+            plus_button.action = increment
+            submit_button.action = pay
+            subtitle = 'Minimum: ' + str(self.min_payment) + '  ' + 'Maximum: ' + str(calc_max)
+            self.hub.choice_layout = create_choices(choices=[payment_button], options=options, title='Spend ' + title, subtitle=subtitle)
+            if self.hub.lead_investigator != self.investigator.name and self.proceed_button in self.layout.children:
+                self.layout.remove(self.proceed_button)
+                self.proceed_button.unset()
+            minus_button.disable()
+            if self.payment == calc_max:
+                plus_button.disable()
             self.hub.show_overlay()
 
-    def end_mythos(self, action=''):
-        self.hub.networker.publish_payload({'message': 'end_mythos', 'value': action}, self.investigator.name)
-        self.finish(True)
-
-    def update_payments(self, minimum, maximum, is_first=None):
-        for x in range(4,7):
-            self.hub.choice_layout.children[x].enable()
-        self.min_payment = minimum
-        self.max_payment = maximum
-        owned = self.hub.info_requests[self.payment_kind]()
-        text_payment = min(maximum, owned)
-        self.hub.choice_layout.children[2].text = 'Minimum: ' + str(minimum) + '  ' + 'Required: ' + str(maximum) + '  ' + 'Owned: ' + str(owned)
-        if self.payment < minimum or self.payment > text_payment:
-            self.hub.choice_layout.children[5].disable()
-        if self.payment <= minimum:
-            self.hub.choice_layout.children[4].disable()
-        if self.payment >= text_payment:
-            self.hub.choice_layout.children[6].disable()
-        if is_first == None:
-            self.layout.children.remove(self.option_button)
-
-    def start_group_pay(self, kind):
-        self.payment = 0
-        self.payment_kind = kind
-        title = ''
-        match kind:
-            case 'clues':
-                title = 'Clues'
-            case 'hp':
-                title = 'Health'
-            case 'san':
-                title = 'Sanity'
-        choices = [ActionButton(height=100, width=100, text=str(self.payment), texture='buttons/placeholder.png')]
-        def increment(amt):
-            for x in range(4,7):
-                self.hub.choice_layout.children[x].enable()
-            self.payment += amt
-            self.hub.choice_layout.children[3].text = str(self.payment)
-            text_payment = min(self.max_payment, self.hub.info_requests[self.payment_kind]())
-            if self.payment < self.min_payment or self.payment > text_payment:
-                self.hub.choice_layout.children[5].disable()
-            if self.payment <= self.min_payment:
-                self.hub.choice_layout.children[4].disable()
-            if self.payment >= self.max_payment:
-                self.hub.choice_layout.children[6].disable()
-        def pay():
-            self.finish(True)
-            self.hub.networker.publish_payload({'message': 'payment_made', 'value': self.payment}, self.investigator.name)
-        options =[ActionButton(height=50, width=50, text='-', texture='buttons/placeholder.png', action=increment, action_args={'amt': -1}),
-                  ActionButton(height=50, width=100, text='Submit Payment', texture='buttons/placeholder.png', action=pay),
-                  ActionButton(height=50, width=50, text='+', texture='buttons/placeholder.png', action=increment, action_args={'amt': 1})]
-        self.hub.choice_layout = create_choices(choices=choices, options=options, title='Spend ' + title, subtitle='Waiting...')
-        self.hub.show_overlay()
-        self.option_button.action = self.action_dict[self.encounter['action']]
-        self.option_button.action_args = self.encounter.get('args', {})
-        self.option_button.text = self.encounter.get('action_text', '')
+    def shuffle_mystery(self, step='finish'):
+        self.hub.networker.publish_payload({'message': 'shuffle_mystery'}, self.investigator.name)
+        self.set_buttons(step)
 
     def load_mythos(self, mythos):
         self.encounter = MYTHOS[mythos]
-        self.encounter['name'] = mythos
-        self.is_mythos = True
         self.phase_button.text = 'Mythos Phase'
         self.layout.clear()
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
-        text = human_readable(self.encounter['name']) + '\n\n' + self.encounter['flavor'] + '\n\n' + self.encounter['text']
+        text = human_readable(mythos) + '\n\n' + self.encounter['flavor'] + '\n\n' + self.encounter['text']
         if self.encounter.get('font_size', None) != None:
             self.text_button.style = {'font_size': int(self.encounter['font_size'])}
         self.text_button.text = text
         self.hub.info_manager.trigger_render()
+        self.option_button.text = 'Waiting for turn'
         self.option_button.action = lambda: None
         self.option_button.action_args = None
-        self.option_button.text = 'Waiting for turn'
         self.layout.add(self.option_button)
 
     def activate_mythos(self):
-        self.layout.children.remove(self.option_button)
-        if self.encounter.get('lead_only', None) != None:
-            self.set_buttons('action')
+        if self.encounter.get('lead_only', None) != None and self.investigator.name != self.hub.lead_investigator:
+            self.set_buttons('finish')
         else:
-            self.proceed_button.action = self.set_buttons
-            self.proceed_button.action_args = {'key': 'finish'}
-            self.proceed_button.text = 'Proceed'
-            self.layout.add(self.proceed_button)
+            self.set_buttons('action')

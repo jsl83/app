@@ -124,10 +124,9 @@ class Networker(threading.Thread, BanyanBase):
         self.action_dict = {
             'strengthen_ao': self.strengthen_ao,
             'heal_monsters': self.heal_monsters,
-            'group_pay': self.group_pay,
-            'shuffle_mystery': self.shuffle_mystery
+            'group_pay': self.group_pay
         }
-        self.group_pay_info = {'needed': 0, 'paid': 0, 'investigators': {}, 'info_received': 0, 'waiting': False, 'kind': ''}
+        self.group_pay_info = {'needed': 0, 'paid': 0, 'investigators': {}, 'info_received': 0, 'kind': ''}
 
         # temporary variables set for testing - DELETE LATER
         self.set_subscriber_topic('akachi_onyele')
@@ -206,7 +205,6 @@ class Networker(threading.Thread, BanyanBase):
                     self.mythos_setup()
                     self.ancient_one['doom'] = 15
                     self.decks['gates']['board'] = []
-                    self.group_pay_info['waiting'] = False
                     #END TESTING
                     self.initiate_gameboard()
                     self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
@@ -293,7 +291,7 @@ class Networker(threading.Thread, BanyanBase):
                             self.yellow_card = False
                         if self.current_phase == 4:
                             self.end_mythos()
-                        elif not self.group_pay_info['waiting']:
+                        else:
                             topic = ''
                             if self.current_phase == 2 and mythos != None and mythos.get('lead_only', None) != None:
                                 topic = 'server_update'
@@ -323,25 +321,22 @@ class Networker(threading.Thread, BanyanBase):
                         self.group_pay_info['investigators'][topic] = payload['value']
                         self.group_pay_info['info_received'] += 1
                         if self.group_pay_info['info_received'] == len(self.selected_investigators):
-                            for investigator in self.selected_investigators:
-                                payments = self.calc_group_payments(investigator)
-                                self.publish_payload({'message': 'group_pay_update', 'max': payments[1], 'min': payments[0], 'first': True}, investigator + '_server')
+                            lead = self.selected_investigators[self.lead_investigator]
+                            payments = self.calc_group_payments(lead)
+                            self.publish_payload({'message': 'group_pay_update', 'max': payments[1], 'min': payments[0]}, lead + '_server')
                     case 'payment_made':
                         self.group_pay_info['paid'] += int(payload['value'])
-                        if self.group_pay_info['paid'] == self.group_pay_info['needed']:
-                            self.end_mythos()
-                        else:
-                            del self.group_pay_info['investigators'][payload['name']]
-                            for investigator in self.group_pay_info['investigators'].keys():
-                                payments = self.calc_group_payments(investigator)
-                                self.publish_payload({'message': 'group_pay_update', 'max': payments[1], 'min': payments[0]}, investigator + '_server')
+                        index = (self.current_player + 1) % len(self.selected_investigators)
+                        if index != self.lead_investigator:
+                            investigator = self.selected_investigators[index]
+                            payments = self.calc_group_payments(investigator)
+                            self.publish_payload({'message': 'group_pay_update', 'max': payments[1], 'min': payments[0]}, investigator + '_server')
                     case 'end_mythos':
-                        if payload['value'] != '':
-                            self.action_dict[payload['value']]()
                         self.end_mythos()
+                    case 'shuffle_mystery':
+                        self.shuffle_mystery()
 
     def end_mythos(self):
-        self.group_pay_info['waiting'] = False
         self.current_phase = 0
         self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
 
@@ -349,8 +344,8 @@ class Networker(threading.Thread, BanyanBase):
         max_pay = self.group_pay_info['needed'] - self.group_pay_info['paid']
         min_pay = 0
         remaining = 0
-        investigators = [investigator for investigator in self.group_pay_info['investigators'].keys() if investigator != name]
-        for investigator in investigators:
+        del self.group_pay_info['investigators'][name]
+        for investigator in self.group_pay_info['investigators'].keys():
             remaining += self.group_pay_info['investigators'][investigator]
         min_pay = max_pay - remaining
         min_pay = 0 if min_pay < 0 else min_pay
@@ -363,9 +358,6 @@ class Networker(threading.Thread, BanyanBase):
         self.group_pay_info['needed'] = math.ceil((len(self.selected_investigators) if count == 'investigators' else len(self.decks['gates']['board'])) / amt)
         self.group_pay_info['paid'] = 0
         self.group_pay_info['info_received'] = 0
-        self.group_pay_info['waiting'] = True
-        self.group_pay_info['kind'] = kind
-        self.publish_payload({'message': 'start_group_pay', 'value': self.group_pay_info['kind']}, 'server_update')
         self.publish_payload({'message': 'info_request', 'value': kind}, 'server_update')
 
     def asset_request(self, command, name, tag=''):
@@ -534,7 +526,7 @@ class Networker(threading.Thread, BanyanBase):
         if len(self.solved_mysteries) > 0:
             mystery = random.choice(self.solved_mysteries)
             self.solved_mysteries.remove(mystery)
-            self.publish_payload({'message': 'mystery_count', 'value': len(self.solved_mysteries)}, 'server_update')
+            self.publish_payload({'message': 'mystery_count', 'value': str(len(self.solved_mysteries))}, 'server_update')
         else:
             self.move_doom()
 

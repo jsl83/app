@@ -363,7 +363,7 @@ class HubScreen(arcade.View):
                         self.encounter_pane.encounter_phase()
                     case 'reckoning':
                         #self.reckonings()
-                        pass
+                        self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                     case 'mythos':
                         self.encounter_pane.activate_mythos()
             case 'encounter_choice':
@@ -402,9 +402,10 @@ class HubScreen(arcade.View):
             case 'info_request':
                 self.networker.publish_payload({'message': 'send_info', 'value': self.info_requests[payload['value']]()}, self.investigator.name)
             case 'group_pay_update':
-                self.encounter_pane.update_payments(payload['min'], payload['max'], payload.get('first', None))
-            case 'start_group_pay':
-                self.encounter_pane.start_group_pay(payload['value'])
+                self.encounter_pane.min_payment = payload['min']
+                self.encounter_pane.max_payment = payload['max']
+            case 'mystery_count':
+                self.info_panes['ancient_one'].mystery_count.text = str(int(self.ancient_one.mysteries) - int(payload['value']))
 
         if self.encounter_pane.wait_step != None:
             self.encounter_pane.set_buttons(self.encounter_pane.wait_step)

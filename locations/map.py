@@ -88,7 +88,7 @@ class Map():
         self.manager.draw()
         self.token_manager.draw()
 
-    def spawn(self, kind, manager, location_name, name=None):
+    def spawn(self, kind, manager, location_name, name=None, monster_id=None):
         location = manager.locations[location_name]
         path = None
         offset = 0
@@ -113,12 +113,12 @@ class Map():
         item = TOKEN_DICT[kind]
         button = ActionButton(location['x'] * 2 - item['size'] * item['scale'] / 2, location['y'] * 2 - item['size'] * item['scale'] / 2 - offset * 45,
                                 texture=path, scale=item['scale'], name=location_name)
-        button.item_name = name
+        button.item_name = name if monster_id == None else monster_id
         self.layouts[kind].add(button)
         button.move(self.map.x, self.map.y + 400)
         zoom_button = ActionButton(location['x'] - item['size'] * item['zoom_scale'] / 2, location['y'] - item['size'] * item['zoom_scale'] / 2 - offset * 25,
                                     texture=path, scale=item['zoom_scale'], name=location_name)
-        zoom_button.item_name = name
+        zoom_button.item_name = name if monster_id == None else monster_id
         self.zoom_layout.add(zoom_button)
 
     def move_tokens(self, kind, location, destination, zoom_destination, dest_name, name=None):

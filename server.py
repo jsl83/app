@@ -92,6 +92,8 @@ class Networker(threading.Thread, BanyanBase):
             'gate': [24, list(range(24))]
         }
         self.expeditions = ['the_amazon', 'the_pyramids', 'the_heart_of_africa', 'antarctica', 'tunguska', 'the_himalayas']
+        self.monster_id = 0
+        self.monsters = []
 
         for map in LOCATIONS.keys():
             for location in LOCATIONS[map].keys():
@@ -111,15 +113,13 @@ class Networker(threading.Thread, BanyanBase):
             self.assets['deck'].append(key)
 
         for key in MONSTERS.keys():
-            if MONSTERS[key] != None:
-                try:
-                    count = int(MONSTERS[key])
-                    for x in range(count):
-                        self.decks['monsters'].append(key)
-                except:
-                    self.decks['epic_monsters'].append(key)
+            count = MONSTERS[key].get('count', 1)
+            is_epic = MONSTERS[key].get('epic', False)
+            if is_epic:
+                self.decks['epic_monsters'].append(key)
             else:
-                self.decks['monsters'].append(key)
+                for x in range(count):
+                    self.decks['monsters'].append(key)
 
         self.triggers = {}
         self.action_dict = {
@@ -265,7 +265,7 @@ class Networker(threading.Thread, BanyanBase):
                                     if len(self.mythos_deck[x]) > 0:
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
-                                        name = 'arrests_made_in_murder_case!'
+                                        name = 'blood_flows'
                                         #END TESTING
                                         mythos = self.mythos_deck[x][name]
                                         self.publish_payload({'message': 'mythos', 'value': name}, 'server_update')
@@ -316,6 +316,7 @@ class Networker(threading.Thread, BanyanBase):
                         self.decks['gates']['discard'].append(payload['value'])
                         self.publish_payload({'message': 'gate_removed', 'value': payload['value']}, 'server_update')
                     case 'damage_monster':
+                        self.server_damage_monster(int(payload['damage']), int(payload['value']))
                         self.publish_payload({'message': 'monster_damaged', 'value': payload['value'], 'damage': payload['damage']}, 'server_update')
                     case 'solve_rumor':
                         self.publish_payload({'message': 'rumor_solved', 'value': payload['value']}, 'server_update')
@@ -337,6 +338,11 @@ class Networker(threading.Thread, BanyanBase):
                         self.end_mythos()
                     case 'shuffle_mystery':
                         self.shuffle_mystery()
+                    case 'move_monster':
+                        self.publish_payload({'message': 'monster_moved', 'value': payload['value'], 'location': payload['location']}, 'server_update')
+                        index = next((i for i, monster in enumerate(self.monsters) if monster['monster_id'] == int(payload['value'])), None)
+                        chosen = self.monsters[index]
+                        chosen['location'] = payload['location']
 
     def end_mythos(self):
         self.current_phase = 0
@@ -354,7 +360,22 @@ class Networker(threading.Thread, BanyanBase):
         return (min_pay, max_pay)
 
     def heal_monsters(self, amt):
+        self.server_damage_monster(amt)
         self.publish_payload({'message': 'monster_damaged', 'value': -1, 'damage': amt}, 'server_update')
+
+    def server_damage_monster(self, amt, monster_id=None):
+        def do_damage(monster, dmg):
+            damage = monster['damage'] + dmg
+            monster['damage'] = damage if damage >= 0 else damage
+            if damage >= int(MONSTERS[monster['name']].get('toughness')):
+                self.monsters.remove(monster)
+        if monster_id == None:
+            for monster in self.monsters:
+                do_damage(monster, amt)
+        else:
+            index = next((i for i, monster in enumerate(self.monsters) if monster['monster_id'] == monster_id), None)
+            chosen = self.monsters[index]
+            do_damage(chosen, amt)
 
     def group_pay(self, kind, count='investigators', amt=1):
         self.group_pay_info['needed'] = math.ceil((len(self.selected_investigators) if count == 'investigators' else len(self.decks['gates']['board'])) / amt)
@@ -442,13 +463,17 @@ class Networker(threading.Thread, BanyanBase):
                 for x in range(number):
                     monster = random.choice(self.decks['monsters'])
                     #self.decks['monsters'].remove(monster)
+                    server_monster = {'name': monster, 'location': location, 'monster_id': self.monster_id, 'damage': 0}
+                    self.monsters.append(server_monster)
                     self.publish_payload({'message': 'spawn',
                                         'value': 'monsters',
                                         'location': location.split(':')[1],
                                         'map': location.split(':')[0],
-                                        'name': monster
+                                        'name': monster,
+                                        'monster_id': self.monster_id
                                         },
                                         'server_update')
+                    self.monster_id += 1
             case 'expedition':
                 locations = []
                 for loc in self.expeditions:
@@ -491,8 +516,8 @@ class Networker(threading.Thread, BanyanBase):
                 color = int(character)
                 card = random.choice(list(cards[color].keys()))
                 #FOR TESTING
-                if color == 1:
-                    card = 'arrests_made_in_murder_case!'
+                if color == 0:
+                    card = 'blood_flows'
                 #END TESTING
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color

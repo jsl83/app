@@ -10,7 +10,6 @@ class LocationManager():
         self.locations = {}
         self.clue_count = 0
         self.all_investigators = []
-        self.monster_id = 0
         self.all_monsters = []
         try:
             with open('locations/locations.yaml') as stream:
@@ -39,9 +38,8 @@ class LocationManager():
         neighbors = lambda name: list(map(lambda route: list(route.keys())[0], self.locations[name]['routes']))
         return astar.find_path(start, goal, neighbors)
     
-    def spawn_monster(self, name, location, world):
-        monster = Monster(name, self.monster_id)
-        self.monster_id += 1
+    def spawn_monster(self, name, location, world, monster_id):
+        monster = Monster(name, monster_id)
         monster.location = location
         monster.map = world
         self.all_monsters.append(monster)

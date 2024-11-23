@@ -126,12 +126,11 @@ class HubScreen(arcade.View):
         #FOR TESTING
         self.request_card('assets', 'arcane_tome')
         self.request_card('assets', 'axe')
+        self.request_card('assets', 'arcane_scholar')
         self.investigator.sanity -= 3
         self.investigator.clues.append('world:arkham')
         self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
         #self.request_card('conditions', 'blessed')
-        self.map.spawn('monsters', self.location_manager, 'space_1', 'avian_thrall')
-        self.location_manager.spawn_monster('avian_thrall', 'space_1', 'world')
         #END TESTING
         
     def on_draw(self):
@@ -295,14 +294,17 @@ class HubScreen(arcade.View):
         match payload['message']:
             case 'spawn':
                 name = payload.get('name', '')
-                self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name)
+                monster_id = None
                 if payload['value'] == 'investigators':
                     if name != self.investigator.name:
                         self.location_manager.spawn_investigator(name, payload['location'])
                 elif payload['value'] == 'monsters':
-                    self.encounter_pane.ambush_monster = self.location_manager.spawn_monster(name, payload['location'], payload['map'])
+                    monster = self.location_manager.spawn_monster(name, payload['location'], payload['map'], int(payload['monster_id']))
+                    self.encounter_pane.ambush_monster = monster
+                    monster_id = str(monster.monster_id)
                 if payload['location'] == self.info_panes['location'].selected:
                     self.info_panes['location'].update_all()
+                self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name, monster_id)
             case 'spells':
                 self.item_received('spells', payload['value'])
             case 'artifacts':
@@ -394,7 +396,7 @@ class HubScreen(arcade.View):
                     if dead:
                         self.location_manager.locations[monster.location]['monsters'].remove(monster)
                         self.location_manager.all_monsters.remove(monster)
-                        self.map.remove_tokens('monsters', monster)
+                        self.map.remove_tokens('monsters', monster.location, str(payload['value']))
                         self.map.token_manager.trigger_render()
                 if monster_id < 0:
                     for monster in self.location_manager.all_monsters:
@@ -418,6 +420,9 @@ class HubScreen(arcade.View):
                 self.encounter_pane.max_payment = payload['max']
             case 'mystery_count':
                 self.info_panes['ancient_one'].mystery_count.text = str(int(self.ancient_one.mysteries) - int(payload['value']))
+            case 'monster_moved':
+                monster = next((monster for monster in self.location_manager.all_monsters if monster.monster_id == int(payload['value'])), None)
+                self.move_unit(monster, payload['location'], 'monsters')
 
         if self.encounter_pane.wait_step != None:
             self.encounter_pane.set_buttons(self.encounter_pane.wait_step)

@@ -86,3 +86,69 @@
     font_size: 13
     flavor: You open the door of your hotel to find several stone-faced policemen. There's been a lot of unexplained deaths and nothing attracts suspicion like being a stranger.
     text: Each investigator on a City space with a Weapon possession tests Influence. If they fails, they discard 1 Weapon possession and gain a Detained Condition.
+  blood_flows:
+    action:
+      - damage_monsters
+    aargs:
+      - damage: 99
+        lose_hp: True
+        skip: True
+    font_size: 13
+    flavor: >
+      "Strong gris-gris," the old man told you. You've been wearing the pouch around your neck ever since New Orleans. "You want it to spill blood fuh you," he drawled, "you has to spill your blood fuh the gris-gris."
+    text: The Lead Investigator discards 1 Monster of his choice and loses Health equal to its toughness.
+  burden_of_greed:
+    action:
+      - condition_check
+    aargs:
+      - item_type: assets
+        tag: item
+        step: discard
+        fail: nothing
+        skip: True
+    nothing:
+      - set_buttons
+    nargs:
+      - key: finish
+        text: Temperance is a virtue (skip)
+    discard:
+      - discard
+    dargs:
+      - kind: assets
+        tag: item
+        amt: select
+        step: health
+        skip: True
+    health:
+      - hp_san
+    hargs:
+      - kind: assets
+        tag: item
+        stat: health
+        skip: True
+    flavor: You can't sleep and can't stop shaking. Compulsively, you open up your suitcase and count everything, gripping everything you own so tightly your hands bleed.
+    text: Each investigator may discard any number of Item possessions, then they lose 1 Health for each Item possession they have.
+  buying_information:
+    action:
+      - skill
+    aargs:
+      - stat: 1
+        fail: no_effect
+    pass:
+      - gain_clue
+    pargs:
+      - rolls: True
+        skip: True
+    font_size: 11
+    flavor: >
+      "When you get there, stop at this address." The nervous little man hands you a business card for a restaurant. "Ask for the catch of the day and then tuck a sawbuck into your napkin. These guys can get you the answers you need." When you get the bill for your meal, it includes directions to a payphone. It's already ringing by the time you find it. You answer and explain your situation to the gruff voice on the other end of the line.
+    text: The Lead Investigator tests Influence and gains a number of Clues equal to their test result.
+  calling_the_elder_things:
+    action:
+      - end_mythos
+    aargs:
+      - text: End Turn (All)
+    font_size: 13
+    flavor: According to the police report, several individuals entered the warehouse in the middle of the night. They performed some sort of ritual which culminated in their death. What you know that the police don't is that, afterward, something inhuman left that warehouse.
+    text: Spawn 1 Monster on each space that contains a Cultist Monster.
+  

@@ -1,3 +1,6 @@
 ---
   avian_thrall:
     toughness: 3
+  cultist:
+    toughness: 1
+    count: 6

@@ -382,6 +382,7 @@ class HubScreen(arcade.View):
             case 'doom':
                 self.set_doom(int(payload['value']))
             case 'gate_removed':
+                loc = payload['value']
                 loc = loc.split(':')
                 map_name = loc[0]
                 location = loc[1]

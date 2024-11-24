@@ -151,4 +151,25 @@
     font_size: 13
     flavor: According to the police report, several individuals entered the warehouse in the middle of the night. They performed some sort of ritual which culminated in their death. What you know that the police don't is that, afterward, something inhuman left that warehouse.
     text: Spawn 1 Monster on each space that contains a Cultist Monster.
+  desperate_times:
+    action:
+      - request_card
+      - set_doom
+    aargs:
+      - text: Gain a Dark Pact Condition
+        kind: conditions
+        name: dark_pact
+      - increment: -2
+        text: Advance Doom by 2
+    font_size: 13
+    flavor: You hear it again and again on the news. Every day the world takes another step toward utter annihilation. You ask yourself, how much would you sacrifice to prevent that disaster? Even if you could only grant humanity one more day of existence, could you honestly say that the price was too high?
+    text: Doom advances by 2 unless the Lead Investigator gains a Dark Pact Condition.
+  dimensional_instability:
+    action:
+      - end_mythos
+    aargs:
+      - text: End Turn (All)
+    font_size: 13
+    flavor: You cannot believe that this gibbering lunatic was once the smiling, lucid lawyer you spoke to this morning. "Collapsed," his trembling hands indicated empty air. "The worlds collided, and the door collapsed!" He abruptly pulls himself off the floor and looks out the small window of his cell. "But so too will they pull. They will rip and tear, and a new door will open elsewhere."
+    text: Discard each Gate that corresponds to the current Omen and advance Doom by 1 for each Gate discarded.
   

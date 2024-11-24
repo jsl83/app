@@ -11,8 +11,19 @@
       lead_only: True
     calling_the_elder_things:
       difficulty: 1
+      actions:
+        - spawn
+      args:
+        - piece: monsters
+          locations: cultists
     dimensional_instability:
       difficulty: 1
+      actions:
+        - move_doom
+        - discard_gates
+      args:
+        - gates: True
+        - omen: True
     driven_to_bankruptcy:
       difficulty: 1
     from_beyond:
@@ -65,8 +76,9 @@
       difficulty: 1
     burden_of_greed:
       difficulty: 1
-    desparate_times:
+    desperate_times:
       difficulty: 2
+      lead_only: True
     everyone_has_a_price:
       difficulty: 0
     eyes_everywhere:

@@ -14,3 +14,16 @@
       - ambush
     text: If you lose Sanity from the Will test, gain a Corruption Condition.
     reckoning_text: Move this Monster to the nearest Investigator. Then they encounter this Monster.
+  cultist:
+    horror:
+      index: 4
+      mod: 0
+      san: 1
+    strength:
+      index: 3
+      mod: 0
+      str: 1
+    toughness: 1
+    reckoning:
+    text: '*'
+    reckoning_text:

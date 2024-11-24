@@ -7,7 +7,7 @@ SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 800
 SCREEN_TITLE = "ELDRITCH HORROR"
 REFERENCES = { #gates, clues, surge
-    1: [1, 1, 1],
+    1: [3, 1, 1],
     2: [1, 2, 2],
     3: [2, 3, 2],
     4: [2, 4, 3]
@@ -126,9 +126,13 @@ class Networker(threading.Thread, BanyanBase):
             'strengthen_ao': self.strengthen_ao,
             'heal_monsters': self.heal_monsters,
             'group_pay': self.group_pay,
-            'spawn': self.spawn
+            'spawn': self.spawn,
+            'move_doom': self.move_doom,
+            'discard_gates': self.discard_gates
         }
         self.group_pay_info = {'needed': 0, 'paid': 0, 'investigators': {}, 'info_received': 0, 'kind': ''}
+        self.omen_cycle = ['green', 'blue', 'red', 'blue']
+        self.mythos = None
 
         # temporary variables set for testing - DELETE LATER
         self.set_subscriber_topic('akachi_onyele')
@@ -146,6 +150,10 @@ class Networker(threading.Thread, BanyanBase):
                     'args': effects['args']
                 }
 
+        self.get_locations = {
+            'cultists': lambda: list(set(monster['location'] for monster in self.monsters if monster['name'] == 'cultist')),
+            'gate_omen': lambda: [gate for gate in self.decks['gates']['board'] if LOCATIONS[gate.split(':')[0]][gate.split(':')[1]] == self.omen_cycle[self.omen]]
+        }
 
     def start_backplane(self):
         if sys.platform.startswith('win32'):
@@ -260,19 +268,17 @@ class Networker(threading.Thread, BanyanBase):
                         if self.current_player == self.lead_investigator:
                             self.current_phase += 1
                             if self.current_phase == 2:
-                                mythos = None
                                 for x in range(3):
                                     if len(self.mythos_deck[x]) > 0:
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
-                                        name = 'blood_flows'
+                                        name = 'dimensional_instability'
                                         #END TESTING
-                                        mythos = self.mythos_deck[x][name]
+                                        if name == None:
+                                            break
+                                        self.mythos = self.mythos_deck[x][name]
                                         self.publish_payload({'message': 'mythos', 'value': name}, 'server_update')
-                                        if mythos.get('actions', None) != None:
-                                            for x in range(len(mythos['actions'])):
-                                                self.action_dict[mythos['actions'][x]](**mythos['args'][x])
-                                        kind = mythos['color']
+                                        kind = self.mythos['color']
                                         if kind == 0:
                                             self.current_phase += 1
                                             self.set_omen()
@@ -286,16 +292,18 @@ class Networker(threading.Thread, BanyanBase):
                                             self.spawn('clues', number=self.reference[1])
                                         #del self.mythos_deck[x][name]
                                         break
-                                if mythos == None:
-                                    pass #Trigger no mythos deck
-                        if self.current_phase == 3 and self.yellow_card:
-                            self.spawn('gates', number=self.reference[0])
-                            self.yellow_card = False
+                        if self.current_phase == 3:
+                            if self.yellow_card:
+                                self.spawn('gates', number=self.reference[0])
+                                self.yellow_card = False
+                            if self.mythos.get('actions', None) != None:
+                                for x in range(len(self.mythos['actions'])):
+                                    self.action_dict[self.mythos['actions'][x]](**self.mythos['args'][x])
                         if self.current_phase == 4:
                             self.end_mythos()
                         else:
                             topic = ''
-                            if self.current_phase == 2 and mythos != None and mythos.get('lead_only', None) != None:
+                            if self.current_phase == 2 and self.mythos != None and self.mythos.get('lead_only', None) != None:
                                 topic = 'server_update'
                             else:
                                 topic = self.selected_investigators[self.current_player] + '_server'
@@ -312,9 +320,7 @@ class Networker(threading.Thread, BanyanBase):
                     case 'doom_change':
                         self.move_doom(int(payload['value']))
                     case 'remove_gate':
-                        self.decks['gates']['board'].remove(payload['value'])
-                        self.decks['gates']['discard'].append(payload['value'])
-                        self.publish_payload({'message': 'gate_removed', 'value': payload['value']}, 'server_update')
+                        self.discard_gates(payload['value'])
                     case 'damage_monster':
                         self.server_damage_monster(int(payload['damage']), int(payload['value']))
                         self.publish_payload({'message': 'monster_damaged', 'value': payload['value'], 'damage': payload['damage']}, 'server_update')
@@ -347,6 +353,13 @@ class Networker(threading.Thread, BanyanBase):
     def end_mythos(self):
         self.current_phase = 0
         self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
+
+    def discard_gates(self, location=None, omen=False):
+        locations = self.get_locations['gate_omen']() if omen else [location]
+        for loc in locations:
+            self.decks['gates']['board'].remove(loc)
+            self.decks['gates']['discard'].append(loc)
+            self.publish_payload({'message': 'gate_removed', 'value': loc}, 'server_update')
 
     def calc_group_payments(self, name):
         max_pay = self.group_pay_info['needed'] - self.group_pay_info['paid']
@@ -418,20 +431,19 @@ class Networker(threading.Thread, BanyanBase):
             return artifact
         
     def monster_surge(self):
-        colors = ['green', 'blue', 'red', 'blue']
         for gates in self.decks['gates']['board']:
             world = gates.split(':')[0]
             loc = gates.split(':')[1]
-            if LOCATIONS[world][loc] == colors[self.omen]:
+            if LOCATIONS[world][loc] == self.omen_cycle[self.omen]:
                 self.spawn('monsters', location=gates, number=self.reference[2])
 
-    def spawn(self, piece, name=None, location=None, number=1):
+    def spawn(self, piece, name=None, location=None, number=1, locations=None):
         match piece:
             case 'gates':
                 for x in range(0, number):
                     if location != None and location in self.decks['gates']['deck']:
-                        #self.decks['gates']['deck'].remove(location)
-                        self.decks['gates']['board'].append(location)
+                        self.decks['gates']['deck'].remove(location)
+                        #self.decks['gates']['board'].append(location)
                         self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': location.split(':')[1], 'map': location.split(':')[0]}, 'server_update')
                         self.spawn('monsters', location=location)
                     elif location == None:
@@ -458,22 +470,28 @@ class Networker(threading.Thread, BanyanBase):
                         #self.decks[piece].remove(token)
                         self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
             case 'monsters':
-                if location == 'expedition':
-                    location = 'world:' + self.expedition
-                for x in range(number):
+                def pull_monster(loc):
                     monster = random.choice(self.decks['monsters'])
                     #self.decks['monsters'].remove(monster)
-                    server_monster = {'name': monster, 'location': location, 'monster_id': self.monster_id, 'damage': 0}
+                    server_monster = {'name': monster, 'location': loc, 'monster_id': self.monster_id, 'damage': 0}
                     self.monsters.append(server_monster)
                     self.publish_payload({'message': 'spawn',
                                         'value': 'monsters',
-                                        'location': location.split(':')[1],
-                                        'map': location.split(':')[0],
+                                        'location': loc.split(':')[1],
+                                        'map': loc.split(':')[0],
                                         'name': monster,
                                         'monster_id': self.monster_id
                                         },
                                         'server_update')
                     self.monster_id += 1
+                if locations != None:
+                    for loc in self.get_locations[locations]():
+                        pull_monster(loc)
+                else:
+                    if location == 'expedition':
+                        location = 'world:' + self.expedition
+                    for x in range(number):
+                        pull_monster(location)
             case 'expedition':
                 locations = []
                 for loc in self.expeditions:
@@ -488,7 +506,7 @@ class Networker(threading.Thread, BanyanBase):
         kinds = ['gates', 'clues']
         self.spawn('expedition')
         for i in range(len(kinds)):
-            self.spawn(kinds[i], self.reference[i])
+            self.spawn(kinds[i], number=self.reference[i])
         self.restock_reserve()
         for x in self.selected_investigators:
             self.publish_payload({'message': 'spawn', 'value': 'investigators', 'name': x, 'location': INVESTIGATORS[x]['location'], 'map': 'world'}, 'server_update')
@@ -517,7 +535,7 @@ class Networker(threading.Thread, BanyanBase):
                 card = random.choice(list(cards[color].keys()))
                 #FOR TESTING
                 if color == 0:
-                    card = 'blood_flows'
+                    card = 'dimensional_instability'
                 #END TESTING
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color
@@ -534,17 +552,12 @@ class Networker(threading.Thread, BanyanBase):
                 triggers = self.triggers['omen' + str(self.omen)]
                 for effects in triggers:
                     triggers[effects]['action'](**triggers[effects]['args'])
-            colors = ['green', 'blue', 'red', 'blue']
-            adv_doom = 0
-            for gates in self.decks['gates']['board']:
-                world = gates.split(':')[0]
-                loc = gates.split(':')[1]
-                if LOCATIONS[world][loc] == colors[self.omen]:
-                    adv_doom -= 1
-            self.move_doom(adv_doom)
+            self.move_doom(gates=True)
         self.publish_payload({'message': 'omen', 'value': self.omen}, 'server_update')
 
-    def move_doom(self, amt=-1):
+    def move_doom(self, amt=-1, gates=False):
+        if not gates:
+            amt = -len(self.get_locations['gate_omen']())
         self.ancient_one['doom'] += amt
         self.publish_payload({'message': 'doom', 'value': self.ancient_one['doom']}, 'server_update')
     

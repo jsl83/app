@@ -22,6 +22,7 @@
       - solve_rumor
     rargs:
       - skip: True
+        choice: True
     lead_only: True
     font_size: 13 
     flavor: You had told everyone the parchment was indecipherable, but you were lying. You know the ritual necessary to summon and bind the dark power. You could strike a bargain with it. The situation is desperate, but you know that a solution is within its power. But what will it ask of you in return?
@@ -172,4 +173,35 @@
     font_size: 13
     flavor: You cannot believe that this gibbering lunatic was once the smiling, lucid lawyer you spoke to this morning. "Collapsed," his trembling hands indicated empty air. "The worlds collided, and the door collapsed!" He abruptly pulls himself off the floor and looks out the small window of his cell. "But so too will they pull. They will rip and tear, and a new door will open elsewhere."
     text: Discard each Gate that corresponds to the current Omen and advance Doom by 1 for each Gate discarded.
-  
+  dimensions_collide:
+    action:
+      - spawn_rumor
+    aargs:
+      - step: end
+        skip: True
+        name: dimensions_collide
+        manager_obj:
+          solve: Test Observation, then spend Clues equal to half the number of Investigators.
+          reckoning: Discard Eldritch tokens from this card equal to half the number of Gates on the game board.
+          unsolved: When there are no Eldritch tokens on this card, investigators lose the game.
+          location: space_11
+          eldritch: 4
+          on_reckoning: eldritch
+          rargs:
+            - divisor: 2
+              count: gates
+          trigger: lose_game
+    end:
+      - end_mythos
+    eargs:
+      - text: End turn (all)
+    flavor: Everywhere that these portals have been reported, earthquakes shake the streets into rubble, and sinkholes swallow buildings whole.
+    text: A rumor has spawned on Space 11
+  driven_to_bankruptcy:
+    action:
+      - end_mythos
+    aargs:
+      - text: End turn (All)
+    font_size: 13
+    flavor: Walking down the street, you are surrounded by locked doors and boarded up windows. You see only a few people striding down the sidewalk, and almost all of them avoid eye contact. Those that do look you in the eye glare at you suspiciously.
+    text: When this card enters play, discard all cards from the reserve. Cards cannot be placed in the reserve until the next reckoning.

@@ -31,8 +31,8 @@ TOKEN_DICT = {
     },
     'rumor': {
         'size': 110,
-        'scale': 0.4,
-        'zoom_scale': 0.2
+        'scale': 0.3,
+        'zoom_scale': 0.15
     }
 }
 

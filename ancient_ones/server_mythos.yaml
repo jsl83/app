@@ -26,6 +26,15 @@
         - omen: True
     driven_to_bankruptcy:
       difficulty: 1
+      actions:
+        - restock_reserve
+        - on_reckoning
+      args:
+        - cycle: True
+          refill: False
+          discard: True
+        - args:
+            action: restock_reserve
     from_beyond:
       difficulty: 2
     heart_of_corruption:

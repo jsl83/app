@@ -1,13 +1,12 @@
-import arcade, arcade.gui
-import yaml
-import random
+import arcade, arcade.gui, yaml, random, math
 from screens.action_button import ActionButton
 from util import *
 
 ENCOUNTERS = {}
 MYTHOS = {}
+RUMORS = {}
 
-for kind in ['generic', 'green', 'orange', 'purple', 'expeditions', 'gate']:
+for kind in ['generic', 'green', 'orange', 'purple', 'expeditions', 'gate', 'rumor']:
     with open('encounters/' + kind + '.yaml') as stream:
         ENCOUNTERS[kind] = yaml.safe_load(stream)
 with open('encounters/mythos.yaml') as stream:
@@ -52,13 +51,14 @@ class EncounterPane():
             'spawn_clue': self.spawn_clue,
             'spend_clue': self.spend_clue,
             'spawn_fight': self.spawn_fight,
+            'spawn_rumor': self.spawn_rumor,
             'solve_rumor': self.solve_rumor
         }
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
-            'spend_clue': lambda *args: len(self.investigator.clues) >= args[0].get('amt', 1),
+            'spend_clue': lambda *args: len(self.investigator.clues) >= args[0].get('amt', math.ceil((len(self.hub.location_manager.all_investigators) / (2 if args[0].get('condition') == 'half' else 1)))),
             'discard': lambda *args: self.discard_check(args[0]['kind'], args[0].get('tag', 'any'), args[0].get('name', None)),
-            'solve_rumor': lambda *args: len(self.hub.rumors) > 0,
+            'solve_rumor': lambda *args: len(self.hub.location_manager.rumors) > 0,
             'gain_asset': lambda *args: not args[0].get('reserve', False) or len([item for item in self.hub.info_panes['reserve'].reserve if args[0]['tag'] == 'any' or args[0]['tag'] in item['tags']]) > 0
         }
         self.encounter = None
@@ -111,16 +111,18 @@ class EncounterPane():
         self.phase_button.text = 'Encounter Phase'
         self.text_button.text = 'Choose Encounter'
         for encounter in self.encounters:
+            button = ActionButton(texture='encounters/' + encounter + '.png', scale=0.3)
+            button.action = self.hub.networker.publish_payload if encounter != 'rumor' else self.start_encounter
             payload = {'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}
-            choices.append(ActionButton(texture='encounters/' + encounter + '.png', action=self.hub.networker.publish_payload,
-                                        action_args={'topic': self.investigator.name, 'payload': payload}, scale=0.3))
+            button.action_args = {'topic': self.investigator.name, 'payload': payload} if encounter != 'rumor' else {'value': 'rumor:0'}            
+            choices.append(button)
         self.hub.choice_layout = create_choices('Choose Encounter', choices=choices)
         self.hub.show_overlay()
 
     def start_encounter(self, value):
         self.hub.clear_overlay()
         choice = value.split(':')
-        loc = 'gate' if choice[0] == 'gate' else self.investigator.location if self.investigator.location.find('space') == -1 and choice[0] != 'generic' else self.hub.location_manager.locations[self.investigator.location]['kind']
+        loc = 'gate' if choice[0] == 'gate' else self.investigator.location if (self.investigator.location.find('space') == -1 and choice[0] != 'generic') or choice[0] == 'rumor' else self.hub.location_manager.locations[self.investigator.location]['kind']
         choice[0] = 'expeditions' if choice[0] in ['the_amazon', 'the_pyramids', 'the_heart_of_africa', 'antarctica', 'tunguska', 'the_himalayas'] else choice[0]
         self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
         if loc == 'gate':
@@ -569,7 +571,9 @@ class EncounterPane():
                     self.set_buttons(step)
             self.click_action = clue_click
 
-    def spend_clue(self, step='finish', clues=1):
+    def spend_clue(self, step='finish', clues=1, condition=None):
+        if condition == 'half':
+            clues = math.ceil((len(self.hub.location_manager.all_investigators) / 2))
         for x in range(clues):
             clue = random.choice(self.investigator.clues)
             self.investigator.clues.remove(clue)
@@ -577,16 +581,25 @@ class EncounterPane():
         self.set_buttons(step)
         self.hub.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
 
-    def solve_rumor(self, step='finish'):
-        choices = []
+    def spawn_rumor(self, name, manager_obj, step='finish'):
+        self.hub.map.spawn('rumor', self.hub.location_manager, manager_obj['location'], name)
+        self.hub.location_manager.rumors[name] = manager_obj
+        self.set_buttons(step)
+
+    def solve_rumor(self, choice=False, step='finish'):
         def choose_rumor(key):
             self.wait_step = step
             self.hub.networker.publish_payload({'message': 'solve_rumor', 'value': key}, self.investigator.name)
-        for rumor in self.hub.info_panes['location'].rumors.keys():
-            choices.append(ActionButton(
-                width=100, height=300, texture='buttons/placeholder.png', text=human_readable(rumor), action=choose_rumor, action_args={'key': rumor}))
-        self.hub.choice_layout = create_choices(choices=choices, title='Select Rumor')
-        self.hub.show_overlay()
+        if choice:
+            choices = []
+            for rumor in self.hub.location_manager.rumors.keys():
+                choices.append(ActionButton(
+                    width=100, height=300, texture='buttons/placeholder.png', text=human_readable(rumor), action=choose_rumor, action_args={'key': rumor}))
+            self.hub.choice_layout = create_choices(choices=choices, title='Select Rumor')
+            self.hub.show_overlay()
+        else:
+            rumor = next((rumor for rumor in self.hub.location_manager.rumors.keys() if self.hub.location_manager.rumors[rumor]['location'] == self.investigator.location), None)
+            choose_rumor(rumor)
 
     def spawn_fight(self):
         self.wait_step = 'ambush'

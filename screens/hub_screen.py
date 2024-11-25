@@ -130,6 +130,7 @@ class HubScreen(arcade.View):
         self.investigator.sanity -= 3
         self.investigator.clues.append('world:arkham')
         self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
+        self.is_first = True
         #self.request_card('conditions', 'blessed')
         #END TESTING
         
@@ -311,7 +312,8 @@ class HubScreen(arcade.View):
                 self.item_received('artifacts', payload['value'])
             case 'restock':
                 removed = [] if payload['removed'] == '' or payload['removed'] == None else payload['removed'].split(':')
-                self.info_panes['reserve'].restock(removed, payload['value'].split(':'))
+                added = [] if payload['value'] == '' or payload['value'] == None else payload['value'].split(':')
+                self.info_panes['reserve'].restock(removed, added)
             case 'conditions':
                 card = payload['value']
                 if next((condition for condition in self.investigator.possessions['conditions'] if condition.name == card[0:-1]), None) is not None:
@@ -355,7 +357,7 @@ class HubScreen(arcade.View):
                             self.remaining_actions = 2
                             #FOR TESTING
                             self.remaining_actions = 3
-                            self.ticket_move('akachi_onyele', 'space_1', 0, 0, 'space_15')
+                            self.ticket_move('akachi_onyele', 'space_11', 0, 0, 'space_15')
                             self.info_panes['investigator'].focus_action()
                             #END TESTING
                     case 'encounter':
@@ -368,7 +370,11 @@ class HubScreen(arcade.View):
                         #self.reckonings()
                         self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                     case 'mythos':
-                        self.encounter_pane.activate_mythos()
+                        #if self.is_first:
+                            self.encounter_pane.activate_mythos()
+                        #    self.is_first = False
+                        #else:
+                        #    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
             case 'encounter_choice':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -405,15 +411,11 @@ class HubScreen(arcade.View):
                 else:
                     monster = next((monster for monster in self.location_manager.all_monsters if monster.monster_id == int(payload['value'])))
                     damage_monster(monster, damage)
-            case 'spawn_rumor':
-                rumor = self.encounter_pane.get_rumor(payload['value'])
-                self.map.spawn('rumor', self.location_manager, rumor['location'])
-                self.info_panes['location'].rumors[payload['value']] = {'location': rumor['location'], 'text': rumor['flavor'] + '\n\n' + rumor['text']}
             case 'rumor_solved':
-                rumor = self.info_panes['location'].rumors[payload['value']]
+                rumor = self.location_manager.rumors[payload['value']]
                 self.location_manager.locations[rumor['location']]['rumor'] = False
-                self.maps['world'].remove_tokens('rumor', rumor['location'])
-                del self.info_panes['location'].rumors[payload['value']]
+                self.maps['world'].remove_tokens('rumor', rumor['location'], payload['value'])
+                del self.location_manager.rumors[payload['value']]
             case 'info_request':
                 self.networker.publish_payload({'message': 'send_info', 'value': self.info_requests[payload['value']]()}, self.investigator.name)
             case 'group_pay_update':

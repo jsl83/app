@@ -25,6 +25,7 @@ class LocationManager():
                     self.locations[name]['dead'] = []
         except:
             self.locations = {}
+        self.rumors = {}
 
     def get_closest_location(self, point, zoom, map_location, area=None):
         for key in self.locations.keys():

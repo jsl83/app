@@ -1,5 +1,6 @@
 import arcade, arcade.gui
 from screens.action_button import ActionButton
+from util import *
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 ICON_SIZES = {
@@ -76,7 +77,6 @@ class LocationPane():
         self.toggle_info = ActionButton(1000, y=380, width=140, height=35, texture='buttons/placeholder.png', text='Details',
                                           action=self.toggle_details, action_args={'flag': True}, texture_pressed='/buttons/pressed_placeholder.png')
         self.rumor_details = arcade.gui.UITextureButton(x=1000, y=0, height=425, width=280, texture=self.blank)
-        self.rumors = {}
         
     def toggle_details(self, flag):
         self.toggle_info.select(flag)
@@ -176,7 +176,12 @@ class LocationPane():
         if not has_rumor:
             self.toggle_rumor.disable()
         else:
-            self.rumor_details.text = next((rumor for rumor in self.rumors.keys() if self.rumors[rumor]['location'] == self.selected), {'text':''})['text']
+            rumor = next((rumor for rumor in self.location_manager.rumors.keys() if self.location_manager.rumors[rumor]['location'] == self.selected), None)
+            if rumor != None:
+                self.rumor_details.text = human_readable(rumor)
+                for x in ['solve', 'unsolved', 'reckoning']:
+                    self.rumor_details.text += '\n\n' + human_readable(x) + '\n' + self.location_manager.rumors[rumor].get(x, '')
+                self.rumor_details.style = {'font_size': 12}
         self.toggle_details(True)
 
     def show_monster(self, unit):

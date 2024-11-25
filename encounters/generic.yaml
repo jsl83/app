@@ -465,8 +465,8 @@
       pargs:
         - hp: 0
           san: -1
-          text: Lose 1 Sanity
           step: fail
+          skip: True
       pass_text: Your ship becomes lost in a dense fog bank, terrifying the superstitious crew. When the mist finally clears, you've somehow traveled hundreds of miles. Move 1 space.
     - test:
         - skill
@@ -561,20 +561,17 @@
           kind: conditions
           name: back_injury
       pass_text: A sudden storm descends upon you and strong winds whip around your vessel. Huge waves toss your ship around like a toy, and you are thrown to the deck repeatedly.
-    - test: None
+    - test:
+        - skill
+      targs:
+        - stat: 1
+          fail: no_effect
       pass:
-        - hp_san
+        - gain_clue
       pargs:
-        - text: Lose 1 Sanity and gain a Back Injury Condition
-          san: -1
-          step: fail
-      fail:
-        - request_card
-      fargs:
-        - skip: True
-          kind: conditions
-          name: back_injury
-      pass_text: A sudden storm descends upon you and strong winds whip around your vessel. Huge waves toss your ship around like a toy, and you are thrown to the deck repeatedly.
+        - text: Gain 1 Clue
+      test_text: You find a terrified stowaway aboard the ship. You attempt to comfort him and coax him into telling you his story.
+      pass_text: He tells you about horrifying beasts and unbelievable worlds.
     - test:
         - skill
       targs:

@@ -7,7 +7,7 @@ SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 800
 SCREEN_TITLE = "ELDRITCH HORROR"
 REFERENCES = { #gates, clues, surge
-    1: [3, 1, 1],
+    1: [1, 1, 1],
     2: [1, 2, 2],
     3: [2, 3, 2],
     4: [2, 4, 3]
@@ -128,11 +128,14 @@ class Networker(threading.Thread, BanyanBase):
             'group_pay': self.group_pay,
             'spawn': self.spawn,
             'move_doom': self.move_doom,
-            'discard_gates': self.discard_gates
+            'discard_gates': self.discard_gates,
+            'restock_reserve': self.restock_reserve,
+            'on_reckoning': self.on_reckoning
         }
         self.group_pay_info = {'needed': 0, 'paid': 0, 'investigators': {}, 'info_received': 0, 'kind': ''}
         self.omen_cycle = ['green', 'blue', 'red', 'blue']
         self.mythos = None
+        self.reckoning_actions = []
 
         # temporary variables set for testing - DELETE LATER
         self.set_subscriber_topic('akachi_onyele')
@@ -149,6 +152,8 @@ class Networker(threading.Thread, BanyanBase):
                     'action': effects['action'],
                     'args': effects['args']
                 }
+        self.is_first = True
+        #END TESTING
 
         self.get_locations = {
             'cultists': lambda: list(set(monster['location'] for monster in self.monsters if monster['name'] == 'cultist')),
@@ -272,7 +277,11 @@ class Networker(threading.Thread, BanyanBase):
                                     if len(self.mythos_deck[x]) > 0:
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
-                                        name = 'dimensional_instability'
+                                        if self.is_first:
+                                            name = 'driven_to_bankruptcy'
+                                            self.is_first = False
+                                        else:
+                                            name = 'ancient_guardians'
                                         #END TESTING
                                         if name == None:
                                             break
@@ -292,6 +301,15 @@ class Networker(threading.Thread, BanyanBase):
                                             self.spawn('clues', number=self.reference[1])
                                         #del self.mythos_deck[x][name]
                                         break
+                        if self.current_phase == 2:
+                            for actions in self.reckoning_actions:
+                                args = actions.get('args', None)
+                                if args != None:
+                                    self.action_dict[actions['action']](**args)
+                                else:
+                                    self.action_dict[actions['action']]()
+                                if not actions.get('recurring', True):
+                                    self.on_reckoning.remove(actions)
                         if self.current_phase == 3:
                             if self.yellow_card:
                                 self.spawn('gates', number=self.reference[0])
@@ -353,6 +371,9 @@ class Networker(threading.Thread, BanyanBase):
     def end_mythos(self):
         self.current_phase = 0
         self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
+
+    def on_reckoning(self, args):
+        self.reckoning_actions.append(args)
 
     def discard_gates(self, location=None, omen=False):
         locations = self.get_locations['gate_omen']() if omen else [location]
@@ -511,19 +532,22 @@ class Networker(threading.Thread, BanyanBase):
         for x in self.selected_investigators:
             self.publish_payload({'message': 'spawn', 'value': 'investigators', 'name': x, 'location': INVESTIGATORS[x]['location'], 'map': 'world'}, 'server_update')
 
-    def restock_reserve(self, removed=[], discard=False):
+    def restock_reserve(self, removed=[], discard=False, refill=True, cycle=False):
+        if cycle:
+            removed = [item for item in self.assets['reserve']]
         removed_items = ':'.join(removed)
         for item in removed:
-            #self.assets['reserve'].remove(item)
+            self.assets['reserve'].remove(item)
             if discard:
                 self.assets['discard'].append(item)
                 self.publish_payload({'message': 'discard', 'value': item}, 'server_update')
         items = ''
-        for i in range(0, 4 - len(self.assets['reserve'])):
-            item = random.choice(self.assets['deck'])
-            #self.assets['deck'].remove(item)
-            #self.assets['reserve'].append(item)
-            items += item + ':'
+        if refill:
+            for i in range(0, 4 - len(self.assets['reserve'])):
+                item = random.choice(self.assets['deck'])
+                #self.assets['deck'].remove(item)
+                self.assets['reserve'].append(item)
+                items += item + ':'
         self.publish_payload({'message': 'restock', 'value': items[0:-1], 'removed': removed_items}, 'server_update')
 
     def mythos_setup(self):
@@ -535,7 +559,9 @@ class Networker(threading.Thread, BanyanBase):
                 card = random.choice(list(cards[color].keys()))
                 #FOR TESTING
                 if color == 0:
-                    card = 'dimensional_instability'
+                    card = 'driven_to_bankruptcy'
+                if color == 1:
+                    card = 'ancient_guardians'
                 #END TESTING
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color

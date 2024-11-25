@@ -24,15 +24,16 @@ class ReservePane():
         self.boundary = 0
         y_pos = 760
         number = 0
+        self.reserve_buttons = []
         for i in range(4):
             if number == 0:
                 y_pos -= 190
             button = ActionButton(1015 + number * 130, y_pos, width=120, height=185, texture='buttons/placeholder.png', action=self.select_item)
-            button.is_reserve = True
             self.button_layout.add(button)
             number += 1
             if number == 2:
                 number = 0
+            self.reserve_buttons.append(button)
         self.layout.add(self.button_pane)
         self.button_layout.add(ActionButton(x=1000, y=760, width=280, height=25, text='RESERVE'))
         self.acquire_button = ActionButton(x=1000, y=325, width=280, height=25, text='Acquire Assets', texture='buttons/placeholder.png', action=self.acquire_assets)
@@ -42,25 +43,29 @@ class ReservePane():
         self.button_layout.add(self.discard_button)
         self.discard_layout.add(ActionButton(x=1000, y=760, width=280, height=25, text='DISCARD'))
         self.discard_layout.add(ActionButton(x=1260, y=780, width=20, height=20, text='X', texture='buttons/placeholder.png', action=self.close_discard))
+        self.empty_texture = arcade.load_texture(":resources:eldritch/images/buttons/placeholder.png")
 
     def restock(self, removed, added):
         for item in removed:
             removal = next((r for r in self.reserve if r['name'] == item), None)
-            option = next((button for button in self.button_layout.children if button.name == item), None)
-            option.name = added[0]
-            card = get_asset(option.name)
-            option.texture = card['texture']
-            option.action_args = {'name': option.name, 'cost': card['cost']}
-            added.remove(added[0])
+            reserve_button = next((button for button in self.reserve_buttons if (button.name == item)), None)
+            reserve_button.name = None
+            reserve_button.action_args = None
+            reserve_button.texture = self.empty_texture
+            reserve_button.disable()
             self.reserve.remove(removal)
-            self.reserve.append(card)
         for item in added:
-            option = next((button for button in self.button_layout.children if (button.name == None or button.name == '') and hasattr(button, 'is_reserve')), None)
+            option = next((button for button in self.reserve_buttons if (button.name == None or button.name == '')), None)
             card = get_asset(item)
             option.name = item
             option.texture = card['texture']
             option.action_args = {'name': option.name, 'cost': card['cost']}
+            option.enable()
             self.reserve.append(card)
+        if len(self.reserve) == 0:
+            self.acquire_button.disable()
+        else:
+            self.acquire_button.enable()
 
     def acquire_assets(self):
         if self.is_shopping:
@@ -83,24 +88,25 @@ class ReservePane():
             self.layout.add(self.debt_button)
 
     def select_item(self, name, cost):
-        if name in self.selected:
-            self.selected.remove(name)
-            self.successes += cost
-            if not self.acquire_button.enabled and self.successes >= 0 and len(self.selected) > 0:
+        if self.is_shopping:
+            if name in self.selected:
+                self.selected.remove(name)
+                self.successes += cost
+                if not self.acquire_button.enabled and self.successes >= 0 and len(self.selected) > 0:
+                    self.acquire_button.enable()
+            else:
                 self.acquire_button.enable()
-        else:
-            self.acquire_button.enable()
-            self.selected.append(name)
-            self.successes -= cost
-            if self.acquire_button.enabled and self.successes < 0:
-                self.acquire_button.disable()
-            if len(self.selected) > 1:
+                self.selected.append(name)
+                self.successes -= cost
+                if self.acquire_button.enabled and self.successes < 0:
+                    self.acquire_button.disable()
+                if len(self.selected) > 1:
+                    self.discard_button.disable()
+            self.acquire_button.text = 'Acquire (Remaining cost: ' + str(self.successes) + ')'
+            if len(self.selected) == 1:
+                self.discard_button.enable()
+            else:
                 self.discard_button.disable()
-        self.acquire_button.text = 'Acquire (Remaining cost: ' + str(self.successes) + ')'
-        if len(self.selected) == 1:
-            self.discard_button.enable()
-        else:
-            self.discard_button.disable()
 
     def discard_action(self):
         if self.is_shopping:

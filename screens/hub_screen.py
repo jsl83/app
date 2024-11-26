@@ -127,6 +127,7 @@ class HubScreen(arcade.View):
         self.request_card('assets', 'arcane_tome')
         self.request_card('assets', 'axe')
         self.request_card('assets', 'arcane_scholar')
+        self.request_card('conditions', 'dark_pact')
         self.investigator.sanity -= 3
         self.investigator.clues.append('world:arkham')
         self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
@@ -192,6 +193,7 @@ class HubScreen(arcade.View):
                     self.info_panes['location'].location_select(location[2])
                     self.switch_info_pane('location')
                     self.select_ui_button(3)
+                    self.info_manager.trigger_render()
             buttons = list(self.ui_manager.get_widgets_at((x,y)))
             if len(buttons) > 0 and type(buttons[0]) == ActionButton:
                 button = buttons[0]
@@ -301,7 +303,6 @@ class HubScreen(arcade.View):
                         self.location_manager.spawn_investigator(name, payload['location'])
                 elif payload['value'] == 'monsters':
                     monster = self.location_manager.spawn_monster(name, payload['location'], payload['map'], int(payload['monster_id']))
-                    self.encounter_pane.ambush_monster = monster
                     monster_id = str(monster.monster_id)
                 if payload['location'] == self.info_panes['location'].selected:
                     self.info_panes['location'].update_all()
@@ -357,32 +358,41 @@ class HubScreen(arcade.View):
                             self.remaining_actions = 2
                             #FOR TESTING
                             self.remaining_actions = 3
-                            self.ticket_move('akachi_onyele', 'space_11', 0, 0, 'space_15')
+                            self.ticket_move('akachi_onyele', 'space_16', 0, 0, 'space_15')
                             self.info_panes['investigator'].focus_action()
+                            if not self.is_first:
+                                self.investigator.focus = 1
                             #END TESTING
                     case 'encounter':
                         #FOR TESTING
-                        self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                        #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                         #END TESTING
                         self.show_encounter_pane()
                         self.encounter_pane.encounter_phase()
                     case 'reckoning':
                         #self.reckonings()
+                        self.location_manager.trigger_reckoning()
                         self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                     case 'mythos':
-                        #if self.is_first:
+                        #self.encounter_pane.activate_mythos()
+                        #FOR TESTING
+                        if self.is_first:
                             self.encounter_pane.activate_mythos()
-                        #    self.is_first = False
-                        #else:
-                        #    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                            self.is_first = False
+                        else:
+                            self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                        #END TESTING
             case 'encounter_choice':
                 self.clear_overlay()
                 self.show_encounter_pane()
                 self.encounter_pane.start_encounter(payload['value'])
             case 'mythos':
-                self.clear_overlay()
-                self.show_encounter_pane()
-                self.encounter_pane.load_mythos(payload['value'])
+                #FOR TESTING
+                if self.is_first:
+                    self.clear_overlay()
+                    self.show_encounter_pane()
+                    self.encounter_pane.load_mythos(payload['value'])
+                #END TESTING
             case 'omen':
                 self.set_omen(int(payload['value']))
             case 'doom':
@@ -403,6 +413,7 @@ class HubScreen(arcade.View):
                     if dead:
                         self.location_manager.locations[monster.location]['monsters'].remove(monster)
                         self.location_manager.all_monsters.remove(monster)
+                        self.location_manager.monster_deck.append(monster.name)
                         self.map.remove_tokens('monsters', monster.location, str(payload['value']))
                         self.map.token_manager.trigger_render()
                 if monster_id < 0:
@@ -426,6 +437,9 @@ class HubScreen(arcade.View):
             case 'monster_moved':
                 monster = next((monster for monster in self.location_manager.all_monsters if monster.monster_id == int(payload['value'])), None)
                 self.move_unit(monster, payload['location'], 'monsters')
+            case 'exile_from_discard':
+                for item in payload['value'].split(':'):
+                    self.info_panes['reserve'].discard_item(item, True)
 
         if self.encounter_pane.wait_step != None:
             self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
@@ -504,6 +518,21 @@ class HubScreen(arcade.View):
         self.choice_layout = create_choices(choices = choices, title=titles[3 if skill == 5 else skill] + ' Test', options=options, offset=(0,150), subtitle=subtitle)
         self.show_overlay()
         return rolls
+    
+    def single_roll(self, pane, options, title='', subtitle=''):
+        roll = random.randint(1, 6)
+        #FOR TESTING
+        def autofail():
+            self.encounter_pane.rolls = [1]
+        def succeed():
+            self.encounter_pane.rolls = [6]
+        options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
+        options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
+        #END TESTING
+        self.choice_layout = create_choices(options=options,
+            choices=[arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png'))])
+        self.show_overlay()
+        return [roll]
     
     def gui_set(self, able=True):
         self.gui_enabled = able

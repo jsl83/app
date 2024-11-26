@@ -146,7 +146,7 @@ class ReservePane():
         self.discard_view = False
         self.reset_discard()
 
-    def discard_item(self, name):
+    def discard_item(self, name, remove=False):
         if name in self.discard:
             self.discard.remove(name)
             item = next((item for item in self.discard_layout.children if item.name == name.replace('.', '')), None)
@@ -158,12 +158,12 @@ class ReservePane():
                 row = int(x / 2 - 1)
                 column = x % 2
                 discard.move(1015 + column * 130 - discard.x, 570 - row * 190 - discard.y)
-                discard.initial_x = 1015 + column * 130 - discard.x
-                discard.initial_y = 570 - row * 190 - discard.y
+                discard.initial_x = discard.x
+                discard.initial_y = discard.y
             if len(self.discard) == 0:
                 self.close_discard()
                 self.discard_action()
-        else:
+        elif not remove:
             self.discard.append(name)
             column = (len(self.discard) + 1) % 2
             row = int((len(self.discard) / 2) - 0.5)

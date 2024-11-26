@@ -121,8 +121,23 @@
   -
     dimensions_collide:
       difficulty: 2
+      actions:
+        - on_reckoning
+      args:
+        - args:
+            recurring: 4
+            unsolve: lose_game
     faded_from_society:
       difficulty: 1
+      actions:
+        - on_reckoning
+      args:
+        - args:
+            recurring: 4
+            action: discard_cost
+            unsolve: solve_rumor
+            unsolve_args: faded_from_society
+            name: faded_from_society
     fractured_reality:
       difficulty: 0
     growing_madness:

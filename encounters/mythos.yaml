@@ -186,11 +186,9 @@
           unsolved: When there are no Eldritch tokens on this card, investigators lose the game.
           location: space_11
           eldritch: 4
-          on_reckoning: eldritch
           rargs:
             - divisor: 2
-              count: gates
-          trigger: lose_game
+              kind: gates
     end:
       - end_mythos
     eargs:
@@ -205,3 +203,70 @@
     font_size: 13
     flavor: Walking down the street, you are surrounded by locked doors and boarded up windows. You see only a few people striding down the sidewalk, and almost all of them avoid eye contact. Those that do look you in the eye glare at you suspiciously.
     text: When this card enters play, discard all cards from the reserve. Cards cannot be placed in the reserve until the next reckoning.
+  everyone_has_a_price:
+    action:
+      - request_card
+      - set_buttons
+    aargs:
+      - check: True
+        text: Gain a Debt Condition to discard 1 Condition
+        kind: conditions
+        name: debt
+        step: discard
+      - text: You don't give in (skip)
+        key: finish
+    discard:
+      - discard
+    dargs:
+      - skip: True
+        kind: conditions
+    flavor: He writes the price on a piece of paper and slides it across the table. It's more than you can afford, but you don't have any other options, and this greedy lout knows it.
+  eyes_everywhere:
+    action:
+      - single_roll
+    aargs:
+      - effects:
+          '12': damage
+          '345': fight
+          '6': nothing
+        skip: True
+    damage:
+      - hp_san
+    dargs:
+      - skip: True
+        hp: -2
+        san: -2
+    fight:
+      - ambush
+    fargs:
+      - text: A Monster ambushes you
+    nothing:
+      - set_buttons
+    nargs:
+      - key: no_effect
+        skip: True
+    flavor: >
+      Now that you know what to look for, you see them all around you: the man pretending to be asleep on the bench, the woman watching you in the reflection of a tobacconist's shop, the trio who have been following you since you left the station. They've been tracking your every move.
+    text: Roll 1 die
+    damage_text: You are assaulted on all sides.
+    fight_text: Your pursuers are not human!
+  faded_from_society:
+    action:
+      - spawn_rumor
+    aargs:
+      - step: end
+        skip: True
+        name: faded_from_society
+        manager_obj:
+          solve: Test Observation, then spend clues equal to half the number of Investigators.
+          reckoning: Search the Asset deck, discard pile, and reserve for all Assets with value equal to or greater than the number of Eldritch token Eldritch tokens on this card and return them to the game box. Then discard 1 Eldritch token from this card.
+          unsolved: When there are no Eldritch tokens on this card, solve this Rumor.
+          eldritch: 4
+          location: space_16
+    end:
+      - end_mythos
+    eargs:
+      - text: End turn (all)
+    flavor: Some dark magic has taken hold in you. Friends have started ignoring you as if you weren't even in the room. It's getting worse, and you fear that soon you'll be invisible to every other person on Earth!
+    text: A rumor has spawned on Space 16
+  

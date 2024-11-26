@@ -130,7 +130,10 @@ class Networker(threading.Thread, BanyanBase):
             'move_doom': self.move_doom,
             'discard_gates': self.discard_gates,
             'restock_reserve': self.restock_reserve,
-            'on_reckoning': self.on_reckoning
+            'on_reckoning': self.on_reckoning,
+            'lose_game': self.lose_game,
+            'solve_rumor': self.solve_rumor,
+            'discard_cost': self.discard_cost
         }
         self.group_pay_info = {'needed': 0, 'paid': 0, 'investigators': {}, 'info_received': 0, 'kind': ''}
         self.omen_cycle = ['green', 'blue', 'red', 'blue']
@@ -220,6 +223,12 @@ class Networker(threading.Thread, BanyanBase):
                     self.mythos_setup()
                     self.ancient_one['doom'] = 15
                     self.decks['gates']['board'] = []
+                    self.is_first = True
+                    self.assets = {
+                        'deck': self.assets['deck'],
+                        'discard': self.assets['discard'],
+                        'reserve': []
+                    }
                     #END TESTING
                     self.initiate_gameboard()
                     self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
@@ -249,6 +258,7 @@ class Networker(threading.Thread, BanyanBase):
                     case 'card_discarded':
                         if payload['kind'] == 'assets':
                             self.assets['discard'].append(payload['value'])
+                            self.publish_payload({'message': 'discard', 'value': payload['value']}, 'server_update')
                         elif payload['kind'] == 'artifacts':
                             self.decks['used_artifacts'].append(payload['value'])
                         else:
@@ -278,10 +288,10 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'driven_to_bankruptcy'
+                                            name = 'faded_from_society'
                                             self.is_first = False
                                         else:
-                                            name = 'ancient_guardians'
+                                            name = 'eyes_everywhere'
                                         #END TESTING
                                         if name == None:
                                             break
@@ -303,13 +313,19 @@ class Networker(threading.Thread, BanyanBase):
                                         break
                         if self.current_phase == 2:
                             for actions in self.reckoning_actions:
-                                args = actions.get('args', None)
-                                if args != None:
-                                    self.action_dict[actions['action']](**args)
-                                else:
-                                    self.action_dict[actions['action']]()
+                                action = actions.get('action', None)
+                                if action != None:
+                                    if actions.get('args', None) != None:
+                                        self.action_dict[actions['action']](actions.get('args', None))
+                                    else:
+                                        self.action_dict[actions['action']]()
                                 if not actions.get('recurring', True):
-                                    self.on_reckoning.remove(actions)
+                                    self.reckoning_actions.remove(actions)
+                                else:
+                                    actions['recurring'] -= 1
+                                    if actions['recurring'] == 0:
+                                        self.action_dict[actions['unsolve']](actions.get('unsolve_args', {}))
+                                        self.reckoning_actions.remove(actions)
                         if self.current_phase == 3:
                             if self.yellow_card:
                                 self.spawn('gates', number=self.reference[0])
@@ -343,7 +359,7 @@ class Networker(threading.Thread, BanyanBase):
                         self.server_damage_monster(int(payload['damage']), int(payload['value']))
                         self.publish_payload({'message': 'monster_damaged', 'value': payload['value'], 'damage': payload['damage']}, 'server_update')
                     case 'solve_rumor':
-                        self.publish_payload({'message': 'rumor_solved', 'value': payload['value']}, 'server_update')
+                        self.solve_rumor(payload['value'])
                     case 'send_info':
                         self.group_pay_info['investigators'][topic] = payload['value']
                         self.group_pay_info['info_received'] += 1
@@ -374,6 +390,13 @@ class Networker(threading.Thread, BanyanBase):
 
     def on_reckoning(self, args):
         self.reckoning_actions.append(args)
+
+    def lose_game(self):
+        pass
+
+    def solve_rumor(self, name):
+        self.reckoning_actions = [rumor for rumor in self.reckoning_actions if rumor['name'] != name]
+        self.publish_payload({'message': 'rumor_solved', 'value': name}, 'server_update')
 
     def discard_gates(self, location=None, omen=False):
         locations = self.get_locations['gate_omen']() if omen else [location]
@@ -532,6 +555,20 @@ class Networker(threading.Thread, BanyanBase):
         for x in self.selected_investigators:
             self.publish_payload({'message': 'spawn', 'value': 'investigators', 'name': x, 'location': INVESTIGATORS[x]['location'], 'map': 'world'}, 'server_update')
 
+    def discard_cost(self):
+        to_remove = set()
+        max_cost = 0
+        for item in self.assets['reserve'] + self.assets['discard'] + self.assets['deck']:
+            if ASSETS[item]['cost'] > max_cost:
+                max_cost = ASSETS[item]['cost']
+                to_remove = set()
+            if ASSETS[item]['cost'] == max_cost:
+                to_remove.add(item)
+        self.publish_payload({'message': 'exile_from_discard', 'value': ':'.join([item for item in self.assets['discard'] if item in to_remove])}, 'server_update')
+        self.assets['deck'] = [item for item in self.assets['deck'] if item not in to_remove]
+        self.restock_reserve([item for item in self.assets['reserve'] if item in to_remove])
+        self.assets['discard'] = [item for item in self.assets['discard'] if item not in to_remove]
+
     def restock_reserve(self, removed=[], discard=False, refill=True, cycle=False):
         if cycle:
             removed = [item for item in self.assets['reserve']]
@@ -543,7 +580,7 @@ class Networker(threading.Thread, BanyanBase):
                 self.publish_payload({'message': 'discard', 'value': item}, 'server_update')
         items = ''
         if refill:
-            for i in range(0, 4 - len(self.assets['reserve'])):
+            for i in range(0, min(4 - len(self.assets['reserve']), len(self.assets['deck']))):
                 item = random.choice(self.assets['deck'])
                 #self.assets['deck'].remove(item)
                 self.assets['reserve'].append(item)
@@ -561,7 +598,9 @@ class Networker(threading.Thread, BanyanBase):
                 if color == 0:
                     card = 'driven_to_bankruptcy'
                 if color == 1:
-                    card = 'ancient_guardians'
+                    card = 'eyes_everywhere'
+                if color == 2:
+                    card = 'faded_from_society'
                 #END TESTING
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color

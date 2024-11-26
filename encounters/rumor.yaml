@@ -20,3 +20,25 @@
         - skip: True
       test_text: You attempt to infiltrate a hidden sect of Tcho-Tchos that is destabilizing the fabric of reality by invoking Chaugnar Faugn.
       pass_text: You put an end to their rituals.
+  space_16:
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          fail: no_effect
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - condition: half
+          text: Spend Clues
+          step: solve
+        - text: Your inquiries lead nowhere (skip)
+          key: finish
+      solve:
+        - solve_rumor
+      sargs:
+        - skip: True
+      test_text: You attempt to research similar occurences from the past.
+      pass_text: You learn about a Russian folktale where children go missing.
+    

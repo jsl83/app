@@ -1,4 +1,4 @@
-import yaml
+import yaml, random, math
 from util import *
 import astar
 from monsters.monster import Monster
@@ -26,6 +26,11 @@ class LocationManager():
         except:
             self.locations = {}
         self.rumors = {}
+        self.monster_deck = []
+        monster_counts = {'cultist': 6, 'avian_thrall': 1}
+        for key in monster_counts.keys():
+            for x in range(monster_counts[key]):
+                self.monster_deck.append(key)
 
     def get_closest_location(self, point, zoom, map_location, area=None):
         for key in self.locations.keys():
@@ -45,6 +50,7 @@ class LocationManager():
         monster.map = world
         self.all_monsters.append(monster)
         self.locations[location]['monsters'].append(monster)
+        self.monster_deck.remove(name)
         return monster
 
     def spawn_investigator(self, name, location):
@@ -86,3 +92,25 @@ class LocationManager():
     
     def get_map_name(self, loc):
         return 'world'
+    
+    def create_ambush_monster(self, name=None):
+        name = name if name != None else random.choice(self.monster_deck)
+        return Monster(name, -1)
+    
+    def trigger_reckoning(self):
+        for rumor in self.rumors.keys():
+            if self.rumors[rumor].get('eldritch', None) != None:
+                tokens = 1
+                if self.rumors[rumor].get('rargs', None) != None:
+                    rargs = self.rumors[rumor]['rargs']
+                    match rargs['kind']:
+                        case 'monsters':
+                            tokens = len(self.all_monsters)
+                        case 'investigators':
+                            tokens = len(self.all_investigators)
+                        case 'gates':
+                            tokens = len([loc for loc in self.locations if loc['gate']])
+                    tokens = math.ceil(tokens / rargs.get('divisor', 1))
+                self.rumors[rumor]['eldritch'] -= tokens
+                if self.rumors[rumor]['eldritch'] == 0:
+                    del self.rumors[rumor]

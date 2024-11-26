@@ -1,5 +1,6 @@
 ---
   avian_thrall:
+    count: 1
     horror:
       index: 4
       mod: 0
@@ -15,6 +16,7 @@
     text: If you lose Sanity from the Will test, gain a Corruption Condition.
     reckoning_text: Move this Monster to the nearest Investigator. Then they encounter this Monster.
   cultist:
+    count: 6
     horror:
       index: 4
       mod: 0

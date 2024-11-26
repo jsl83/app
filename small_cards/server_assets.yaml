@@ -1,177 +1,217 @@
 ---
   .18_derringer:
     expansion: 0
+    cost: 1
     tags:
       - trinket
       - weapon
   .38_revolver:
     expansion: 0
+    cost: 1
     tags:
       - item
       - weapon
   .45_automatic:
     expansion: 0
+    cost: 2
     tags:
       - item
       - weapon
   agency_quarantine:
     expansion: 0
+    cost: 4
     tags:
       - service
   arcane_manuscripts:
     expansion: 0
+    cost: 1
     tags:
       - item
       - tome
   arcane_scholar:
     expansion: 0
+    cost: 2
     tags:
       - ally
   arcane_tome:
     expansion: 0
+    cost: 3
     tags:
       - item
       - tome
   axe:
     expansion: 0
+    cost: 2
     tags:
       - item
       - weapon
   bandages:
     expansion: 0
+    cost: 1
     tags:
       - item
   bull_whip:
     expansion: 0
+    cost: 1
     tags:
       - item
       - weapon
   carbine_rifle:
     expansion: 0
+    cost: 3
     tags:
       - item
       - weapon
   cat_burglar:
     expansion: 0
+    cost: 1
     tags:
       - ally
   charter_flight:
     expansion: 0
+    cost: 1
     tags:
       - service
   delivery_service:
     expansion: 0
+    cost: 1
     tags:
       - service
       - teamwork
   double-barreled_shotgun:
     expansion: 0
+    cost: 4
     tags:
       - item
       - weapon
   dynamite:
     expansion: 0
+    cost: 3
     tags:
       - item
       - weapon
   fine_clothes:
     expansion: 0
+    cost: 2
     tags:
       - item
   fishing_net:
     expansion: 0
+    cost: 2
     tags:
       - item
   hired_muscle:
     expansion: 0
+    cost: 2
     tags:
       - ally
   holy_cross:
     expansion: 0
+    cost: 2
     tags:
       - item
   holy_water:
     expansion: 0
+    cost: 2
     tags:
       - item
       - magical
   kerosene:
     expansion: 0
+    cost: 1
     tags:
       - item
   king_james_bible:
     expansion: 0
+    cost: 2
     tags:
       - item
       - tome
   lodge_researcher:
     expansion: 0
+    cost: 3
     tags:
       - ally
   lucky_cigarette_case:
     expansion: 0
+    cost: 2
     tags:
       - trinket
   lucky_rabbit's_foot:
     expansion: 0
+    cost: 1
     tags:
       - trinket
   personal_assistant:
     expansion: 0
+    cost: 2
     tags:
       - ally
   pocket_watch:
     expansion: 0
+    cost: 1
     tags:
       - trinket
   private_care:
     expansion: 0
+    cost: 2
     tags:
       - service
   private_investigator:
     expansion: 0
+    cost: 2
     tags:
       - ally
   protective_amulet:
     expansion: 0
+    cost: 1
     tags:
       - item
   puzzle_box:
     expansion: 0
+    cost: 3
     tags:
       - trinket
   sanctuary:
     expansion: 0
+    cost: 2
     tags:
       - service
   silver_twilight_ritual:
     expansion: 0
+    cost: 3
     tags:
       - service
   spirit_dagger:
     expansion: 0
+    cost: 2
     tags:
       - item
       - magical
       - weapon
   urban_guide:
     expansion: 0
+    cost: 4
     tags:
       - ally
   vatican_missionary:
     expansion: 0
+    cost: 2
     tags:
       - ally
   whiskey:
     expansion: 0
+    cost: 1
     tags:
       - item
   wireless_report:
     expansion: 0
+    cost: 1
     tags:
       - service
       - teamwork
   witch_doctor:
     expansion: 0
+    cost: 3
     tags:
       - ally

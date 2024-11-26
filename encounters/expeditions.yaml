@@ -476,15 +476,11 @@
   the_himalayas:
     - test: None
       pass:
-        - spawn_fight
-      pargs:
-        - text: Spawn 1 Monster and encounter it
-      ambush:
         - ambush
-      aargs:
+      pargs:
         - step: doom
           fail: observation
-          skip: True
+          text: Spawn 1 Monster and encounter it
       doom:
         - set_doom
       dargs:
@@ -510,13 +506,6 @@
         - set_doom
       rargs:
         - text: Retreat Doom by 1 and discard the Monster
-          step: kill
-      kill:
-        - damage_monsters
-      kargs:
-        - damage: 99
-          skip: True
-          ambush: True
       sanity:
         - hp_san
       sargs:

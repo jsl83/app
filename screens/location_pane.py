@@ -76,7 +76,8 @@ class LocationPane():
                                               action=self.toggle_details, action_args={'flag': False}, texture_pressed='/buttons/pressed_placeholder.png')
         self.toggle_info = ActionButton(1000, y=380, width=140, height=35, texture='buttons/placeholder.png', text='Details',
                                           action=self.toggle_details, action_args={'flag': True}, texture_pressed='/buttons/pressed_placeholder.png')
-        self.rumor_details = arcade.gui.UITextureButton(x=1000, y=0, height=425, width=280, texture=self.blank)
+        self.rumor_details = arcade.gui.UITextureButton(x=1000, y=0, height=390, width=280, texture=self.blank)
+        self.rumor = None
         
     def toggle_details(self, flag):
         self.toggle_info.select(flag)
@@ -90,7 +91,9 @@ class LocationPane():
 
     def location_select(self, key):
         location = self.location_manager.locations[key]
+        self.rumor = next((rumor for rumor in self.location_manager.rumors.keys() if self.location_manager.rumors[rumor]['location'] == self.selected), None)
         self.selected = key
+        self.tokens['rumor'].text = ''
         self.layout.clear()
         self.location_layout.clear()
         self.update_all()
@@ -126,7 +129,9 @@ class LocationPane():
         self.token_layout.add(self.black)
         for icon in has:
             self.token_layout.add(self.tokens[icon])
-        return 'rumor' in has
+            if self.rumor != None:
+                self.tokens['rumor'].text = str(self.location_manager.rumors[self.rumor].get('eldritch', ''))
+                self.tokens['rumor'].style['font_color'] = (255,0,0)
 
     def update_list(self, kind):
         y_offset = 0
@@ -165,7 +170,7 @@ class LocationPane():
         pass
 
     def update_all(self):
-        has_rumor = self.update_tokens()
+        self.update_tokens()
         self.update_list('investigators')
         self.update_list('monsters')
         for layout in [self.token_layout, self.toggle_layout]:
@@ -173,15 +178,13 @@ class LocationPane():
         self.location_layout.add(self.toggle_info)
         self.location_layout.add(self.toggle_rumor)
         self.toggle_rumor.enable()
-        if not has_rumor:
+        if self.rumor == None:
             self.toggle_rumor.disable()
         else:
-            rumor = next((rumor for rumor in self.location_manager.rumors.keys() if self.location_manager.rumors[rumor]['location'] == self.selected), None)
-            if rumor != None:
-                self.rumor_details.text = human_readable(rumor)
-                for x in ['solve', 'unsolved', 'reckoning']:
-                    self.rumor_details.text += '\n\n' + human_readable(x) + '\n' + self.location_manager.rumors[rumor].get(x, '')
-                self.rumor_details.style = {'font_size': 12}
+            self.rumor_details.text = human_readable(self.rumor)
+            for x in ['solve', 'unsolved', 'reckoning']:
+                self.rumor_details.text += '\n\n' + human_readable(x) + '\n' + self.location_manager.rumors[self.rumor].get(x, '')
+            self.rumor_details.style = {'font_size': 12}
         self.toggle_details(True)
 
     def show_monster(self, unit):

@@ -22,7 +22,7 @@ class EncounterPane():
         self.first_fight = True
         self.rolls = []
         self.phase_button = ActionButton(x=1020, width=240, y=725, height=50, texture='blank.png')
-        self.text_button = ActionButton(x=1020, width=240, y=300, height=400, texture='blank.png')
+        self.text_button = ActionButton(x=1020, width=240, y=275, height=425, texture='blank.png')
         self.proceed_button = ActionButton(1020, 200, 240, 50, 'buttons/pressed_placeholder.png')
         self.option_button = ActionButton(1020, 125, 240, 50, 'buttons/placeholder.png')
         self.last_button = ActionButton(1020, 50, 240, 50, 'buttons/placeholder.png')
@@ -47,10 +47,10 @@ class EncounterPane():
             'set_buttons': self.set_buttons,
             'set_doom': self.set_doom,
             'shuffle_mystery': self.shuffle_mystery,
+            'single_roll': self.single_roll,
             'skill': self.skill_test,
             'spawn_clue': self.spawn_clue,
             'spend_clue': self.spend_clue,
-            'spawn_fight': self.spawn_fight,
             'spawn_rumor': self.spawn_rumor,
             'solve_rumor': self.solve_rumor
         }
@@ -70,7 +70,6 @@ class EncounterPane():
         self.allowed_locs = {}
         self.wait_step = None
         self.ambush_steps = None
-        self.ambush_monster = None
         self.min_payment = 0
         self.max_payment = 0
         self.payment = 0
@@ -163,8 +162,10 @@ class EncounterPane():
     def resolve_combat(self, monster):
         self.hub.clear_overlay()
         successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
-        self.hub.damage_monster(monster, successes)
         if self.ambush_steps != None:
+            if successes >= monster.toughness:
+                pass
+                #monster death triggers
             self.set_buttons(self.ambush_steps[0] if successes >= monster.toughness else self.ambush_steps[1])
             self.ambush_steps = None
             self.hub.show_encounter_pane()
@@ -172,6 +173,7 @@ class EncounterPane():
             self.hub.show_encounter_pane()
             self.monsters.remove(monster)
             self.encounter_phase()
+            self.hub.damage_monster(monster, successes)
 
     def mists(self):
         self.monsters = []
@@ -197,7 +199,6 @@ class EncounterPane():
         self.encounters = []
         self.first_fight = True
         self.rolls = []
-        self.ambush_monster = None
         self.hub.clear_overlay()
         self.hub.gui_set(True)
         self.hub.switch_info_pane('investigator')
@@ -217,9 +218,9 @@ class EncounterPane():
             self.proceed_button.action = self.set_buttons
             self.proceed_button.action_args = {'key': step}
 
-    def ambush(self, step='finish', fail='finish'):
+    def ambush(self, name=None, step='finish', fail='finish'):
         self.ambush_steps = (step, fail)
-        self.combat_will(self.ambush_monster)
+        self.combat_will(self.hub.location_manager.create_ambush_monster(name))
 
     def close_gate(self, step='finish'):
         self.wait_step = step
@@ -234,11 +235,8 @@ class EncounterPane():
             pass_check = False
         self.set_buttons(step if pass_check else fail)
 
-    def damage_monsters(self, damage, step='finish', single=True, epic=True, ambush=False, lose_hp=False):
-        if ambush:
-            self.hub.damage_monster(self.ambush_monster, damage)
-            self.set_buttons(step)
-        elif len(self.hub.location_manager.get_all('monsters', True)) == 0:
+    def damage_monsters(self, damage, step='finish', single=True, epic=True, lose_hp=False):
+        if len(self.hub.location_manager.get_all('monsters', True)) == 0:
             self.proceed_button.text = 'The world is peaceful'
             self.proceed_button.action = self.set_buttons
             self.proceed_button.action_args = {'key': 'finish'}
@@ -543,6 +541,13 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'shuffle_mystery'}, self.investigator.name)
         self.set_buttons(step)
 
+    def single_roll(self, effects):
+        def trigger_effects():
+            for key in effects.keys():
+                if str(self.rolls[0]) in str(key):
+                    self.set_buttons(effects[key])
+        self.rolls = self.hub.single_roll(self, [ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=trigger_effects)])
+
     def skill_test(self, stat, mod=0, step='pass', fail='fail', clue_mod=False):
         for button in [self.proceed_button, self.option_button, self.last_button]:
             if button in self.layout.children:
@@ -601,11 +606,6 @@ class EncounterPane():
             rumor = next((rumor for rumor in self.hub.location_manager.rumors.keys() if self.hub.location_manager.rumors[rumor]['location'] == self.investigator.location), None)
             choose_rumor(rumor)
 
-    def spawn_fight(self):
-        self.wait_step = 'ambush'
-        location = self.investigator.map + ':' + self.investigator.location
-        self.hub.networker.publish_payload({'message': 'spawn', 'value': 'monsters', 'location': location}, self.investigator.name)
-
     def take_damage(self, hp, san, action, args):
         if hp == 0 and san == 0:
             action(**args)
@@ -630,7 +630,7 @@ class EncounterPane():
         self.layout.clear()
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
-        text = human_readable(mythos) + '\n\n' + self.encounter['flavor'] + '\n\n' + self.encounter['text']
+        text = human_readable(mythos) + '\n\n' + self.encounter['flavor'] + '\n\n' + self.encounter.get('text', '')
         if self.encounter.get('font_size', None) != None:
             self.text_button.style = {'font_size': int(self.encounter['font_size'])}
         self.text_button.text = text

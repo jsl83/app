@@ -127,6 +127,7 @@
         - args:
             recurring: 4
             unsolve: lose_game
+            name: dimensions_collide
     faded_from_society:
       difficulty: 1
       actions:
@@ -135,11 +136,18 @@
         - args:
             recurring: 4
             action: discard_cost
-            unsolve: solve_rumor
-            unsolve_args: faded_from_society
             name: faded_from_society
     fractured_reality:
       difficulty: 0
+      actions:
+        - on_reckoning
+      args:
+        - args:
+            recurring: 4
+            unsolve: move_doom
+            unsolve_args:
+              all_gates: True
+            name: fractured_reality
     growing_madness:
       difficulty: 0
     lost_knowledge:

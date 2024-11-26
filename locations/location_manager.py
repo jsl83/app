@@ -112,5 +112,3 @@ class LocationManager():
                             tokens = len([loc for loc in self.locations if loc['gate']])
                     tokens = math.ceil(tokens / rargs.get('divisor', 1))
                 self.rumors[rumor]['eldritch'] -= tokens
-                if self.rumors[rumor]['eldritch'] == 0:
-                    del self.rumors[rumor]

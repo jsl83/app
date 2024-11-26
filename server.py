@@ -288,7 +288,7 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'faded_from_society'
+                                            name = 'from_beyond'
                                             self.is_first = False
                                         else:
                                             name = 'eyes_everywhere'
@@ -324,8 +324,9 @@ class Networker(threading.Thread, BanyanBase):
                                 else:
                                     actions['recurring'] -= 1
                                     if actions['recurring'] == 0:
-                                        self.action_dict[actions['unsolve']](actions.get('unsolve_args', {}))
-                                        self.reckoning_actions.remove(actions)
+                                        if actions.get('unsolve', None) != None:
+                                            self.action_dict[actions['unsolve']](**actions['unsolve_args'])
+                                        self.solve_rumor(actions['name'])
                         if self.current_phase == 3:
                             if self.yellow_card:
                                 self.spawn('gates', number=self.reference[0])
@@ -486,8 +487,8 @@ class Networker(threading.Thread, BanyanBase):
             case 'gates':
                 for x in range(0, number):
                     if location != None and location in self.decks['gates']['deck']:
-                        self.decks['gates']['deck'].remove(location)
-                        #self.decks['gates']['board'].append(location)
+                        #self.decks['gates']['deck'].remove(location)
+                        self.decks['gates']['board'].append(location)
                         self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': location.split(':')[1], 'map': location.split(':')[0]}, 'server_update')
                         self.spawn('monsters', location=location)
                     elif location == None:
@@ -596,11 +597,11 @@ class Networker(threading.Thread, BanyanBase):
                 card = random.choice(list(cards[color].keys()))
                 #FOR TESTING
                 if color == 0:
-                    card = 'driven_to_bankruptcy'
+                    card = 'from_beyond'
                 if color == 1:
-                    card = 'eyes_everywhere'
+                    card = 'from_bad_to_worse'
                 if color == 2:
-                    card = 'faded_from_society'
+                    card = 'fractured_reality'
                 #END TESTING
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color
@@ -620,9 +621,11 @@ class Networker(threading.Thread, BanyanBase):
             self.move_doom(gates=True)
         self.publish_payload({'message': 'omen', 'value': self.omen}, 'server_update')
 
-    def move_doom(self, amt=-1, gates=False):
+    def move_doom(self, amt=-1, gates=False, all_gates=False):
         if not gates:
             amt = -len(self.get_locations['gate_omen']())
+        if all_gates:
+            amt = -len(self.decks['gates']['board'])
         self.ancient_one['doom'] += amt
         self.publish_payload({'message': 'doom', 'value': self.ancient_one['doom']}, 'server_update')
     

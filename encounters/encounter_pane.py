@@ -21,6 +21,7 @@ class EncounterPane():
         self.investigator = self.hub.investigator
         self.first_fight = True
         self.rolls = []
+        self.rumor_not_gate = None
         self.phase_button = ActionButton(x=1020, width=240, y=725, height=50, texture='blank.png')
         self.text_button = ActionButton(x=1020, width=240, y=275, height=425, texture='blank.png')
         self.proceed_button = ActionButton(1020, 200, 240, 50, 'buttons/pressed_placeholder.png')
@@ -41,6 +42,7 @@ class EncounterPane():
             'group_pay': self.group_pay,
             'hp_san': self.hp_san,
             'improve_skill': self.improve_skill,
+            'loss_per_condition': self.loss_per_condition,
             'monster_heal': self.monster_heal,
             'move_monster': self.move_monster,
             'request_card': self.request_card,
@@ -52,7 +54,8 @@ class EncounterPane():
             'spawn_clue': self.spawn_clue,
             'spend_clue': self.spend_clue,
             'spawn_rumor': self.spawn_rumor,
-            'solve_rumor': self.solve_rumor
+            'solve_rumor': self.solve_rumor,
+            'trigger_encounter': self.trigger_encounter
         }
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
@@ -203,6 +206,7 @@ class EncounterPane():
         self.hub.gui_set(True)
         self.hub.switch_info_pane('investigator')
         self.hub.select_ui_button(0)
+        self.rumor_not_gate = None
         if not skip:
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
 
@@ -224,8 +228,11 @@ class EncounterPane():
 
     def close_gate(self, step='finish'):
         self.wait_step = step
-        map_name = self.hub.location_manager.get_map_name(self.investigator.location)
-        self.hub.networker.publish_payload({'message': 'remove_gate', 'value': map_name + ':' + self.investigator.location}, self.investigator.name)
+        if self.rumor_not_gate != None:
+            self.hub.networker.publish_payload({'message': 'solve_rumor', 'value': self.rumor_not_gate}, self.investigator.name)
+        else:
+            map_name = self.hub.location_manager.get_map_name(self.investigator.location)
+            self.hub.networker.publish_payload({'message': 'remove_gate', 'value': map_name + ':' + self.investigator.location}, self.investigator.name)
     
     def condition_check(self, space_type=None, item_type=None, tag=None, step='finish', fail='finish'):
         pass_check = True
@@ -440,6 +447,13 @@ class EncounterPane():
             self.hub.choice_layout = create_choices(choices=choices, title='Improve a Skill', options=options)
             self.hub.show_overlay()
 
+    def loss_per_condition(self, lose, per, step='finish'):
+        amt = self.discard_check('conditions', per)
+        if lose == 'clues':
+            self.spend_clue(step, amt)
+        else:
+            self.hp_san(step, -amt if lose == 'health' else 0, -amt if lose == 'sanity' else 0)
+
     def monster_heal(self, amt, step='finish'):
         for location in self.hub.location_manager.locations:
             for monster in self.hub.location_manager.locations[location]['monsters']:
@@ -579,7 +593,7 @@ class EncounterPane():
     def spend_clue(self, step='finish', clues=1, condition=None):
         if condition == 'half':
             clues = math.ceil((len(self.hub.location_manager.all_investigators) / 2))
-        for x in range(clues):
+        for x in range(min(clues, len(self.investigator.clues))):
             clue = random.choice(self.investigator.clues)
             self.investigator.clues.remove(clue)
             self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
@@ -623,6 +637,10 @@ class EncounterPane():
                 width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.investigator.hp_san, action_args={'action': action, 'args': args})
             self.hub.choice_layout = create_choices(choices = choices, options=[next_button], title='Taking Damage', subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))
             self.hub.show_overlay()
+
+    def trigger_encounter(self, kind, rumor=None):
+        self.rumor_not_gate = rumor
+        self.hub.networker.publish_payload({'message': 'get_encounter', 'value': kind}, self.investigator.name)
 
     def load_mythos(self, mythos):
         self.encounter = MYTHOS[mythos]

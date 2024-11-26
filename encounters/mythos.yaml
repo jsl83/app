@@ -268,5 +268,46 @@
     eargs:
       - text: End turn (all)
     flavor: Some dark magic has taken hold in you. Friends have started ignoring you as if you weren't even in the room. It's getting worse, and you fear that soon you'll be invisible to every other person on Earth!
-    text: A rumor has spawned on Space 16
-  
+    text: A rumor has spawned on Space 16.
+  fractured_reality:
+    action:
+      - spawn_rumor
+    aargs:
+      - step: end
+        skip: True
+        name: fractured_reality
+        manager_obj:
+          location: space_2
+          solve: Resolve an Other World Encounter; if an effect would close a Gate, solve this Rumor instead.
+          reckoning: Discard 1 Eldritch token from this card.
+          unsolved: Advance Doom by 1 for each Gate on the game Board.
+          eldritch: 4
+    end:
+      - end_mythos
+    eargs:
+      - text: End turn (all)
+    flavor: The strange phenomenon is an echo of the catastrophic destruction of Mu. The repercussions of the serpent people's overreaching ambition still take their toll.
+    text: A rumor has spawned on Space 2.
+  from_bad_to_worse:
+    action:
+      - loss_per_condition
+    aargs:
+      - lose: health
+        per: injury
+        step: sanity
+        text: Lose Clues
+    sanity:
+      - loss_per_condition
+    sargs:
+      - lose: sanity
+        per: madness
+        step: clues
+        skip: True
+    clues:
+      - loss_per_condition
+    cargs:
+      - lose: clues
+        per: deal
+        skip: True
+    flavor: Piece by piece, you are falling apart. It's getting harder to successfully negotiate simple human interactions. Your wounds won't stop bleeding, and your hands won't stop shaking.
+    text: You lose 1 Health for each Injury Condition, 1 Sanity for each Madness Condition, and 1 Clue for each Deal Condition

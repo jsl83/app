@@ -41,4 +41,13 @@
         - skip: True
       test_text: You attempt to research similar occurences from the past.
       pass_text: You learn about a Russian folktale where children go missing.
-    
+  space_2:
+    - test: None
+      pass:
+        - trigger_encounter
+      pargs:
+        - rumor: fractured_reality
+          text: Trigger Other World Encounter
+          kind: gate
+      pass_text: You use an ancient portal created by a long-dead wizard of Mu.
+  

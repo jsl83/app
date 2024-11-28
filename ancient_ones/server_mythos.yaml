@@ -71,10 +71,10 @@
     all_for_nothing:
       difficulty: 2
       actions:
-        - group_pay
+        - set_payment
       args:
-        - kind: clues
-          amt: 2
+        - kind: investigators
+          divisor: 2
     ancient_guardians:
       difficulty: 1
       actions:
@@ -128,6 +128,9 @@
       args:
         - args:
             recurring: 4
+            rargs:
+              - count: gates
+                divisor: 2
             unsolve: lose_game
             name: dimensions_collide
     faded_from_society:

@@ -86,16 +86,6 @@ class Investigator():
     
     def death(self, hp, san):
         pass
-    
-    def hp_san(self, action=None, args=None):
-        self.health += self.hp_damage
-        self.sanity += self.san_damage
-        if self.health <= 0 or self.sanity <= 0:
-            self.death(self.health <= 0, self.sanity <= 0)
-        elif action != None:
-            action(**args)
-        self.san_damage = 0
-        self.hp_damage = 0
 
     def improve_skill(self, skill, amt):
         self.skill_tokens[skill] += amt
@@ -103,3 +93,13 @@ class Investigator():
 
     def discard(self, card):
         card.discard()
+
+    def get_number(self, kind, tag=None):
+        if kind == 'clues':
+            return len(self.clues)
+        elif kind == 'hp':
+            return self.health
+        elif kind =='san':
+            return self.sanity
+        else:
+            return len([card for card in self.possessions[kind] if tag == None or tag in card['tags']])

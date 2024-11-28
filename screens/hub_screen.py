@@ -39,10 +39,6 @@ class HubScreen(arcade.View):
         self.server_message = ''
         self.lead_investigator = None
 
-        for item in self.investigator.initial_items:
-            request = item.split(':')
-            self.request_card(request[0], request[1])
-
         self.initial_click = (0,0)
         self.zoom = 1
         self.click_time = 0
@@ -113,13 +109,14 @@ class HubScreen(arcade.View):
             'action': None,
             'args': {}
         }
-        self.info_requests = {
-            'clues': lambda: len(self.investigator.clues),
-            'hp': lambda: self.investigator.health,
-            'san': lambda: self.investigator.sanity
-        }
 
         self.networker.publish_payload({'message': 'ready'}, 'login')
+        
+        for item in self.investigator.initial_items:
+            request = item.split(':')
+            self.request_card(request[0], request[1])
+        self.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity})
+
         self.location_manager.locations[self.investigator.location]['investigators'].append(self.investigator)
         self.location_manager.all_investigators.append(self.investigator)
 
@@ -361,9 +358,8 @@ class HubScreen(arcade.View):
                                 self.ticket_move('akachi_onyele', 'space_16', 0, 0, 'space_15')
                             else:
                                 self.ticket_move('akachi_onyele', 'space_15', 0, 0, 'space_16')
+                                self.investigator.focus = 0
                             self.info_panes['investigator'].focus_action()
-                            if not self.is_first:
-                                self.investigator.focus = 1
                             #END TESTING
                     case 'encounter':
                         #FOR TESTING
@@ -373,14 +369,13 @@ class HubScreen(arcade.View):
                         #self.encounter_pane.encounter_phase()
                     case 'reckoning':
                         #self.reckonings()
-                        self.location_manager.trigger_reckoning()
                         self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                     case 'mythos':
                         #self.encounter_pane.activate_mythos()
                         #FOR TESTING
                         #if self.is_first:
                         self.encounter_pane.activate_mythos()
-                        #    self.is_first = False
+                        self.is_first = False
                         #else:
                         #    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                         #END TESTING
@@ -431,10 +426,11 @@ class HubScreen(arcade.View):
                 self.location_manager.locations[rumor['location']]['rumor'] = False
                 self.maps['world'].remove_tokens('rumor', rumor['location'], payload['value'])
                 del self.location_manager.rumors[payload['value']]
-            case 'info_request':
-                self.networker.publish_payload({'message': 'send_info', 'value': self.info_requests[payload['value']]()}, self.investigator.name)
+            case 'update_rumor':
+                if self.location_manager.rumors.get(payload['name'], None) != None:
+                    self.location_manager.rumors[payload['name']]['eldritch'] = payload['value']
             case 'group_pay_update':
-                self.encounter_pane.update_payment(payload['min'], payload['max'])
+                self.encounter_pane.group_pay(payload['min'], payload['max'], payload['kind'])
             case 'mystery_count':
                 self.info_panes['ancient_one'].mystery_count.text = str(int(self.ancient_one.mysteries) - int(payload['value']))
             case 'monster_moved':

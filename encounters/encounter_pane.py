@@ -39,7 +39,6 @@ class EncounterPane():
             'end_mythos': self.end_mythos,
             'gain_asset': self.gain_asset,
             'gain_clue': self.gain_clue,
-            'group_pay': self.group_pay,
             'hp_san': self.hp_san,
             'improve_skill': self.improve_skill,
             'loss_per_condition': self.loss_per_condition,
@@ -47,7 +46,6 @@ class EncounterPane():
             'move_monster': self.move_monster,
             'mythos_reckoning': self.mythos_reckoning,
             'request_card': self.request_card,
-            'rumor_tick': self.rumor_tick,
             'server_check': lambda: self.set_buttons('pass') if self.mythos_switch else self.set_buttons('fail'),
             'set_buttons': self.set_buttons,
             'set_doom': self.set_doom,
@@ -58,6 +56,7 @@ class EncounterPane():
             'spend_clue': self.spend_clue,
             'spawn_rumor': self.spawn_rumor,
             'solve_rumor': self.solve_rumor,
+            'start_group_pay': self.start_group_pay,
             'trigger_encounter': self.trigger_encounter
         }
         self.req_dict = {
@@ -76,20 +75,9 @@ class EncounterPane():
         self.allowed_locs = {}
         self.wait_step = None
         self.ambush_steps = None
-        self.min_payment = 0
-        self.max_payment = 0
         self.payment = 0
         self.set_button_set = set()
         self.mythos_switch = False
-        self.payment_update = False
-        self.payment_info = None
-
-    def update_payment(self, min, max):
-        self.min_payment = min
-        self.max_payment = max
-        if not self.payment_update:
-            self.payment_update = True
-            self.group_pay(**self.payment_info)
 
     def get_rumor(self, name):
         return MYTHOS[name]
@@ -222,8 +210,6 @@ class EncounterPane():
         self.hub.select_ui_button(0)
         self.rumor_not_gate = None
         self.mythos_switch = False
-        self.payment_update = False
-        self.payment_info = None
         if not skip:
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
 
@@ -374,15 +360,12 @@ class EncounterPane():
                 self.wait_step = step
             self.hub.networker.publish_payload({'message': 'get_clue', 'value': amt}, self.investigator.name)
 
-    def group_pay(self, kind, step='finish'):
-        calc_max = min(self.max_payment, self.hub.info_requests[kind]())
-        if not self.payment_update:
-            self.payment_info = {'kind': kind, 'step': step}
-        elif calc_max == 0:
-            pass
-            #self.set_buttons(step)
+    def group_pay(self, minimum, max, kind, step='finish'):
+        calc_max = min(max, self.investigator.get_number(kind))
+        if calc_max == 0:
+            self.set_buttons(step)
         else:
-            self.payment = self.min_payment
+            self.payment = minimum
             title = ''
             match kind:
                 case 'clues':
@@ -401,9 +384,9 @@ class EncounterPane():
                     button.enable()
                 self.payment += amt
                 payment_button.text = str(self.payment)
-                if self.payment < self.min_payment or self.payment > calc_max:
+                if self.payment < minimum or self.payment > calc_max:
                     submit_button.disable()
-                if self.payment <= self.min_payment:
+                if self.payment <= minimum:
                     minus_button.disable()
                 if self.payment >= calc_max:
                     plus_button.disable()
@@ -418,7 +401,7 @@ class EncounterPane():
             minus_button.action = increment
             plus_button.action = increment
             submit_button.action = pay
-            subtitle = 'Minimum: ' + str(self.min_payment) + '  ' + 'Maximum: ' + str(calc_max)
+            subtitle = 'Minimum: ' + str(minimum) + '  ' + 'Maximum: ' + str(calc_max)
             self.hub.choice_layout = create_choices(choices=[payment_button], options=options, title='Spend ' + title, subtitle=subtitle)
             if self.hub.lead_investigator != self.investigator.name and self.proceed_button in self.layout.children:
                 self.layout.remove(self.proceed_button)
@@ -443,6 +426,7 @@ class EncounterPane():
         else:
             self.investigator.health += hp
             self.investigator.sanity += san
+            self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity})
             self.set_buttons(step)
 
     def improve_skill(self, skill, step='finish', amt=1, option=None):
@@ -520,7 +504,6 @@ class EncounterPane():
                 self.option_button.action_args = {'key': step}
 
     def mythos_reckoning(self, number=1, step='finish'):
-        self.hub.location_manager.trigger_reckoning(2)
         self.hub.networker.publish_payload({'message': 'mythos_reckoning', 'value': number}, self.investigator.name)
         self.set_buttons(step)
 
@@ -530,10 +513,6 @@ class EncounterPane():
         if not message_sent:
             self.wait_step = None
             self.set_buttons(step)
-
-    def rumor_tick(self, number=2):
-        for x in range(number):
-            self.hub.location_manager.trigger_reckoning()
 
     def set_buttons(self, key):
         self.wait_step = None
@@ -652,21 +631,27 @@ class EncounterPane():
             rumor = next((rumor for rumor in self.hub.location_manager.rumors.keys() if self.hub.location_manager.rumors[rumor]['location'] == self.investigator.location), None)
             choose_rumor(rumor)
 
+    def start_group_pay(self, kind):
+        self.hub.networker.publish_payload({'message': 'payment_info', 'kind': kind}, self.investigator.name)
+
     def take_damage(self, hp, san, action, args):
         if hp == 0 and san == 0:
             action(**args)
         else:
             choices = []
-            self.investigator.hp_damage += hp
-            self.investigator.san_damage += san
             if hp < 0:
                 #choices.append(hp damage triggers)
                 pass
             if san < 0:
                 #choices.append(san damage triggers)
                 pass
+            def resolve_damage(hp, san):
+                self.investigator.health += hp
+                self.investigator.sanity += san
+                self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity})
+                action(**args)
             next_button = ActionButton(
-                width=100, height=30, texture='buttons/placeholder.png', text='Next', action=self.investigator.hp_san, action_args={'action': action, 'args': args})
+                width=100, height=30, texture='buttons/placeholder.png', text='Next', action=resolve_damage, action_args={'hp': hp, 'san': san})
             self.hub.choice_layout = create_choices(choices = choices, options=[next_button], title='Taking Damage', subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))
             self.hub.show_overlay()
 

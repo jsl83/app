@@ -133,7 +133,9 @@ class Networker(threading.Thread, BanyanBase):
             'on_reckoning': self.on_reckoning,
             'lose_game': self.lose_game,
             'solve_rumor': self.solve_rumor,
-            'discard_cost': self.discard_cost
+            'discard_cost': self.discard_cost,
+            'mythos_reckoning': self.mythos_reckoning,
+            'from_beyond': self.from_beyond
         }
         self.group_pay_info = {'needed': 0, 'paid': 0, 'investigators': {}, 'info_received': 0, 'kind': ''}
         self.omen_cycle = ['green', 'blue', 'red', 'blue']
@@ -288,10 +290,10 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'from_beyond'
+                                            name = 'fractured_reality'
                                             self.is_first = False
                                         else:
-                                            name = 'eyes_everywhere'
+                                            name = 'from_beyond'
                                         #END TESTING
                                         if name == None:
                                             break
@@ -312,28 +314,17 @@ class Networker(threading.Thread, BanyanBase):
                                         #del self.mythos_deck[x][name]
                                         break
                         if self.current_phase == 2:
-                            for actions in self.reckoning_actions:
-                                action = actions.get('action', None)
-                                if action != None:
-                                    if actions.get('args', None) != None:
-                                        self.action_dict[actions['action']](actions.get('args', None))
-                                    else:
-                                        self.action_dict[actions['action']]()
-                                if not actions.get('recurring', True):
-                                    self.reckoning_actions.remove(actions)
-                                else:
-                                    actions['recurring'] -= 1
-                                    if actions['recurring'] == 0:
-                                        if actions.get('unsolve', None) != None:
-                                            self.action_dict[actions['unsolve']](**actions['unsolve_args'])
-                                        self.solve_rumor(actions['name'])
+                            self.mythos_reckoning()
                         if self.current_phase == 3:
                             if self.yellow_card:
                                 self.spawn('gates', number=self.reference[0])
                                 self.yellow_card = False
                             if self.mythos.get('actions', None) != None:
                                 for x in range(len(self.mythos['actions'])):
-                                    self.action_dict[self.mythos['actions'][x]](**self.mythos['args'][x])
+                                    if self.mythos.get('args', None) != None:
+                                        self.action_dict[self.mythos['actions'][x]](**self.mythos['args'][x])
+                                    else:
+                                        self.action_dict[self.mythos['actions'][x]]()
                         if self.current_phase == 4:
                             self.end_mythos()
                         else:
@@ -384,6 +375,8 @@ class Networker(threading.Thread, BanyanBase):
                         index = next((i for i, monster in enumerate(self.monsters) if monster['monster_id'] == int(payload['value'])), None)
                         chosen = self.monsters[index]
                         chosen['location'] = payload['location']
+                    case 'mythos_reckoning':
+                        self.mythos_reckoning(payload['value'], True)
 
     def end_mythos(self):
         self.current_phase = 0
@@ -394,6 +387,34 @@ class Networker(threading.Thread, BanyanBase):
 
     def lose_game(self):
         pass
+
+    def from_beyond(self):
+        if len(self.reckoning_actions) == 0:
+            self.move_doom()
+        else:
+            self.publish_payload({'message': 'mythos_switch'}, 'server_update')
+            self.group_pay('clues', amt=2)
+
+    def mythos_reckoning(self, number=1, doom=False):
+        if doom and len(self.reckoning_actions) == 0:
+            self.move_doom()
+        else:
+            for x in range(number):
+                for actions in self.reckoning_actions:
+                    action = actions.get('action', None)
+                    if action != None:
+                        if actions.get('args', None) != None:
+                            self.action_dict[actions['action']](actions.get('args', None))
+                        else:
+                            self.action_dict[actions['action']]()
+                    if not actions.get('recurring', True):
+                        self.reckoning_actions.remove(actions)
+                    else:
+                        actions['recurring'] -= 1
+                        if actions['recurring'] == 0:
+                            if actions.get('unsolve', None) != None:
+                                self.action_dict[actions['unsolve']](**actions['unsolve_args'])
+                            self.solve_rumor(actions['name'])
 
     def solve_rumor(self, name):
         self.reckoning_actions = [rumor for rumor in self.reckoning_actions if rumor['name'] != name]
@@ -599,7 +620,7 @@ class Networker(threading.Thread, BanyanBase):
                 if color == 0:
                     card = 'from_beyond'
                 if color == 1:
-                    card = 'from_bad_to_worse'
+                    card = 'everyone_has_a_price'
                 if color == 2:
                     card = 'fractured_reality'
                 #END TESTING

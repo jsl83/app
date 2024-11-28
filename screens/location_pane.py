@@ -90,9 +90,9 @@ class LocationPane():
             self.toggle_layout.add(self.rumor_details)
 
     def location_select(self, key):
+        self.selected = key
         location = self.location_manager.locations[key]
         self.rumor = next((rumor for rumor in self.location_manager.rumors.keys() if self.location_manager.rumors[rumor]['location'] == self.selected), None)
-        self.selected = key
         self.tokens['rumor'].text = ''
         self.layout.clear()
         self.location_layout.clear()

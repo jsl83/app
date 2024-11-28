@@ -196,8 +196,7 @@ class HubScreen(arcade.View):
                     self.info_manager.trigger_render()
             buttons = list(self.ui_manager.get_widgets_at((x,y)))
             if len(buttons) > 0 and type(buttons[0]) == ActionButton:
-                button = buttons[0]
-                button.action()
+                buttons[0].action()
         else:
             ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y))) + list(self.choice_manager.get_widgets_at((x,y)))
             if len(ui_buttons) > 0:
@@ -358,17 +357,20 @@ class HubScreen(arcade.View):
                             self.remaining_actions = 2
                             #FOR TESTING
                             self.remaining_actions = 3
-                            self.ticket_move('akachi_onyele', 'space_16', 0, 0, 'space_15')
+                            if self.is_first:
+                                self.ticket_move('akachi_onyele', 'space_16', 0, 0, 'space_15')
+                            else:
+                                self.ticket_move('akachi_onyele', 'space_15', 0, 0, 'space_16')
                             self.info_panes['investigator'].focus_action()
                             if not self.is_first:
                                 self.investigator.focus = 1
                             #END TESTING
                     case 'encounter':
                         #FOR TESTING
-                        #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                        self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                         #END TESTING
-                        self.show_encounter_pane()
-                        self.encounter_pane.encounter_phase()
+                        #self.show_encounter_pane()
+                        #self.encounter_pane.encounter_phase()
                     case 'reckoning':
                         #self.reckonings()
                         self.location_manager.trigger_reckoning()
@@ -376,11 +378,11 @@ class HubScreen(arcade.View):
                     case 'mythos':
                         #self.encounter_pane.activate_mythos()
                         #FOR TESTING
-                        if self.is_first:
-                            self.encounter_pane.activate_mythos()
-                            self.is_first = False
-                        else:
-                            self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                        #if self.is_first:
+                        self.encounter_pane.activate_mythos()
+                        #    self.is_first = False
+                        #else:
+                        #    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                         #END TESTING
             case 'encounter_choice':
                 self.clear_overlay()
@@ -388,11 +390,13 @@ class HubScreen(arcade.View):
                 self.encounter_pane.start_encounter(payload['value'])
             case 'mythos':
                 #FOR TESTING
-                if self.is_first:
-                    self.clear_overlay()
-                    self.show_encounter_pane()
-                    self.encounter_pane.load_mythos(payload['value'])
+                #if self.is_first:
+                self.clear_overlay()
+                self.show_encounter_pane()
+                self.encounter_pane.load_mythos(payload['value'])
                 #END TESTING
+            case 'mythos_switch':
+                self.encounter_pane.mythos_switch = True
             case 'omen':
                 self.set_omen(int(payload['value']))
             case 'doom':
@@ -430,8 +434,7 @@ class HubScreen(arcade.View):
             case 'info_request':
                 self.networker.publish_payload({'message': 'send_info', 'value': self.info_requests[payload['value']]()}, self.investigator.name)
             case 'group_pay_update':
-                self.encounter_pane.min_payment = payload['min']
-                self.encounter_pane.max_payment = payload['max']
+                self.encounter_pane.update_payment(payload['min'], payload['max'])
             case 'mystery_count':
                 self.info_panes['ancient_one'].mystery_count.text = str(int(self.ancient_one.mysteries) - int(payload['value']))
             case 'monster_moved':

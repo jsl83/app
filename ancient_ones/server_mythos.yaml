@@ -37,6 +37,8 @@
             action: restock_reserve
     from_beyond:
       difficulty: 2
+      actions:
+        - from_beyond
     heart_of_corruption:
       difficulty: 0
     legitimate_banking:

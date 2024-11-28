@@ -45,7 +45,10 @@ class EncounterPane():
             'loss_per_condition': self.loss_per_condition,
             'monster_heal': self.monster_heal,
             'move_monster': self.move_monster,
+            'mythos_reckoning': self.mythos_reckoning,
             'request_card': self.request_card,
+            'rumor_tick': self.rumor_tick,
+            'server_check': lambda: self.set_buttons('pass') if self.mythos_switch else self.set_buttons('fail'),
             'set_buttons': self.set_buttons,
             'set_doom': self.set_doom,
             'shuffle_mystery': self.shuffle_mystery,
@@ -76,6 +79,17 @@ class EncounterPane():
         self.min_payment = 0
         self.max_payment = 0
         self.payment = 0
+        self.set_button_set = set()
+        self.mythos_switch = False
+        self.payment_update = False
+        self.payment_info = None
+
+    def update_payment(self, min, max):
+        self.min_payment = min
+        self.max_payment = max
+        if not self.payment_update:
+            self.payment_update = True
+            self.group_pay(**self.payment_info)
 
     def get_rumor(self, name):
         return MYTHOS[name]
@@ -207,6 +221,9 @@ class EncounterPane():
         self.hub.switch_info_pane('investigator')
         self.hub.select_ui_button(0)
         self.rumor_not_gate = None
+        self.mythos_switch = False
+        self.payment_update = False
+        self.payment_info = None
         if not skip:
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
 
@@ -359,8 +376,11 @@ class EncounterPane():
 
     def group_pay(self, kind, step='finish'):
         calc_max = min(self.max_payment, self.hub.info_requests[kind]())
-        if calc_max == 0:
-            self.set_buttons(step)
+        if not self.payment_update:
+            self.payment_info = {'kind': kind, 'step': step}
+        elif calc_max == 0:
+            pass
+            #self.set_buttons(step)
         else:
             self.payment = self.min_payment
             title = ''
@@ -499,6 +519,11 @@ class EncounterPane():
                 self.option_button.action = self.set_buttons
                 self.option_button.action_args = {'key': step}
 
+    def mythos_reckoning(self, number=1, step='finish'):
+        self.hub.location_manager.trigger_reckoning(2)
+        self.hub.networker.publish_payload({'message': 'mythos_reckoning', 'value': number}, self.investigator.name)
+        self.set_buttons(step)
+
     def request_card(self, kind, step='finish', name='', tag=''):
         self.wait_step = step
         message_sent = self.hub.request_card(kind, name, tag=tag)
@@ -506,15 +531,17 @@ class EncounterPane():
             self.wait_step = None
             self.set_buttons(step)
 
+    def rumor_tick(self, number=2):
+        for x in range(number):
+            self.hub.location_manager.trigger_reckoning()
+
     def set_buttons(self, key):
         self.wait_step = None
         if key == 'finish':
             self.finish()
         else:
-            self.layout.clear()
-            self.layout.add(self.text_button)
-            self.layout.add(self.phase_button)
             self.hub.clear_overlay()
+            self.set_button_set = set()
             if key == 'no_effect':
                 self.proceed_button.enable()
                 self.proceed_button.text = 'Onward...'
@@ -544,7 +571,12 @@ class EncounterPane():
                     else:
                         buttons[x].action = self.action_dict[actions[x]]
                         buttons[x].action_args = args
-                    self.layout.add(buttons[x])
+                    self.set_button_set.add(buttons[x])
+                self.layout.clear()
+                self.layout.add(self.text_button)
+                self.layout.add(self.phase_button)
+                for button in self.set_button_set:
+                    self.layout.add(button)
             self.hub.info_manager.trigger_render()
 
     def set_doom(self, increment=1, step='finish'):

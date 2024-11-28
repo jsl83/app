@@ -97,18 +97,19 @@ class LocationManager():
         name = name if name != None else random.choice(self.monster_deck)
         return Monster(name, -1)
     
-    def trigger_reckoning(self):
-        for rumor in self.rumors.keys():
-            if self.rumors[rumor].get('eldritch', None) != None:
-                tokens = 1
-                if self.rumors[rumor].get('rargs', None) != None:
-                    rargs = self.rumors[rumor]['rargs']
-                    match rargs['kind']:
-                        case 'monsters':
-                            tokens = len(self.all_monsters)
-                        case 'investigators':
-                            tokens = len(self.all_investigators)
-                        case 'gates':
-                            tokens = len([loc for loc in self.locations if loc['gate']])
-                    tokens = math.ceil(tokens / rargs.get('divisor', 1))
-                self.rumors[rumor]['eldritch'] -= tokens
+    def trigger_reckoning(self, number=1):
+        for x in range(number):
+            for rumor in self.rumors.keys():
+                if self.rumors[rumor].get('eldritch', None) != None:
+                    tokens = 1
+                    if self.rumors[rumor].get('rargs', None) != None:
+                        rargs = self.rumors[rumor]['rargs']
+                        match rargs['kind']:
+                            case 'monsters':
+                                tokens = len(self.all_monsters)
+                            case 'investigators':
+                                tokens = len(self.all_investigators)
+                            case 'gates':
+                                tokens = len([loc for loc in self.locations if loc['gate']])
+                        tokens = math.ceil(tokens / rargs.get('divisor', 1))
+                    self.rumors[rumor]['eldritch'] -= tokens

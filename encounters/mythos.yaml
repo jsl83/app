@@ -311,3 +311,28 @@
         skip: True
     flavor: Piece by piece, you are falling apart. It's getting harder to successfully negotiate simple human interactions. Your wounds won't stop bleeding, and your hands won't stop shaking.
     text: You lose 1 Health for each Injury Condition, 1 Sanity for each Madness Condition, and 1 Clue for each Deal Condition
+  from_beyond:
+    action:
+      - server_check
+    aargs:
+      - skip: True
+    pass:
+      - mythos_reckoning
+      - group_pay
+    pargs:
+      - text: It remains an enigma (Don't spend)
+        number: 2
+        step: end
+      - kind: clues
+        skip: True
+    end:
+      - end_mythos
+    eargs:
+      - skip: True
+    fail:
+      - end_mythos
+    fargs:
+      - text: No reckoning Mythos
+    font_size: 11
+    flavor: The shop owner's body was found in the storeroom among those curios and antiques deemed "too esoteric" for public display. While the police ascribed his death to natural causes, you see it for something more sinister. The insidious powers from outside of reality are growing more aggressive, impatient for the meal they plan to make of this world.
+    text: Resolve the Reckoning effect on each Mythos card in play twice unless investigators, as a group, spend Clues equal to half Investigators. If there are no Mythos cards in play with a Reckoning effect, advance Doom by 1.

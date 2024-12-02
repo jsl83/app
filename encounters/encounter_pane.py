@@ -78,6 +78,9 @@ class EncounterPane():
         self.payment = 0
         self.set_button_set = set()
         self.mythos_switch = False
+        self.reckonings = []
+        self.priority_reckonings = []
+        self.mythos = None
 
     def get_rumor(self, name):
         return MYTHOS[name]
@@ -199,7 +202,6 @@ class EncounterPane():
             button.unset()
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
-        self.encounter = None
         self.monsters = []
         self.encounters = []
         self.first_fight = True
@@ -518,6 +520,8 @@ class EncounterPane():
         self.wait_step = None
         if key == 'finish':
             self.finish()
+        elif key == 'reckoning':
+            self.reckoning()
         else:
             self.hub.clear_overlay()
             self.set_button_set = set()
@@ -660,6 +664,7 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'get_encounter', 'value': kind}, self.investigator.name)
 
     def load_mythos(self, mythos):
+        self.mythos = mythos
         self.encounter = MYTHOS[mythos]
         self.phase_button.text = 'Mythos Phase'
         self.layout.clear()
@@ -680,3 +685,17 @@ class EncounterPane():
             self.set_buttons('finish')
         else:
             self.set_buttons('action')
+
+    def reckoning(self):
+        if len(self.priority_reckonings) > 0:
+            action = self.priority_reckonings.pop(0)
+            self.text_button.text = 'Reckoning\n\n' + action[2]
+            action[0](**action[1])
+        elif len(self.reckonings) > 0:
+            pass
+        else:
+            self.finish()
+            text = human_readable(self.mythos) + '\n\n' + self.encounter['flavor'] + '\n\n' + self.encounter.get('text', '')
+            if self.encounter.get('font_size', None) != None:
+                self.text_button.style = {'font_size': int(self.encounter['font_size'])}
+            self.text_button.text = text

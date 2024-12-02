@@ -124,7 +124,7 @@ class HubScreen(arcade.View):
         self.request_card('assets', 'arcane_tome')
         self.request_card('assets', 'axe')
         self.request_card('assets', 'arcane_scholar')
-        self.request_card('conditions', 'dark_pact')
+        self.request_card('conditions', 'amnesia')
         self.investigator.sanity -= 3
         self.investigator.clues.append('world:arkham')
         self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
@@ -357,7 +357,7 @@ class HubScreen(arcade.View):
                             if self.is_first:
                                 self.ticket_move('akachi_onyele', 'space_16', 0, 0, 'space_15')
                             else:
-                                self.ticket_move('akachi_onyele', 'space_15', 0, 0, 'space_16')
+                                self.ticket_move('akachi_onyele', 'space_8', 0, 0, 'space_16')
                                 self.investigator.focus = 0
                             self.info_panes['investigator'].focus_action()
                             #END TESTING
@@ -368,12 +368,16 @@ class HubScreen(arcade.View):
                         #self.show_encounter_pane()
                         #self.encounter_pane.encounter_phase()
                     case 'reckoning':
-                        #self.reckonings()
-                        self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                        self.encounter_pane.reckoning()
+                        #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                     case 'mythos':
+                        #self.clear_overlay()
+                        #self.show_encounter_pane()
                         #self.encounter_pane.activate_mythos()
                         #FOR TESTING
                         #if self.is_first:
+                        self.clear_overlay()
+                        self.show_encounter_pane()
                         self.encounter_pane.activate_mythos()
                         self.is_first = False
                         #else:
@@ -425,6 +429,9 @@ class HubScreen(arcade.View):
                 rumor = self.location_manager.rumors[payload['value']]
                 self.location_manager.locations[rumor['location']]['rumor'] = False
                 self.maps['world'].remove_tokens('rumor', rumor['location'], payload['value'])
+                if not payload['solved'] and rumor.get('unsolve_action', None) != None:
+                    action = self.encounter_pane.action_dict[rumor['unsolve_action']]
+                    self.encounter_pane.priority_reckonings.append((action, rumor.get('unsolve_args', {}), rumor['unsolve_text']))
                 del self.location_manager.rumors[payload['value']]
             case 'update_rumor':
                 if self.location_manager.rumors.get(payload['name'], None) != None:

@@ -50,4 +50,25 @@
           text: Trigger Other World Encounter
           kind: gate
       pass_text: You use an ancient portal created by a long-dead wizard of Mu.
-  
+  space_8:
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          fail: no_effect
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - condition: half
+          text: Spend Clues
+          step: solve
+        - text: The wizard is unimpressed (skip)
+          key: finish
+      solve:
+        - solve_rumor
+      sargs:
+        - skip: True
+      test_text: You attempt to find the uncharted isle.
+      pass_text: The wizard returns to his time.
+    

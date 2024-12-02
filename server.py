@@ -299,10 +299,10 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'everyone_has_a_price'
+                                            name = 'growing_madness'
                                             self.is_first = False
                                         else:
-                                            name = 'from_beyond'
+                                            name = 'everyone_has_a_price'
                                         #END TESTING
                                         if name == None:
                                             break
@@ -432,18 +432,26 @@ class Networker(threading.Thread, BanyanBase):
                         if actions['recurring'] <= 0:
                             if actions.get('unsolve', None) != None:
                                 self.action_dict[actions['unsolve']](**actions['unsolve_args'])
-                            self.solve_rumor(actions)
+                            self.solve_rumor(actions, False)
                         else:
                             self.publish_payload({'message': 'update_rumor', 'name': actions['name'], 'value': actions['recurring']}, 'server_update')
 
-    def rumor_tick(self, count, divisor):
+    def rumor_tick(self, count, divisor=1):
         tick = 0
         if count == 'gates':
             tick = len(self.decks['gates']['board'])
+        elif count == 'lead_madness':
+            lead = self.selected_investigators[self.lead_investigator]
+            owned = [card[:-1] for card in self.investigators[lead]['conditions']]
+            condition = random.choice([card for card in self.decks['conditions'] if ('madness' in CONDITIONS[card[:-1]]['tags']) and (card[:-1] not in owned)])
+            #self.decks['conditions'].remove(condition)
+            self.investigators[lead]['conditions'].append(condition)
+            self.publish_payload({'message': 'conditions', 'value': condition}, lead + '_server')
+            tick = len([card for card in owned if 'madness' in CONDITIONS[card]['tags']]) + 1
         return math.ceil(tick / divisor)
 
-    def solve_rumor(self, rumor):
-        self.publish_payload({'message': 'rumor_solved', 'value': rumor['name']}, 'server_update')
+    def solve_rumor(self, rumor, solved=True):
+        self.publish_payload({'message': 'rumor_solved', 'value': rumor['name'], 'solved': solved}, 'server_update')
         self.reckoning_actions.remove(rumor)
 
     def discard_gates(self, location=None, omen=False):
@@ -649,7 +657,7 @@ class Networker(threading.Thread, BanyanBase):
                 if color == 1:
                     card = 'everyone_has_a_price'
                 if color == 2:
-                    card = 'fractured_reality'
+                    card = 'growing_madness'
                 #END TESTING
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color

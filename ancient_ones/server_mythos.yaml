@@ -155,6 +155,14 @@
             name: fractured_reality
     growing_madness:
       difficulty: 0
+      actions:
+        - on_reckoning
+      args:
+        - args:
+            recurring: 4
+            rargs:
+              count: lead_madness
+            name: growing_madness
     lost_knowledge:
       difficulty: 0
     mysterious_lights:

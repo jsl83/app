@@ -333,3 +333,28 @@
     font_size: 11
     flavor: The shop owner's body was found in the storeroom among those curios and antiques deemed "too esoteric" for public display. While the police ascribed his death to natural causes, you see it for something more sinister. The insidious powers from outside of reality are growing more aggressive, impatient for the meal they plan to make of this world.
     text: Resolve the Reckoning effect on each Mythos card in play twice unless investigators, as a group, spend Clues equal to half Investigators. If there are no Mythos cards in play with a Reckoning effect, advance Doom by 1.
+  growing_madness:
+    action:
+      - spawn_rumor
+    aargs:
+      - step: end
+        skip: True
+        name: growing_madness
+        manager_obj:
+          location: space_8
+          solve: Test Observation, then spend Clues equal to half Investigators.
+          reckoning: The Lead Investigator gains a Madness Condition, then discards 1 Eldritch token from this card for each Madness Condition they have.
+          unsolved: Each Investigator loses 3 Sanity.
+          eldritch: 4
+          unsolve_action: hp_san
+          unsolve_args:
+              san: -3
+              step: reckoning
+          unsolve_text: Unsolved Rumor - Growing Madness
+    end:
+      - end_mythos
+    eargs:
+      - text: End turn (all)
+    flavor: You dream of a life as an insane wizard thousands of years ago in Atlantis. You also dream of that same wizard still alive today on an uncharted island.
+    text: A rumor has spawned on Space 8.
+  

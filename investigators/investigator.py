@@ -50,6 +50,8 @@ class Investigator():
         self.san_damage = 0
         self.hp_damage = 0
 
+        self.encounter_impairment = 0
+
     def get_ticket(self, kind):
         rail = 0
         ship = 0

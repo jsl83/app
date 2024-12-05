@@ -357,4 +357,71 @@
       - text: End turn (all)
     flavor: You dream of a life as an insane wizard thousands of years ago in Atlantis. You also dream of that same wizard still alive today on an uncharted island.
     text: A rumor has spawned on Space 8.
+  haunting_nightmares:
+    action:
+      - spend_clue
+      - hp_san
+    aargs:
+      - text: Spend 1 Clue
+      - san: -2
+        step: madness
+        text: Lose 2 Sanity and gain a Madness Condition
+    madness:
+      - request_card
+    margs:
+      - kind: conditions
+        tag: madness
+        skip: True
+    flavor: You wake up in mid-scream, and your heart is racing. What little you can remember of your nightmare was so visceral and horrific that you dread falling back asleep.
+  heart_of_corruption:
+    lead_only: True
+    action:
+      - request_card
+    aargs:
+      - kind: artifacts
+        step: roll
+        skip: True
+    roll:
+      - single_roll
+    rargs:
+      - effects:
+          12: damage
+          3456: no_effect
+        skip: True
+    damage:
+      - hp_san
+    dargs:
+      - hp: -2
+        san: -2
+        skip: True
+    font_size: 13
+    flavor: You compared the picture in the magazine to the drawing on the old, tattered map. It was definitely a match, but what could be so valuable that it required so much secrecy, and why was that particular point on the map marked with blood?
+    text: The Lead Investigator gains 1 Artifact, then rolls 1 die. On a 1 or 2, they lose 2 Health and 2 Sanity.
+  heat_wave_singes_the_globe:
+    action:
+      - hp_san
+      - delayed
+    aargs:
+      - hp: -3
+        text: Lose 3 Health
+      - text: Become Delayed
+    flavor: Sweating and exhausted, you stop to rest in what little shade you can find. You've already heard stories of this heat wave claiming the lives of sick or elderly individuals. You fear that if you keep going at this pace, you might fall victim to it as well.
+  legitimate_banking:
+    lead_only: True
+    action:
+      - impair_encounter
+    aargs:
+      - skip: True
+        amt: 6
+        step: debt
+    debt:
+      - request_card
+    dargs:
+      - kind: conditions
+        name: debt
+        trigger: True
+        text: Gain/resolve a Debt Condition
+    font_size: 12
+    flavor: The man in the suit slides the contract across the desk. "We've spoken to the police and the customs agents, and all of the necessary payments have been made. If you'll just sign this, indicating that you understand your obligations, you can be on your way." His assistant places a pen in your hand.
+    text: The Lead Investigator gains a Debt Condition. If the Lead Investigator already had a Debt Condition, they resolve the Reckoning effect on that card, treating all die rolls as l's.
   

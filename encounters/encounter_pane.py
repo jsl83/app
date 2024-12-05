@@ -40,6 +40,7 @@ class EncounterPane():
             'gain_asset': self.gain_asset,
             'gain_clue': self.gain_clue,
             'hp_san': self.hp_san,
+            'impair_encounter': self.impair_encounter,
             'improve_skill': self.improve_skill,
             'loss_per_condition': self.loss_per_condition,
             'monster_heal': self.monster_heal,
@@ -52,6 +53,7 @@ class EncounterPane():
             'shuffle_mystery': self.shuffle_mystery,
             'single_roll': self.single_roll,
             'skill': self.skill_test,
+            'small_card': self.small_card,
             'spawn_clue': self.spawn_clue,
             'spend_clue': self.spend_clue,
             'spawn_rumor': self.spawn_rumor,
@@ -81,6 +83,8 @@ class EncounterPane():
         self.reckonings = []
         self.priority_reckonings = []
         self.mythos = None
+        self.final_step = ''
+        self.small_card_dict = None
 
     def get_rumor(self, name):
         return MYTHOS[name]
@@ -212,6 +216,7 @@ class EncounterPane():
         self.hub.select_ui_button(0)
         self.rumor_not_gate = None
         self.mythos_switch = False
+        self.investigator.encounter_impairment = 0
         if not skip:
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
 
@@ -302,38 +307,46 @@ class EncounterPane():
         self.set_buttons(step)
 
     def discard(self, kind, step='finish', tag='any', amt='one', name=None):
-        items = self.investigator.possessions[kind]
-        items = [item for item in items if tag in item.tags] if tag != 'any' else [item for item in items if name == item.name] if name != None else items
-        if len(items) == 0:
-            self.set_buttons(step)
-        else:
-            options = []
-            selected = []
-            def discard_card(card):
+        if name != None:
+            card = next((item for item in self.investigator.possessions[kind] if item.name == name), None)
+            if card != None:
                 card.discard()
                 self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, self.investigator.name)
                 self.hub.info_panes['possessions'].setup()
-            if amt == 'one':
-                def next_step(card, step):
-                    discard_card(card)
-                    self.set_buttons(step)
+            self.set_buttons(step)
+        else:
+            items = self.investigator.possessions[kind]
+            items = [item for item in items if tag in item.tags] if tag != 'any' else items
+            if len(items) == 0:
+                self.set_buttons(step)
             else:
-                def submit():
-                    for item in selected:
-                        discard_card(item)
-                    self.set_buttons(step)
-                button = ActionButton(width=150, height=30, text='Discard: 0', texture='buttons/placeholder.png', action=submit)
-                def select(card, step):
-                    if card in selected:
-                        selected.remove(card)
-                    else:
-                        selected.append(card)
-                    button.text = 'Discard: ' + str(len(selected))
-                options = [button]
-            title = 'Discard ' + (human_readable(tag) + ' ' if tag != 'any' else '') + (human_readable(name) if name != None else kind) + ': ' + human_readable(amt)
-            choices = [ActionButton(texture=item.texture, width=120, height=185, action=next_step if amt == 'one' else select, action_args={'card': item, 'step': step}) for item in items]
-            self.hub.choice_layout = create_choices(choices = choices, options = options, title=title)
-            self.hub.show_overlay()
+                options = []
+                selected = []
+                def discard_card(card):
+                    card.discard()
+                    self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, self.investigator.name)
+                    self.hub.info_panes['possessions'].setup()
+                if amt == 'one':
+                    def next_step(card, step):
+                        discard_card(card)
+                        self.set_buttons(step)
+                else:
+                    def submit():
+                        for item in selected:
+                            discard_card(item)
+                        self.set_buttons(step)
+                    button = ActionButton(width=150, height=30, text='Discard: 0', texture='buttons/placeholder.png', action=submit)
+                    def select(card, step):
+                        if card in selected:
+                            selected.remove(card)
+                        else:
+                            selected.append(card)
+                        button.text = 'Discard: ' + str(len(selected))
+                    options = [button]
+                title = 'Discard ' + (human_readable(tag) + ' ' if tag != 'any' else '') + (human_readable(name) if name != None else kind) + ': ' + human_readable(amt)
+                choices = [ActionButton(texture=item.texture, width=120, height=185, action=next_step if amt == 'one' else select, action_args={'card': item, 'step': step}) for item in items]
+                self.hub.choice_layout = create_choices(choices = choices, options = options, title=title)
+                self.hub.show_overlay()
 
     def end_mythos(self):
         self.hub.networker.publish_payload({'message': 'end_mythos'}, self.investigator.name)
@@ -431,6 +444,10 @@ class EncounterPane():
             self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity})
             self.set_buttons(step)
 
+    def impair_encounter(self, amt, step='finish'):
+        self.investigator.encounter_impairment = amt
+        self.set_buttons(step)
+
     def improve_skill(self, skill, step='finish', amt=1, option=None):
         if len(str(skill)) == 1:
             self.investigator.improve_skill(skill, amt)
@@ -509,12 +526,16 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'mythos_reckoning', 'value': number}, self.investigator.name)
         self.set_buttons(step)
 
-    def request_card(self, kind, step='finish', name='', tag=''):
-        self.wait_step = step
-        message_sent = self.hub.request_card(kind, name, tag=tag)
-        if not message_sent:
-            self.wait_step = None
-            self.set_buttons(step)
+    def request_card(self, kind, step='finish', name='', tag='', trigger=False):
+        card = next((card for card in self.investigator.possessions[kind] if card.name == name), None)
+        if (trigger or name in ['cursed', 'blessed']) and card != None:
+            self.small_card(card, trigger, step)
+        else:
+            self.wait_step = step
+            message_sent = self.hub.request_card(kind, name, tag=tag)
+            if not message_sent:
+                self.wait_step = None
+                self.set_buttons(step)
 
     def set_buttons(self, key):
         self.wait_step = None
@@ -590,6 +611,9 @@ class EncounterPane():
                 self.set_buttons(fail)
         next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=confirm_test)
         self.rolls = self.hub.run_test(stat, mod, self.hub.encounter_pane, [next_button])
+
+    def small_card(self, card, trigger, step):
+        SmallCardPane(self.hub, card, self, trigger, step)
 
     def spawn_clue(self, step='finish', click=False, number=1):
         if not click:
@@ -699,3 +723,33 @@ class EncounterPane():
             if self.encounter.get('font_size', None) != None:
                 self.text_button.style = {'font_size': int(self.encounter['font_size'])}
             self.text_button.text = text
+
+class SmallCardPane(EncounterPane):
+    def __init__(self, hub, card, parent, encounter, step):
+        EncounterPane.__init__(self, hub)
+        self.return_layout = arcade.gui.UILayout(x=1000)
+        for element in hub.info_manager.children[0]:
+            self.return_layout.add(element)
+        self.return_overlay = arcade.gui.UILayout(width=1000, height=658, x=0, y=142).with_background(arcade.load_texture(':resources:eldritch/images/gui/overlay.png'))
+        for element in hub.choice_layout.children:
+            self.return_overlay.add(element)
+        self.encounter = card.card_back
+        self.hub.clear_overlay()
+        self.hub.info_manager.children = {0:[]}
+        self.hub.info_manager.add(self.layout)
+        self.set_buttons('action')
+        self.phase_button.text = human_readable(card.name) + ' - ' + self.encounter['title']
+        self.parent = parent
+        self.is_encounter = encounter
+        self.step = step
+
+    def finish(self):
+        self.hub.info_manager.children = {0:[]}
+        self.hub.clear_overlay()
+        self.hub.info_manager.add(self.return_layout)
+        self.hub.info_manager.trigger_render()
+        if len(self.return_overlay.children) != 1:
+            self.hub.choice_layout = self.return_overlay
+            self.hub.show_overlay()
+        if self.is_encounter:
+            self.parent.set_buttons(self.step)

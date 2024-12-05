@@ -124,7 +124,7 @@ class HubScreen(arcade.View):
         self.request_card('assets', 'arcane_tome')
         self.request_card('assets', 'axe')
         self.request_card('assets', 'arcane_scholar')
-        self.request_card('conditions', 'amnesia')
+        #self.request_card('conditions', 'amnesia')
         self.investigator.sanity -= 3
         self.investigator.clues.append('world:arkham')
         self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
@@ -469,7 +469,8 @@ class HubScreen(arcade.View):
         subtitle = subtitle if subtitle != '' else '' if mod == 0 else 'Mod: ' + str(mod)
         dice = self.investigator.skills[3 if skill == 5 else skill] + mod + self.investigator.skill_tokens[skill]
         for x in range(dice if dice > 1 else 1):
-            roll = random.randint(1, 6)
+            roll = random.randint(1, 6) - self.investigator.encounter_impairment
+            roll = 1 if roll < 1 else roll
             rolls.append(roll)
             choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
         fail = next((roll for roll in rolls if roll < self.investigator.success), None)

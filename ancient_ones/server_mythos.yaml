@@ -41,8 +41,10 @@
         - from_beyond
     heart_of_corruption:
       difficulty: 0
+      lead_only: True
     legitimate_banking:
       difficulty: 1
+      lead_only: True
     no_peace_for_the_fallen:
       difficulty: 1
     patrolling_the_border:

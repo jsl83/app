@@ -23,7 +23,8 @@
     tags:
       - deal
       - common
-    variants: 6
+    #variants: 6
+    variants: 1
   detained:
     tags:
       - restriction

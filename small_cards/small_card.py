@@ -59,6 +59,7 @@ class Condition(SmallCard):
         self.variant = int(name[-1])
         SmallCard.__init__(self, name[0:-1], investigator)
         self.kind = 'conditions'
+        self.card_back = CARDS['conditions'][self.name][str(self.variant)]['back']
         self.setup()
 
     def get_server_name(self):

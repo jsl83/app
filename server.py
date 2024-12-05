@@ -105,11 +105,11 @@ class Networker(threading.Thread, BanyanBase):
 
         for key in SPELLS.keys():
             for x in range(int(SPELLS[key]['variants'])):
-                self.decks['spells'].append(key + str(x))
+                self.decks['spells'].append(key + str(x+1))
 
         for key in CONDITIONS.keys():
             for x in range(int(CONDITIONS[key]['variants'])):
-                self.decks['conditions'].append(key + str(x))
+                self.decks['conditions'].append(key + str(x+1))
 
         for key in ASSETS.keys():
             self.assets['deck'].append(key)
@@ -299,7 +299,7 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'growing_madness'
+                                            name = 'legitimate_banking'
                                             self.is_first = False
                                         else:
                                             name = 'everyone_has_a_price'
@@ -653,9 +653,9 @@ class Networker(threading.Thread, BanyanBase):
                 card = random.choice(list(cards[color].keys()))
                 #FOR TESTING
                 if color == 0:
-                    card = 'from_beyond'
+                    card = 'legitimate_banking'
                 if color == 1:
-                    card = 'everyone_has_a_price'
+                    card = 'heat_wave_singes_the_globe'
                 if color == 2:
                     card = 'growing_madness'
                 #END TESTING

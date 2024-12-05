@@ -18,6 +18,27 @@
     tags:
       - deal
       - common
+    '1':
+      back:
+        title: Beyond Riches
+        action:
+          - skill
+        aargs:
+          - stat: 2
+        pass:
+          - discard
+        pargs:
+          - kind: conditions
+            name: debt
+            text: Discard this card
+        fail:
+          - hp_san
+        fargs:
+          - san: -3
+            step: pass
+            skip: True
+        action_text: The man wears a hat and a brown trenchcoat. "We do not want money," he hisses and grabs your throat. You feel as if part of your identity is being stolen from you.
+        fail_text: A fragment of your soul is ripped away.
   detained:
     tags:
       - restriction

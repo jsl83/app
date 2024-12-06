@@ -3,13 +3,6 @@ from screens.action_button import ActionButton
 from util import *
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
-ICON_SIZES = {
-    'lore': (38, 27),
-    'influence': (35, 18),
-    'observation': (33, 18),
-    'strength': (37,22),
-    'will': (24,28)
-}
 
 class LocationPane():
     def __init__(self, location_manager):
@@ -193,17 +186,11 @@ class LocationPane():
         for stat in self.monster:
             self.monster[stat].text = str(stats[stat])
         self.monster_picture.texture = arcade.load_texture(":resources:eldritch/images/monsters/" + unit.name + '.png')
-        self.horror_test = self.display_skill(stats['horror_check'], 1070, 400)
-        self.strength_test = self.display_skill(stats['strength_check'], 1070, 335)
+        self.horror_test = arcade.gui.UITextureButton(x=1030, y=390, texture=self.icons[stats['horror_check']])
+        self.strength_test = arcade.gui.UITextureButton(x=1030, y=325, texture=self.icons[stats['strength_check']])
         self.description_layout.add(self.horror_test)
         self.description_layout.add(self.strength_test)
         self.layout.add(self.description_layout)
-
-    def display_skill(self, index, x_pos, y_pos):
-        skills = ['lore', 'influence', 'observation', 'strength', 'will']
-        key = skills[index]
-        return arcade.gui.UITextureButton(
-            x=x_pos - ICON_SIZES[key][0], y=3 + y_pos - (ICON_SIZES[key][1] - 20) / 2, width=ICON_SIZES[key][0], height=ICON_SIZES[key][1], texture=self.icons[index])
 
     def close_monster(self):
         self.location_select(self.selected)

@@ -233,7 +233,7 @@ class Networker(threading.Thread, BanyanBase):
                         'discard': self.assets['discard'],
                         'reserve': []
                     }
-                    self.investigators['akachi_onyele'] = {'assets':[], 'conditions': [], 'artifacts': [], 'unique_assets':[], 'spells':[], 'hp': 0, 'san': 0, 'clues': [], 'paid': -1}
+                    self.investigators['akachi_onyele'] = {'assets':[], 'conditions': [], 'artifacts': [], 'unique_assets':[], 'spells':[], 'hp': 0, 'san': 0, 'clues': ['world:arkham'], 'paid': -1}
                     #END TESTING
                     self.initiate_gameboard()
                     self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
@@ -272,7 +272,9 @@ class Networker(threading.Thread, BanyanBase):
                         else:
                             self.decks[payload['kind']].append(payload['value'])
                         if payload['value'] in self.investigators[topic][payload['kind']]:
-                            self.investigators[topic].remove(payload['value'])
+                            self.investigators[topic][payload['kind']].remove(payload['value'])
+                        elif payload['kind'] == 'clues':
+                            self.publish_payload({'message': 'token_removed', 'value': payload['value'], 'kind': 'clue'}, 'server_update')
                     case 'get_clue':
                         clue = random.choice(self.decks['clues'])
                         #self.decks['clues'].remove(clue)
@@ -299,10 +301,10 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'legitimate_banking'
+                                            name = 'lost_knowledge'
                                             self.is_first = False
                                         else:
-                                            name = 'everyone_has_a_price'
+                                            name = 'heat_wave_singes_the_globe'
                                         #END TESTING
                                         if name == None:
                                             break
@@ -360,8 +362,9 @@ class Networker(threading.Thread, BanyanBase):
                         self.server_damage_monster(int(payload['damage']), int(payload['value']))
                         self.publish_payload({'message': 'monster_damaged', 'value': payload['value'], 'damage': payload['damage']}, 'server_update')
                     case 'solve_rumor':
-                        rumor = next((rumor for rumor in self.reckoning_actions if rumor['name'] == payload['value']))
-                        self.solve_rumor(rumor)
+                        rumor = next((rumor for rumor in self.reckoning_actions if rumor['name'] == payload['value']), None)
+                        if rumor != None:
+                            self.solve_rumor(rumor)
                     case 'payment_made':
                         self.investigators[topic]['paid'] = int(payload['value'])
                     case 'payment_info':
@@ -459,7 +462,7 @@ class Networker(threading.Thread, BanyanBase):
         for loc in locations:
             self.decks['gates']['board'].remove(loc)
             self.decks['gates']['discard'].append(loc)
-            self.publish_payload({'message': 'gate_removed', 'value': loc}, 'server_update')
+            self.publish_payload({'message': 'token_removed', 'value': loc, 'kind': 'gate'}, 'server_update')
 
     def calc_group_payments(self, name, kind):
         has_paid = [investigator for investigator in self.selected_investigators if self.investigators[investigator]['paid'] >= 0]
@@ -487,7 +490,13 @@ class Networker(threading.Thread, BanyanBase):
         def do_damage(monster, dmg):
             damage = monster['damage'] + dmg
             monster['damage'] = damage if damage >= 0 else damage
-            if damage >= int(MONSTERS[monster['name']].get('toughness')):
+            value = 0
+            toughness = MONSTERS[monster['name']].get('toughness')
+            if '+' in toughness:
+                value = len(self.selected_investigators) + len(toughness)
+            else:
+                value = int(toughness)
+            if damage >= value:
                 self.monsters.remove(monster)
         if monster_id == None:
             for monster in self.monsters:
@@ -572,19 +581,30 @@ class Networker(threading.Thread, BanyanBase):
                         self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
             case 'monsters':
                 def pull_monster(loc):
-                    monster = random.choice(self.decks['monsters'])
-                    #self.decks['monsters'].remove(monster)
-                    server_monster = {'name': monster, 'location': loc, 'monster_id': self.monster_id, 'damage': 0}
-                    self.monsters.append(server_monster)
-                    self.publish_payload({'message': 'spawn',
-                                        'value': 'monsters',
-                                        'location': loc.split(':')[1],
-                                        'map': loc.split(':')[0],
-                                        'name': monster,
-                                        'monster_id': self.monster_id
-                                        },
-                                        'server_update')
-                    self.monster_id += 1
+                    is_epic = False
+                    monster = None
+                    if name != None:
+                        for deck in [self.decks['monsters'], self.decks['epic_monsters']]:
+                            if name in deck:
+                                monster = name
+                                #deck.remove(name)
+                                if deck == self.decks['epic_monsters']:
+                                    is_epic = True
+                    else:
+                        monster = random.choice(self.decks['monsters'])
+                        #self.decks['monsters'].remove(monster)
+                    if monster != None:
+                        server_monster = {'name': monster, 'location': loc, 'monster_id': self.monster_id, 'damage': 0, 'is_epic': is_epic}
+                        self.monsters.append(server_monster)
+                        self.publish_payload({'message': 'spawn',
+                                            'value': 'monsters',
+                                            'location': loc.split(':')[1],
+                                            'map': loc.split(':')[0],
+                                            'name': monster,
+                                            'monster_id': self.monster_id
+                                            },
+                                            'server_update')
+                        self.monster_id += 1
                 if locations != None:
                     for loc in self.get_locations[locations]():
                         pull_monster(loc)
@@ -657,7 +677,7 @@ class Networker(threading.Thread, BanyanBase):
                 if color == 1:
                     card = 'heat_wave_singes_the_globe'
                 if color == 2:
-                    card = 'growing_madness'
+                    card = 'lost_knowledge'
                 #END TESTING
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color

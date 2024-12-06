@@ -35,6 +35,7 @@ class EncounterPane():
             'condition_check': self.condition_check,
             'damage_monsters': self.damage_monsters,
             'delayed': self.delay,
+            'despawn_clues': self.despawn_clues,
             'discard': self.discard,
             'end_mythos': self.end_mythos,
             'gain_asset': self.gain_asset,
@@ -149,27 +150,41 @@ class EncounterPane():
         self.hub.info_panes['location'].show_monster(monster)
         self.hub.info_manager.add(self.hub.info_panes['location'].layout)
         self.hub.clear_overlay()
-        def lose_san():
-            self.hub.clear_overlay()
-            successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
-            dmg = successes - monster.horror['san']
-            dmg = dmg if dmg < 0 else 0
-            self.take_damage(0, dmg, self.combat_strength, {'monster': monster})
-        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_san)
-        self.rolls = self.hub.run_test(monster.horror['index'], monster.horror['mod'], self.hub.encounter_pane,
-                                       [next_button], 'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity))
+        if monster.horror['mod'] == '-':
+            self.combat_strength(monster)
+        else:
+            def lose_san():
+                self.hub.clear_overlay()
+                successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
+                dmg = successes - monster.horror['san']
+                dmg = dmg if dmg < 0 else 0
+                self.take_damage(0, dmg, self.combat_strength, {'monster': monster})
+            next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_san)
+            self.rolls = self.hub.run_test(monster.horror['index'],
+                                        monster.horror['mod'],
+                                        self.hub.encounter_pane,
+                                        [next_button],
+                                        'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity),
+                                        allow_clues=not hasattr(monster, 'no_clues'))
         
     def combat_strength(self, monster):
         self.hub.clear_overlay()
-        def lose_hp():
-            self.hub.clear_overlay()
-            successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
-            dmg = successes - monster.strength['str']
-            dmg = dmg if dmg < 0 else 0
-            self.take_damage(dmg, 0, self.resolve_combat, {'monster': monster})
-        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_hp)
-        self.rolls = self.hub.run_test(monster.strength['index'], monster.strength['mod'], self.hub.encounter_pane,
-                                       [next_button], 'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity))
+        if monster.strength['mod'] == '-':
+            self.resolve_combat(monster)
+        else:
+            def lose_hp():
+                self.hub.clear_overlay()
+                successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
+                dmg = successes - monster.strength['str']
+                dmg = dmg if dmg < 0 else 0
+                self.take_damage(dmg, 0, self.resolve_combat, {'monster': monster})
+            next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_hp)
+            self.rolls = self.hub.run_test(monster.strength['index'],
+                                        monster.strength['mod'],
+                                        self.hub.encounter_pane,
+                                        [next_button],
+                                        'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity),
+                                        allow_clues=not hasattr(monster, 'no_clues'))
         
     def resolve_combat(self, monster):
         self.hub.clear_overlay()
@@ -304,6 +319,24 @@ class EncounterPane():
 
     def delay(self, step='finish'):
         self.investigator.delayed = True
+        self.set_buttons(step)
+
+    def despawn_clues(self, location, player=False, lead_only=False, step='finish'):
+        if player:
+            for clue in self.investigator.clues:
+                self.investigator.clues.remove(clue)
+                self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
+        if not lead_only or self.investigator.name == self.hub.lead_investigator:
+            if location == 'all':
+                for loc in self.hub.location_manager.locations.keys():
+                    stats = self.hub.location_manager.locations[loc]
+                    if stats['clue']:
+                        stats['clue'] = False
+                        self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': stats['map'] + ':' + loc}, self.investigator.name)
+            elif self.hub.location_manager.locations[location]['clue']:
+                stats = self.hub.location_manager.locations[location]
+                stats['clue'] = False
+                self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': stats['map'] + ':' + location}, self.investigator.name)
         self.set_buttons(step)
 
     def discard(self, kind, step='finish', tag='any', amt='one', name=None):
@@ -539,7 +572,9 @@ class EncounterPane():
 
     def set_buttons(self, key):
         self.wait_step = None
-        if key == 'finish':
+        if key == 'nothing':
+            pass
+        elif key == 'finish':
             self.finish()
         elif key == 'reckoning':
             self.reckoning()
@@ -644,7 +679,7 @@ class EncounterPane():
         self.hub.location_manager.rumors[name] = manager_obj
         self.set_buttons(step)
 
-    def solve_rumor(self, choice=False, step='finish'):
+    def solve_rumor(self, choice=False, step='finish', name=None):
         def choose_rumor(key):
             self.wait_step = step
             self.hub.networker.publish_payload({'message': 'solve_rumor', 'value': key}, self.investigator.name)
@@ -656,8 +691,7 @@ class EncounterPane():
             self.hub.choice_layout = create_choices(choices=choices, title='Select Rumor')
             self.hub.show_overlay()
         else:
-            rumor = next((rumor for rumor in self.hub.location_manager.rumors.keys() if self.hub.location_manager.rumors[rumor]['location'] == self.investigator.location), None)
-            choose_rumor(rumor)
+            choose_rumor(name)
 
     def start_group_pay(self, kind):
         self.hub.networker.publish_payload({'message': 'payment_info', 'kind': kind}, self.investigator.name)
@@ -714,7 +748,10 @@ class EncounterPane():
         if len(self.priority_reckonings) > 0:
             action = self.priority_reckonings.pop(0)
             self.text_button.text = 'Reckoning\n\n' + action[2]
-            action[0](**action[1])
+            self.encounter['zaction'] = action[0]
+            self.encounter['zargs'] = action[1]
+            self.set_buttons('zaction')
+            #action[0](**action[1])
         elif len(self.reckonings) > 0:
             pass
         else:

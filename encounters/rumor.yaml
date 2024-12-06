@@ -18,6 +18,7 @@
         - solve_rumor
       sargs:
         - skip: True
+          name: dimensions_collide
       test_text: You attempt to infiltrate a hidden sect of Tcho-Tchos that is destabilizing the fabric of reality by invoking Chaugnar Faugn.
       pass_text: You put an end to their rituals.
   space_16:
@@ -39,6 +40,7 @@
         - solve_rumor
       sargs:
         - skip: True
+          name: faded_from_society
       test_text: You attempt to research similar occurences from the past.
       pass_text: You learn about a Russian folktale where children go missing.
   space_2:
@@ -69,6 +71,7 @@
         - solve_rumor
       sargs:
         - skip: True
+          name: growing_madness
       test_text: You attempt to find the uncharted isle.
       pass_text: The wizard returns to his time.
     

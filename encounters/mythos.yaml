@@ -346,11 +346,12 @@
           reckoning: The Lead Investigator gains a Madness Condition, then discards 1 Eldritch token from this card for each Madness Condition they have.
           unsolved: Each Investigator loses 3 Sanity.
           eldritch: 4
-          unsolve_action: hp_san
+          unsolve_action:
+            - hp_san
           unsolve_args:
-              san: -3
+            - san: -3
               step: reckoning
-          unsolve_text: Unsolved Rumor - Growing Madness
+              skip: True
     end:
       - end_mythos
     eargs:
@@ -424,4 +425,31 @@
     font_size: 12
     flavor: The man in the suit slides the contract across the desk. "We've spoken to the police and the customs agents, and all of the necessary payments have been made. If you'll just sign this, indicating that you understand your obligations, you can be on your way." His assistant places a pen in your hand.
     text: The Lead Investigator gains a Debt Condition. If the Lead Investigator already had a Debt Condition, they resolve the Reckoning effect on that card, treating all die rolls as l's.
-  
+  lost_knowledge:
+    action:
+      - spawn_rumor
+    aargs:
+      - step: end
+        skip: True
+        name: lost_knowledge
+        manager_obj:
+          location: space_21
+          solve: Defeat the Tick Tock Men Epic Monster.
+          reckoning: Discard 1 Eldritch token from this card.
+          unsolved: When there are no Eldritch tokens on this card, each investigator discards all Clues, and then discard all Clues on the game board.
+          eldritch: 3
+          unsolve_action:
+            - despawn_clues
+          unsolve_args: 
+            - player: True
+              lead_only: True
+              location: all
+              step: reckoning
+              text: Discard Clues
+          not_encounter: True
+    end:
+      - end_mythos
+    eargs:
+      - text: End turn (all)
+    flavor: Your contact in the capital is hesitant to speak about those called "The Watches." He says they work for a number of different governments, but answer to some other authority.
+    text: The Tick Tock Men Epic Monster has spawned on Space 21

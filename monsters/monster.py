@@ -5,11 +5,29 @@ with open('monsters/monsters.yaml') as stream:
     MONSTERS = yaml.safe_load(stream)
 
 class Monster():
-    def __init__(self, name, monster_id):
+    def __init__(self, name, monster_id, inv_number):
         self.name = name
         self.epic = False
         for key in MONSTERS[name]:
             setattr(self, key, MONSTERS[name][key])
+
+        if not hasattr(self, 'horror'):
+            self.horror = {
+                'index': 4,
+                'san': '-',
+                'mod': '-'
+            }
+            self.no_horror = True
+        if not hasattr(self, 'strength'):
+            self.strength = {
+                'index': 3,
+                'san': '-',
+                'mod': '-'
+            }
+            self.no_strength = True
+
+        if '+' in str(self.toughness):
+            self.toughness = int(inv_number + len(self.toughness))
 
         self.reckoning = self.set_reckoning(self.reckoning) if hasattr(self, 'reckoning') else None
         self.spawn = self.set_spawn(self.spawn) if hasattr(self, 'spawn') else None

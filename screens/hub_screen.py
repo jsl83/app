@@ -357,16 +357,16 @@ class HubScreen(arcade.View):
                             if self.is_first:
                                 self.ticket_move('akachi_onyele', 'space_16', 0, 0, 'space_15')
                             else:
-                                self.ticket_move('akachi_onyele', 'space_8', 0, 0, 'space_16')
+                                self.ticket_move('akachi_onyele', 'space_21', 0, 0, 'space_16')
                                 self.investigator.focus = 0
                             self.info_panes['investigator'].focus_action()
                             #END TESTING
                     case 'encounter':
                         #FOR TESTING
-                        self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                        #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                         #END TESTING
-                        #self.show_encounter_pane()
-                        #self.encounter_pane.encounter_phase()
+                        self.show_encounter_pane()
+                        self.encounter_pane.encounter_phase()
                     case 'reckoning':
                         self.encounter_pane.reckoning()
                         #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -400,13 +400,14 @@ class HubScreen(arcade.View):
                 self.set_omen(int(payload['value']))
             case 'doom':
                 self.set_doom(int(payload['value']))
-            case 'gate_removed':
+            case 'token_removed':
+                kind = payload['kind']
                 loc = payload['value']
                 loc = loc.split(':')
                 map_name = loc[0]
                 location = loc[1]
-                self.location_manager.locations[location]['gate'] = False
-                self.maps[map_name].remove_tokens('gate', location)
+                self.location_manager.locations[location][kind] = False
+                self.maps[map_name].remove_tokens(kind, location)
                 self.map.token_manager.trigger_render()
             case 'monster_damaged':
                 monster_id = int(payload['value'])
@@ -414,9 +415,15 @@ class HubScreen(arcade.View):
                 def damage_monster(monster, damage):
                     dead = monster.on_damage(damage)
                     if dead:
+                        if hasattr(monster, 'death'):
+                            if hasattr(monster, 'dargs'):
+                                self.encounter_pane.action_dict[monster.death](**monster.dargs)
+                            else:
+                                self.encounter_pane.action_dict[monster.death]()
                         self.location_manager.locations[monster.location]['monsters'].remove(monster)
                         self.location_manager.all_monsters.remove(monster)
-                        self.location_manager.monster_deck.append(monster.name)
+                        if not hasattr(monster, 'epic'):
+                            self.location_manager.monster_deck.append(monster.name)
                         self.map.remove_tokens('monsters', monster.location, str(payload['value']))
                         self.map.token_manager.trigger_render()
                 if monster_id < 0:
@@ -430,8 +437,8 @@ class HubScreen(arcade.View):
                 self.location_manager.locations[rumor['location']]['rumor'] = False
                 self.maps['world'].remove_tokens('rumor', rumor['location'], payload['value'])
                 if not payload['solved'] and rumor.get('unsolve_action', None) != None:
-                    action = self.encounter_pane.action_dict[rumor['unsolve_action']]
-                    self.encounter_pane.priority_reckonings.append((action, rumor.get('unsolve_args', {}), rumor['unsolve_text']))
+                    text = 'Unsolved Rumor - ' + human_readable(payload['value']) + '\n\n' + rumor.get('unsolved')
+                    self.encounter_pane.priority_reckonings.append((rumor['unsolve_action'], rumor.get('unsolve_args', {}), text))
                 del self.location_manager.rumors[payload['value']]
             case 'update_rumor':
                 if self.location_manager.rumors.get(payload['name'], None) != None:
@@ -462,7 +469,7 @@ class HubScreen(arcade.View):
         arcade.draw_circle_filled(x, y, 15, color)
         arcade.draw_text(current, x, y+2, width=20, anchor_x='center', anchor_y='center', bold=True, font_size=17, font_name="calibri")
 
-    def run_test(self, skill, mod=0, pane=None, options=[], subtitle=''):
+    def run_test(self, skill, mod=0, pane=None, options=[], subtitle='', allow_clues=True):
         choices = []
         rolls = []
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
@@ -504,7 +511,7 @@ class HubScreen(arcade.View):
                 focus_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': option_index}, texture='icons/focus.png', text='Use', text_position=(20,-2))
                 options.append(focus_button)
                 option_index += 1
-            if len(self.investigator.clues) > 0:
+            if len(self.investigator.clues) > 0 and allow_clues:
                 clue_button = ActionButton(action=reroll, action_args={'kind': 'clue', 'option_index': option_index}, texture='icons/clue.png', text='Use', text_position=(20,-2))
                 options.append(clue_button)
                 option_index += 1

@@ -1,5 +1,6 @@
 ---
   space_1:
+    map: world
     name: Space 1
     subtitle: Alaskan Coast
     x: 60
@@ -11,6 +12,7 @@
       space_4: uncharted
       space_19: ship
   space_2:
+    map: world
     name: Space 2
     subtitle: Hawaii, United States
     x: 33
@@ -21,6 +23,7 @@
       san_francisco: ship
       tokyo: ship
   space_3:
+    map: world
     name: Space 3
     subtitle: Oceanic Pole of Inacessibility
     x: 107
@@ -31,6 +34,7 @@
       buenos_aires: ship
       sydney: ship
   space_4:
+    map: world
     name: Space 4
     subtitle: Fort Providence, Canada
     x: 161
@@ -41,6 +45,7 @@
       space_1: uncharted
       space_5: uncharted
   space_5:
+    map: world
     name: Space 5
     subtitle: American Metropolis
     x: 182
@@ -52,6 +57,7 @@
       arkham: rail
       san_francisco: rail
   space_6:
+    map: world
     name: Space 6
     subtitle: Dallas, United States
     x: 152
@@ -63,6 +69,7 @@
       arkham: rail
       space_7: rail
   space_7:
+    map: world
     name: Space 7
     subtitle: Central America
     x: 201
@@ -76,6 +83,7 @@
       buenos_aires: ship
       the_amazon: uncharted
   space_8:
+    map: world
     name: Space 8
     subtitle: The Caribbean
     x: 266
@@ -88,6 +96,7 @@
       buenos_aires: ship
       space_10: ship
   space_9:
+    map: world
     name: Space 9
     subtitle: Disko Island, Greenland
     x: 345
@@ -97,6 +106,7 @@
     routes:
       arkham: ship
   space_10:
+    map: world
     name: Space 10
     subtitle: Dakar, Senegal
     x: 422
@@ -109,6 +119,7 @@
       the_pyramids: uncharted
       space_15: ship
   space_11:
+    map: world
     name: Space 11
     subtitle: Tristan de Cunha
     x: 440
@@ -119,6 +130,7 @@
       buenos_aires: ship
       space_15: ship
   space_12:
+    map: world
     name: Space 12
     subtitle: South Georgia
     x: 391
@@ -129,6 +141,7 @@
       buenos_aires: ship
       antarctica: ship
   space_13:
+    map: world
     name: Space 13
     subtitle: Arkhangelsk, Russia
     x: 580
@@ -138,6 +151,7 @@
     routes:
       london: ship
   space_14:
+    map: world
     name: Space 14
     subtitle: Scandinavia
     x: 549
@@ -148,6 +162,7 @@
       rome: rail
       space_16: rail
   space_15:
+    map: world
     name: Space 15
     subtitle: South Africa
     x: 538
@@ -161,6 +176,7 @@
       space_18: ship
       the_heart_of_africa: uncharted
   space_16:
+    map: world
     name: Space 16
     subtitle: Central Russia
     x: 673
@@ -172,6 +188,7 @@
       istanbul: rail
       tunguska: rail
   space_17:
+    map: world
     name: Space 17
     subtitle: Urban India
     x: 706
@@ -185,6 +202,7 @@
       space_20: ship
       shanghai: rail
   space_18:
+    map: world
     name: Space 18
     subtitle: Port-aux-Francais
     x: 689
@@ -195,6 +213,7 @@
       space_15: ship
       sydney: ship
   space_19:
+    map: world
     name: Space 19
     subtitle: Beringovsky, Russia
     x: 918
@@ -206,6 +225,7 @@
       shanghai: rail
       tunguska: rail
   space_20:
+    map: world
     name: Space 20
     subtitle: Jakarta, Indonesia
     x: 846
@@ -218,6 +238,7 @@
       tokyo: ship
       sydney: ship
   space_21:
+    map: world
     name: Space 21
     subtitle: Uluru, Australia
     x: 881
@@ -227,6 +248,7 @@
     routes:
       sydney: uncharted
   san_francisco:
+    map: world
     name: San Francisco
     subtitle: Improve Observation
     x: 98
@@ -242,6 +264,7 @@
       space_5: rail
       space_6: rail
   arkham:
+    map: world
     name: Arkham
     subtitle: Gain Incantation Spells
     x: 270
@@ -257,6 +280,7 @@
       london: ship
       space_8: ship
   the_amazon:
+    map: world
     name: The Amazon
     x: 274
     y: 419
@@ -266,6 +290,7 @@
       space_7: uncharted
       buenos_aires: uncharted
   buenos_aires:
+    map: world
     name: Buenos Aires
     subtitle: Gain Ritual Spells
     x: 265
@@ -282,6 +307,7 @@
       space_12: ship
       the_amazon: uncharted
   london:
+    map: world
     name: London
     subtitle: Spawn Clue Tokens
     x: 441
@@ -295,6 +321,7 @@
       arkham: ship
       rome: ship
   rome:
+    map: world
     name: Rome
     subtitle: Improve Will
     x: 497
@@ -310,6 +337,7 @@
       istanbul: rail
       the_pyramids: ship
   istanbul:
+    map: world
     name: Istanbul
     subtitle: Improve Diplomacy
     x: 603
@@ -324,6 +352,7 @@
       the_pyramids: rail
       space_17: rail
   the_pyramids:
+    map: world
     name: The Pyramids
     x: 571
     y: 473
@@ -335,6 +364,7 @@
       space_10: uncharted
       the_heart_of_africa: uncharted
   the_heart_of_africa:
+    map: world
     name: The Heart of Africa
     x: 555
     y: 375
@@ -344,6 +374,7 @@
       the_pyramids: uncharted
       space_15: uncharted
   antarctica:
+    map: world
     name: Antarctica
     x: 592
     y: 199
@@ -353,6 +384,7 @@
       space_12: ship
       sydney: ship
   tunguska:
+    map: world
     name: Tunguska
     x: 752
     y: 628
@@ -362,6 +394,7 @@
       space_16: rail
       space_19: rail
   the_himalayas:
+    map: world
     name: The Himalayas
     x: 734
     y: 528
@@ -371,6 +404,7 @@
       space_17: uncharted
       shanghai: uncharted
   shanghai:
+    map: world
     name: Shanghai
     subtitle: Improve Lore
     x: 843
@@ -386,6 +420,7 @@
       space_19: rail
       space_20: ship
   tokyo:
+    map: world
     name: Tokyo
     subtitle: Defeat Monsters
     x: 927
@@ -400,6 +435,7 @@
       space_2: ship
       space_19: ship
   sydney:
+    map: world
     name: Sydney
     subtitle: Improve Strength
     x: 911

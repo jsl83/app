@@ -4,3 +4,6 @@
   cultist:
     toughness: 1
     count: 6
+  tick_tock_men:
+    toughness: ++
+    is_epic: True

@@ -167,6 +167,16 @@
             name: growing_madness
     lost_knowledge:
       difficulty: 0
+      actions:
+        - on_reckoning
+        - spawn
+      args:
+        - args:
+            recurring: 3
+            name: lost_knowledge
+        - piece: monsters
+          name: tick_tock_men
+          location: world:space_21
     mysterious_lights:
       difficulty: 2
     return_of_the_ancient_ones:

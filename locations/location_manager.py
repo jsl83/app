@@ -8,7 +8,6 @@ class LocationManager():
     def __init__(self):
 
         self.locations = {}
-        self.clue_count = 0
         self.all_investigators = []
         self.all_monsters = []
         try:
@@ -45,12 +44,13 @@ class LocationManager():
         return astar.find_path(start, goal, neighbors)
     
     def spawn_monster(self, name, location, world, monster_id):
-        monster = Monster(name, monster_id)
+        monster = Monster(name, monster_id, len(self.all_investigators))
         monster.location = location
         monster.map = world
         self.all_monsters.append(monster)
         self.locations[location]['monsters'].append(monster)
-        self.monster_deck.remove(name)
+        if not hasattr(monster, 'epic'):
+            self.monster_deck.remove(name)
         return monster
 
     def spawn_investigator(self, name, location):
@@ -79,6 +79,10 @@ class LocationManager():
         for kind in ['gate', 'eldritch', 'rumor', 'expedition', 'clue']:
             if self.locations[location][kind]:
                 encounters.append(kind)
+            if kind == 'rumor':
+                rumor = next((rumor for rumor in self.rumors if self.rumors[rumor]['location'] == location), None)
+                if rumor != None and self.rumors[rumor]['not_encounter']:
+                    encounters.remove(kind)
         return encounters
     
     def get_all(self, kind, is_array=False):

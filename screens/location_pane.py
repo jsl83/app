@@ -128,17 +128,18 @@ class LocationPane():
 
     def update_list(self, kind):
         y_offset = 0
+        dead = [] if kind != 'investigators' else [name for name in self.location_manager.dead_investigators.keys() if self.location_manager.dead_investigators[name]['location'] == self.selected]
         if kind == 'monsters':
             layout = self.monster_layout
             label = self.monster_label
-            inv_number = len(self.location_manager.locations[self.selected]['investigators'])
+            inv_number = len(self.location_manager.locations[self.selected]['investigators']) + len(dead)
             y_offset = 0 if inv_number == 0 else 35 + (int((inv_number - 1) / 4) + 1) * 60
             label.move(0, 335 - y_offset - label.y)
         else:
             layout = self.investigator_layout
             label = self.investigator_label
         layout.clear()
-        number = len(self.location_manager.locations[self.selected][kind])
+        number = len(self.location_manager.locations[self.selected][kind]) + len(dead)
         if number > 0:
             layout.add(label)
             i = 0
@@ -146,12 +147,16 @@ class LocationPane():
             y = 260 - y_offset + (19 if kind == 'monsters' else 0)
             row_num = number - row * 4
             offset = (280 - (row_num * 49 + (row_num - 1) * 12)) / 2 if row_num < 4 else 24
-            for unit in self.location_manager.locations[self.selected][kind]:
+            for unit in self.location_manager.locations[self.selected][kind] + dead:
                 column = i % 4
-                texture = 'monsters/' + unit.name + '.png' if kind == 'monsters' else 'investigators/' + unit.name + '_portrait.png'
+                texture = 'monsters/' + unit + '.png' if kind == 'monsters' else 'investigators/' + unit + '_portrait.png'
                 button = ActionButton(texture=texture, action=self.show_monster if kind == 'monsters' else self.trade, action_args={'unit':unit}, scale=0.25 if kind == 'monsters' else 0.2)
                 layout.add(button)
-                button.move(1000 + offset + column * 61 - button.x, y - button.y)
+                if unit in dead:
+                    dead_button = ActionButton(texture='investigators/dead.png', scale=0.2)
+                    layout.add(dead_button)
+                    dead_button.move(1000 + offset + column * 61, y)
+                button.move(1000 + offset + column * 61, y)
                 if i % 4 == 3:
                     row += 1
                     y -= 60
@@ -160,6 +165,9 @@ class LocationPane():
                 i += 1
 
     def trade(self, unit):
+        pass
+
+    def view_possessions(self, name):
         pass
 
     def update_all(self):
@@ -175,8 +183,9 @@ class LocationPane():
             self.toggle_rumor.disable()
         else:
             self.rumor_details.text = human_readable(self.rumor)
-            for x in ['solve', 'unsolved', 'reckoning']:
-                self.rumor_details.text += '\n\n' + human_readable(x) + '\n' + self.location_manager.rumors[self.rumor].get(x, '')
+            for x in ['solve', 'unsolved', 'reckoning', 'effect']:
+                if self.location_manager.rumors[self.rumor].get(x, None) != None:
+                    self.rumor_details.text += '\n\n' + human_readable(x) + '\n' + self.location_manager.rumors[self.rumor].get(x)
             self.rumor_details.style = {'font_size': 12}
         self.toggle_details(True)
 

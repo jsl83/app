@@ -175,23 +175,16 @@
     text: Discard each Gate that corresponds to the current Omen and advance Doom by 1 for each Gate discarded.
   dimensions_collide:
     action:
-      - spawn_rumor
-    aargs:
-      - step: end
-        skip: True
-        name: dimensions_collide
-        manager_obj:
-          solve: Test Observation, then spend Clues equal to half the number of Investigators.
-          reckoning: Discard Eldritch tokens from this card equal to half the number of Gates on the game board.
-          unsolved: When there are no Eldritch tokens on this card, investigators lose the game.
-          location: space_11
-          eldritch: 4
-    end:
       - end_mythos
-    eargs:
+    aargs:
       - text: End turn (all)
     flavor: Everywhere that these portals have been reported, earthquakes shake the streets into rubble, and sinkholes swallow buildings whole.
     text: A rumor has spawned on Space 11
+    manager_object:
+      solve: Test Observation, then spend Clues equal to half the number of Investigators.
+      reckoning: Discard Eldritch tokens from this card equal to half the number of Gates on the game board.
+      unsolved: When there are no Eldritch tokens on this card, investigators lose the game.
+      eldritch: 4
   driven_to_bankruptcy:
     action:
       - end_mythos
@@ -218,6 +211,7 @@
       - skip: True
         kind: conditions
     flavor: He writes the price on a piece of paper and slides it across the table. It's more than you can afford, but you don't have any other options, and this greedy lout knows it.
+    text: Each investigator may gain a Debt Condition to discard 1 Condition.
   eyes_everywhere:
     action:
       - single_roll
@@ -249,42 +243,29 @@
     fight_text: Your pursuers are not human!
   faded_from_society:
     action:
-      - spawn_rumor
-    aargs:
-      - step: end
-        skip: True
-        name: faded_from_society
-        manager_obj:
-          solve: Test Observation, then spend clues equal to half the number of Investigators.
-          reckoning: Search the Asset deck, discard pile, and reserve for all Assets with value equal to or greater than the number of Eldritch token Eldritch tokens on this card and return them to the game box. Then discard 1 Eldritch token from this card.
-          unsolved: When there are no Eldritch tokens on this card, solve this Rumor.
-          eldritch: 4
-          location: space_16
-    end:
       - end_mythos
-    eargs:
+    aargs:
       - text: End turn (all)
     flavor: Some dark magic has taken hold in you. Friends have started ignoring you as if you weren't even in the room. It's getting worse, and you fear that soon you'll be invisible to every other person on Earth!
     text: A rumor has spawned on Space 16.
+    manager_object:
+      solve: Test Observation, then spend clues equal to half the number of Investigators.
+      reckoning: Search the Asset deck, discard pile, and reserve for all Assets with value equal to or greater than the number of Eldritch token Eldritch tokens on this card and return them to the game box. Then discard 1 Eldritch token from this card.
+      unsolved: When there are no Eldritch tokens on this card, solve this Rumor.
+      eldritch: 4
   fractured_reality:
     action:
-      - spawn_rumor
-    aargs:
-      - step: end
-        skip: True
-        name: fractured_reality
-        manager_obj:
-          location: space_2
-          solve: Resolve an Other World Encounter; if an effect would close a Gate, solve this Rumor instead.
-          reckoning: Discard 1 Eldritch token from this card.
-          unsolved: Advance Doom by 1 for each Gate on the game Board.
-          eldritch: 4
-    end:
       - end_mythos
-    eargs:
+    aargs:
       - text: End turn (all)
     flavor: The strange phenomenon is an echo of the catastrophic destruction of Mu. The repercussions of the serpent people's overreaching ambition still take their toll.
     text: A rumor has spawned on Space 2.
+    manager_object:
+      location: space_2
+      solve: Resolve an Other World Encounter; if an effect would close a Gate, solve this Rumor instead.
+      reckoning: Discard 1 Eldritch token from this card.
+      unsolved: Advance Doom by 1 for each Gate on the game Board.
+      eldritch: 4
   from_bad_to_worse:
     action:
       - loss_per_condition
@@ -335,29 +316,22 @@
     text: Resolve the Reckoning effect on each Mythos card in play twice unless investigators, as a group, spend Clues equal to half Investigators. If there are no Mythos cards in play with a Reckoning effect, advance Doom by 1.
   growing_madness:
     action:
-      - spawn_rumor
-    aargs:
-      - step: end
-        skip: True
-        name: growing_madness
-        manager_obj:
-          location: space_8
-          solve: Test Observation, then spend Clues equal to half Investigators.
-          reckoning: The Lead Investigator gains a Madness Condition, then discards 1 Eldritch token from this card for each Madness Condition they have.
-          unsolved: Each Investigator loses 3 Sanity.
-          eldritch: 4
-          unsolve_action:
-            - hp_san
-          unsolve_args:
-            - san: -3
-              step: reckoning
-              skip: True
-    end:
       - end_mythos
-    eargs:
+    aargs:
       - text: End turn (all)
     flavor: You dream of a life as an insane wizard thousands of years ago in Atlantis. You also dream of that same wizard still alive today on an uncharted island.
     text: A rumor has spawned on Space 8.
+    manager_object:
+      solve: Test Observation, then spend Clues equal to half Investigators.
+      reckoning: The Lead Investigator gains a Madness Condition, then discards 1 Eldritch token from this card for each Madness Condition they have.
+      unsolved: Each Investigator loses 3 Sanity.
+      eldritch: 4
+      unsolve_action:
+        - hp_san
+      unsolve_args:
+        - san: -3
+          step: reckoning
+          skip: True
   haunting_nightmares:
     action:
       - spend_clue
@@ -427,29 +401,39 @@
     text: The Lead Investigator gains a Debt Condition. If the Lead Investigator already had a Debt Condition, they resolve the Reckoning effect on that card, treating all die rolls as l's.
   lost_knowledge:
     action:
-      - spawn_rumor
-    aargs:
-      - step: end
-        skip: True
-        name: lost_knowledge
-        manager_obj:
-          location: space_21
-          solve: Defeat the Tick Tock Men Epic Monster.
-          reckoning: Discard 1 Eldritch token from this card.
-          unsolved: When there are no Eldritch tokens on this card, each investigator discards all Clues, and then discard all Clues on the game board.
-          eldritch: 3
-          unsolve_action:
-            - despawn_clues
-          unsolve_args: 
-            - player: True
-              lead_only: True
-              location: all
-              step: reckoning
-              text: Discard Clues
-          not_encounter: True
-    end:
       - end_mythos
     eargs:
       - text: End turn (all)
     flavor: Your contact in the capital is hesitant to speak about those called "The Watches." He says they work for a number of different governments, but answer to some other authority.
     text: The Tick Tock Men Epic Monster has spawned on Space 21
+    manager_object:
+      solve: Defeat the Tick Tock Men Epic Monster.
+      reckoning: Discard 1 Eldritch token from this card.
+      unsolved: When there are no Eldritch tokens on this card, each investigator discards all Clues, and then discard all Clues on the game board.
+      eldritch: 3
+      unsolve_action:
+        - despawn_clues
+      unsolve_args: 
+        - player: True
+          lead_only: True
+          location: all
+          step: reckoning
+          text: Discard Clues
+      not_encounter: True
+  mysterious_lights:
+    action:
+      - allow_gate_close
+    aargs:
+      - step: end
+        skip: True
+        allow: False
+    end:
+      - end_mythos
+    eargs:
+      - text: End turn (all)
+    flavor: You've never seen the Aurora Borealis flashing with such intensity. Even south of the arctic circle, the air feels alive with alien energies that cannot be dispelled.
+    text: A rumor has spawned on Space 13.
+    manager_object:
+      location: space_13
+      solve: Test Observation, then spend Clues equal to half Investigators.
+      effect: Gates cannot be closed.

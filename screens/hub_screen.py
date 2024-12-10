@@ -115,11 +115,10 @@ class HubScreen(arcade.View):
         for item in self.investigator.initial_items:
             request = item.split(':')
             self.request_card(request[0], request[1])
-        self.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity})
+        self.investigator.health = 1
+        self.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, self.investigator.name)
 
-        self.location_manager.locations[self.investigator.location]['investigators'].append(self.investigator)
-        self.location_manager.all_investigators.append(self.investigator)
-
+        '''
         #FOR TESTING
         self.request_card('assets', 'arcane_tome')
         self.request_card('assets', 'axe')
@@ -131,6 +130,7 @@ class HubScreen(arcade.View):
         self.is_first = True
         #self.request_card('conditions', 'blessed')
         #END TESTING
+        '''
         
     def on_draw(self):
         self.clear()
@@ -157,14 +157,14 @@ class HubScreen(arcade.View):
             location = self.location_manager.get_closest_location((x,y), self.zoom, map_loc, 50)
             if self.encounter_pane.move_action != None:
                 if location[2] in self.encounter_pane.allowed_locs:
-                    self.move_unit(self.investigator, location[2])
+                    self.move_unit(self.investigator.name, location[2])
                     self.original_investigator_location = location[2]
                     self.encounter_pane.move_action()
                 else:
-                    self.move_unit(self.investigator, self.original_investigator_location)
+                    self.move_unit(self.investigator.name, self.original_investigator_location)
             else:
                 if location == None:
-                    self.move_unit(self.investigator, self.original_investigator_location)
+                    self.move_unit(self.investigator.name, self.original_investigator_location)
                 elif location[2] in self.in_movement_range().keys():
                     tickets = self.in_movement_range()[location[2]]
                     if len(tickets) > 1:
@@ -178,7 +178,7 @@ class HubScreen(arcade.View):
                     else:
                         self.ticket_move(self.investigator.name, location[2], tickets[0][0], tickets[0][1], self.original_investigator_location)
                 else:
-                    self.move_unit(self.investigator, self.original_investigator_location)
+                    self.move_unit(self.investigator.name, self.original_investigator_location)
         elif x < 1000 and y > 142 and self.click_time <= 10 and (self.gui_enabled or self.encounter_pane.click_action != None):
             location = self.location_manager.get_closest_location((x,y), self.zoom, self.map.get_location())
             if location != None:
@@ -226,8 +226,7 @@ class HubScreen(arcade.View):
                 location = self.location_manager.get_closest_location((x, y), self.zoom, self.map.get_location(), 40)
                 if location != None:
                     key = location[2]
-                    investigators = self.location_manager.locations[key]['investigators']
-                    if len(investigators) > 0 and self.investigator in investigators:
+                    if self.investigator.name in self.location_manager.locations[key]['investigators']:
                         self.holding = 'investigator'
                         tokens = self.map.get_tokens('investigators', key, self.investigator.name)
                         self.investigator_token = tokens[0] if self.zoom == 2 else tokens[1]
@@ -295,11 +294,13 @@ class HubScreen(arcade.View):
                 name = payload.get('name', '')
                 monster_id = None
                 if payload['value'] == 'investigators':
-                    if name != self.investigator.name:
-                        self.location_manager.spawn_investigator(name, payload['location'])
+                    self.location_manager.spawn_investigator(name, payload['location'])
                 elif payload['value'] == 'monsters':
                     monster = self.location_manager.spawn_monster(name, payload['location'], payload['map'], int(payload['monster_id']))
                     monster_id = str(monster.monster_id)
+                elif payload['value'] == 'rumor':
+                    self.location_manager.rumors[payload['value']] = self.encounter_pane.get_rumor(payload['value'])
+                    self.location_manager.rumors[payload['value']]['location'] = payload['location']
                 if payload['location'] == self.info_panes['location'].selected:
                     self.info_panes['location'].update_all()
                 self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name, monster_id)
@@ -327,62 +328,63 @@ class HubScreen(arcade.View):
             case 'discard':
                 self.info_panes['reserve'].discard_item(payload['value'])
             case 'investigator_moved':
-                investigator = next((investigator for investigator in self.location_manager.all_investigators if investigator.name == payload['value']))
-                self.move_unit(investigator, payload['destination'])
+                self.move_unit(payload['value'], payload['destination'])
             case 'choose_lead':
                 self.encounter_pane.finish(True)
                 portraits = []
-                for investigator in self.location_manager.all_investigators:
-                    name = investigator.name
+                for name in self.location_manager.all_investigators:
                     portraits.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.4, action=self.networker.publish_payload,
                                                 action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
                 self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
                 self.show_overlay()
                 #FOR TESTING
-                self.networker.publish_payload({'message': 'lead_selected', 'value': 'akachi_onyele'}, self.investigator.name)
+                #self.networker.publish_payload({'message': 'lead_selected', 'value': 'akachi_onyele'}, self.investigator.name)
                 #END TESTING
             case 'lead_selected':
                 self.lead_investigator = payload['value']
-                self.clear_overlay()
+                if not payload.get('dead_trigger', None) != None:
+                    self.clear_overlay()
             case 'player_turn':
-                match payload['value']:
-                    case 'action':
-                        if self.investigator.delayed:
-                            self.investigator.delayed = False
-                            self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                        else:
-                            self.remaining_actions = 2
-                            #FOR TESTING
-                            self.remaining_actions = 3
-                            if self.is_first:
-                                self.ticket_move('akachi_onyele', 'space_16', 0, 0, 'space_15')
+                if payload['value'] in ['action', 'encounter', 'reckoning'] and self.investigator.is_dead:
+                    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                else:
+                    match payload['value']:
+                        case 'action':
+                            if self.investigator.delayed:
+                                self.investigator.delayed = False
+                                #self.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
                             else:
-                                self.ticket_move('akachi_onyele', 'space_21', 0, 0, 'space_16')
-                                self.investigator.focus = 0
-                            self.info_panes['investigator'].focus_action()
+                                self.remaining_actions = 2
+                                '''
+                                #FOR TESTING
+                                self.remaining_actions = 3
+                                if self.is_first:
+                                    self.ticket_move('akachi_onyele', 'space_16', 0, 0, 'space_15')
+                                else:
+                                    self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
+                                    self.investigator.focus = 0
+                                self.info_panes['investigator'].focus_action()
+                                #END TESTING
+                                '''
+                        case 'encounter':
+                            #FOR TESTING
+                            #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                             #END TESTING
-                    case 'encounter':
-                        #FOR TESTING
-                        #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                        #END TESTING
-                        self.show_encounter_pane()
-                        self.encounter_pane.encounter_phase()
-                    case 'reckoning':
-                        self.encounter_pane.reckoning()
-                        #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                    case 'mythos':
-                        #self.clear_overlay()
-                        #self.show_encounter_pane()
-                        #self.encounter_pane.activate_mythos()
-                        #FOR TESTING
-                        #if self.is_first:
-                        self.clear_overlay()
-                        self.show_encounter_pane()
-                        self.encounter_pane.activate_mythos()
-                        self.is_first = False
-                        #else:
-                        #    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                        #END TESTING
+                            self.show_encounter_pane()
+                            self.encounter_pane.encounter_phase()
+                        case 'reckoning':
+                            self.encounter_pane.reckoning()
+                            #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                        case 'mythos':
+                            #FOR TESTING
+                            #if self.is_first:
+                            self.clear_overlay()
+                            self.show_encounter_pane()
+                            self.encounter_pane.activate_mythos()
+                            self.is_first = False
+                            #else:
+                            #    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                            #END TESTING
             case 'encounter_choice':
                 self.clear_overlay()
                 self.show_encounter_pane()
@@ -453,6 +455,9 @@ class HubScreen(arcade.View):
             case 'exile_from_discard':
                 for item in payload['value'].split(':'):
                     self.info_panes['reserve'].discard_item(item, True)
+            case 'investigator_death':
+                self.location_manager.locations[payload['location']]['investigators'].remove(payload['value'])
+                self.location_manager.dead_investigators[payload['value']] = {'possessions': payload['possessions'], 'location': payload['location']}
 
         if self.encounter_pane.wait_step != None:
             self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
@@ -614,6 +619,7 @@ class HubScreen(arcade.View):
         self.networker.publish_payload({'message': 'move_investigator', 'value': self.investigator.name, 'destination': loc}, self.investigator.name)
         self.investigator.rail_tickets += rail
         self.investigator.ship_tickets += ship
+        self.networker.publish_payload({'message': 'update_tickets', 'ship': self.investigator.ship_tickets, 'rail': self.investigator.rail_tickets}, self.investigator.name)
         self.info_panes['investigator'].set_ticket_counts()
         self.undo_action = None
         self.actions_taken['move']['taken'] = False
@@ -623,13 +629,16 @@ class HubScreen(arcade.View):
         destination = self.location_manager.get_location_coord(location)
         zoom_destination = self.location_manager.get_zoom_pos(location, self.map.get_location())
         key = self.location_manager.move_unit(unit, kind, location)
-        unit.location = location
-        self.map.move_tokens(kind, key, destination, zoom_destination, location, unit.name)
+        self.map.move_tokens(kind, key, destination, zoom_destination, location, unit)
+        if kind != 'investigators':
+            unit.location = location
+        elif unit == self.investigator.name:
+            self.investigator.location = location
 
     def get_locations_within(self, distance, investigator=None, same_loc=True):
         locations = self.location_manager.locations
         investigator = investigator if investigator != None else self.investigator
-        start_loc = next((start for start in locations if investigator in locations[start]['investigators']))
+        start_loc = next((start for start in locations if investigator.name in locations[start]['investigators']))
         locs = {start_loc}
         temp = set()
         for x in range(distance):
@@ -646,7 +655,7 @@ class HubScreen(arcade.View):
         locations = self.location_manager.locations
         rails = self.investigator.rail_tickets
         ships = self.investigator.ship_tickets
-        start_loc = next((start for start in locations if self.investigator in locations[start]['investigators']))
+        start_loc = next((start for start in locations if self.investigator.name in locations[start]['investigators']))
         move_dict = {}
         tickets = {'rail': 0, 'ship': 0}
         for route in locations[start_loc]['routes'].keys():
@@ -692,6 +701,8 @@ class HubScreen(arcade.View):
         }
         self.investigator.rail_tickets -= rail
         self.investigator.ship_tickets -= ship
+        if rail != 0 or ship != 0:
+            self.networker.publish_payload({'message': 'update_tickets', 'ship': self.investigator.ship_tickets, 'rail': self.investigator.rail_tickets}, self.investigator.name)
         self.info_panes['investigator'].set_ticket_counts()
         self.networker.publish_payload({'message': 'move_investigator', 'value': name, 'destination': location}, self.investigator.name)
         if overlay:

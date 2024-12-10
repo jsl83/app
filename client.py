@@ -24,7 +24,7 @@ class Networker(threading.Thread, BanyanBase):
         BanyanBase.__init__(self, back_plane_ip_address=back_plane_ip_address,
             process_name=process_name, loop_time=.0001)
         self.set_subscriber_topic('server_update')
-        self.set_subscriber_topic('akachi_onyele_server')
+        #self.set_subscriber_topic('akachi_onyele_server')
         self.start()
 
     # Process banyan subscribed messages
@@ -44,7 +44,7 @@ class Networker(threading.Thread, BanyanBase):
         if self.external_message_processor:
             self.external_message_processor(topic, payload)
         else:
-            '''
+            #'''
             message = payload['message']
             match topic:
                 case 'server_update':
@@ -60,8 +60,8 @@ class Networker(threading.Thread, BanyanBase):
                         case 'start_game':
                             self.screen = HubScreen(self, self.investigator, payload['value'])
                             self.window.show_view(self.screen)
-            '''
-            self.window.show_view(HubScreen(self, 'akachi_onyele', 'azathoth'))
+            #'''
+            #self.window.show_view(HubScreen(self, 'akachi_onyele', 'azathoth'))
 
 def set_up_network():
     parser = argparse.ArgumentParser()

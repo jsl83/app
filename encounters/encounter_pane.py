@@ -22,12 +22,14 @@ class EncounterPane():
         self.first_fight = True
         self.rolls = []
         self.rumor_not_gate = None
+        self.gate_close = True
         self.phase_button = ActionButton(x=1020, width=240, y=725, height=50, texture='blank.png')
         self.text_button = ActionButton(x=1020, width=240, y=275, height=425, texture='blank.png')
         self.proceed_button = ActionButton(1020, 200, 240, 50, 'buttons/pressed_placeholder.png')
         self.option_button = ActionButton(1020, 125, 240, 50, 'buttons/placeholder.png')
         self.last_button = ActionButton(1020, 50, 240, 50, 'buttons/placeholder.png')
         self.action_dict = {
+            'allow_gate_close': self.allow_gate_close,
             'allow_move': self.allow_move,
             'ambush': self.ambush,
             'close_gate': self.close_gate,
@@ -57,7 +59,6 @@ class EncounterPane():
             'small_card': self.small_card,
             'spawn_clue': self.spawn_clue,
             'spend_clue': self.spend_clue,
-            'spawn_rumor': self.spawn_rumor,
             'solve_rumor': self.solve_rumor,
             'start_group_pay': self.start_group_pay,
             'trigger_encounter': self.trigger_encounter
@@ -88,7 +89,7 @@ class EncounterPane():
         self.small_card_dict = None
 
     def get_rumor(self, name):
-        return MYTHOS[name]
+        return MYTHOS[name]['manager_object']
 
     def discard_check(self, kind, tag='any', name=None):
         items = self.investigator.possessions[kind]
@@ -235,6 +236,10 @@ class EncounterPane():
         if not skip:
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
 
+    def allow_gate_close(self, allow=True, step='finish'):
+        self.gate_close = allow
+        self.set_buttons(step)
+
     def allow_move(self, distance, step='finish', same_loc=True, must_move=False):
         self.allowed_locs = self.hub.get_locations_within(distance, same_loc=same_loc)
         def action():
@@ -252,12 +257,15 @@ class EncounterPane():
         self.combat_will(self.hub.location_manager.create_ambush_monster(name))
 
     def close_gate(self, step='finish'):
-        self.wait_step = step
-        if self.rumor_not_gate != None:
-            self.hub.networker.publish_payload({'message': 'solve_rumor', 'value': self.rumor_not_gate}, self.investigator.name)
+        if self.gate_close:
+            self.wait_step = step
+            if self.rumor_not_gate != None:
+                self.hub.networker.publish_payload({'message': 'solve_rumor', 'value': self.rumor_not_gate}, self.investigator.name)
+            else:
+                map_name = self.hub.location_manager.get_map_name(self.investigator.location)
+                self.hub.networker.publish_payload({'message': 'remove_gate', 'value': map_name + ':' + self.investigator.location}, self.investigator.name)
         else:
-            map_name = self.hub.location_manager.get_map_name(self.investigator.location)
-            self.hub.networker.publish_payload({'message': 'remove_gate', 'value': map_name + ':' + self.investigator.location}, self.investigator.name)
+            self.set_buttons(step)
     
     def condition_check(self, space_type=None, item_type=None, tag=None, step='finish', fail='finish'):
         pass_check = True
@@ -472,8 +480,8 @@ class EncounterPane():
         if hp < 0 or san < 0:
             self.take_damage(hp, san, self.set_buttons, {'key': step})
         else:
-            self.investigator.health += hp
-            self.investigator.sanity += san
+            self.investigator.health = self.investigator.health + hp if self.investigator.health + hp <= self.investigator.max_health else self.investigator.max_health
+            self.investigator.sanity = self.investigator.sanity + san if self.investigator.sanity + san <= self.investigator.max_sanity else self.investigator.max_sanity
             self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity})
             self.set_buttons(step)
 
@@ -585,7 +593,16 @@ class EncounterPane():
                 self.proceed_button.enable()
                 self.proceed_button.text = 'Onward...'
                 self.text_button.text = 'The long night continues...'
-                self.layout.add(self.proceed_button)
+                if self.proceed_button not in self.layout.children:
+                    self.layout.add(self.proceed_button)
+                self.proceed_button.action = self.set_buttons
+                self.proceed_button.action_args = {'key': 'finish'}
+            elif key == 'dead':
+                self.proceed_button.enable()
+                self.proceed_button.text = 'End Turn'
+                self.text_button.text = 'You have fallen to the forces of darkness'
+                if self.proceed_button not in self.layout.children:
+                    self.layout.add(self.proceed_button)
                 self.proceed_button.action = self.set_buttons
                 self.proceed_button.action_args = {'key': 'finish'}
             else:
@@ -674,11 +691,6 @@ class EncounterPane():
         self.set_buttons(step)
         self.hub.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
 
-    def spawn_rumor(self, name, manager_obj, step='finish'):
-        self.hub.map.spawn('rumor', self.hub.location_manager, manager_obj['location'], name)
-        self.hub.location_manager.rumors[name] = manager_obj
-        self.set_buttons(step)
-
     def solve_rumor(self, choice=False, step='finish', name=None):
         def choose_rumor(key):
             self.wait_step = step
@@ -708,10 +720,14 @@ class EncounterPane():
                 #choices.append(san damage triggers)
                 pass
             def resolve_damage(hp, san):
-                self.investigator.health += hp
-                self.investigator.sanity += san
-                self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity})
-                action(**args)
+                self.investigator.health = self.investigator.health + hp if self.investigator.health + hp <= self.investigator.max_health else self.investigator.max_health
+                self.investigator.sanity = self.investigator.sanity + san if self.investigator.sanity + san <= self.investigator.max_sanity else self.investigator.max_sanity
+                self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity, 'location': self.investigator.location}, self.investigator.name)
+                if self.investigator.health <= 0 or self.investigator.sanity <= 0:
+                    self.investigator.is_dead = True
+                    self.set_buttons('dead')
+                else:
+                    action(**args)
             next_button = ActionButton(
                 width=100, height=30, texture='buttons/placeholder.png', text='Next', action=resolve_damage, action_args={'hp': hp, 'san': san})
             self.hub.choice_layout = create_choices(choices = choices, options=[next_button], title='Taking Damage', subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))
@@ -733,14 +749,14 @@ class EncounterPane():
             self.text_button.style = {'font_size': int(self.encounter['font_size'])}
         self.text_button.text = text
         self.hub.info_manager.trigger_render()
-        self.option_button.text = 'Waiting for turn'
+        self.option_button.text = 'Waiting for other players'
         self.option_button.action = lambda: None
         self.option_button.action_args = None
         self.layout.add(self.option_button)
 
     def activate_mythos(self):
-        if self.encounter.get('lead_only', None) != None and self.investigator.name != self.hub.lead_investigator:
-            self.set_buttons('finish')
+        if (self.encounter.get('lead_only', None) != None and self.investigator.name != self.hub.lead_investigator) or self.investigator.is_dead:
+            self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
         else:
             self.set_buttons('action')
 
@@ -760,6 +776,7 @@ class EncounterPane():
             if self.encounter.get('font_size', None) != None:
                 self.text_button.style = {'font_size': int(self.encounter['font_size'])}
             self.text_button.text = text
+            self.hub.show_encounter_pane()
 
 class SmallCardPane(EncounterPane):
     def __init__(self, hub, card, parent, encounter, step):

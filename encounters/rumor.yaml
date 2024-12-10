@@ -74,4 +74,32 @@
           name: growing_madness
       test_text: You attempt to find the uncharted isle.
       pass_text: The wizard returns to his time.
-    
+  space_13:
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          fail: no_effect
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - condition: half
+          text: Spend Clues
+          step: solve
+        - text: You find nothing (skip)
+          key: finish
+      solve:
+        - solve_rumor
+      sargs:
+        - skip: True
+          name: mysterious_lights
+          step: gate
+      gate:
+        - allow_gate_close
+      gargs:
+        - allow: True
+          skip: True
+      test_text: You fly a plane over the arctic ice to scout for the source of these unusually intense northern lights.
+      pass_text: You catch sight of an unoccupied mi-go outpost and attempt to turn off their bizarre devices.
+  

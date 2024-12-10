@@ -51,6 +51,7 @@ class Investigator():
         self.hp_damage = 0
 
         self.encounter_impairment = 0
+        self.is_dead = False
 
     def get_ticket(self, kind):
         rail = 0
@@ -85,9 +86,6 @@ class Investigator():
 
     def calculate_skill(self, index):
         return self.skill[3 if index == 5 else index] + self.skill_tokens[3 if index == 5 else index] + self.skill_bonuses[index]
-    
-    def death(self, hp, san):
-        pass
 
     def improve_skill(self, skill, amt):
         self.skill_tokens[skill] += amt

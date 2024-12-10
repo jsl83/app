@@ -10,6 +10,7 @@ class LocationManager():
         self.locations = {}
         self.all_investigators = []
         self.all_monsters = []
+        self.dead_investigators = {}
         try:
             with open('locations/locations.yaml') as stream:
                 self.locations = yaml.safe_load(stream)
@@ -54,10 +55,8 @@ class LocationManager():
         return monster
 
     def spawn_investigator(self, name, location):
-        investigator = Investigator(name)
-        investigator.location = location
-        self.all_investigators.append(investigator)
-        self.locations[location]['investigators'].append(investigator)
+        self.all_investigators.append(name)
+        self.locations[location]['investigators'].append(name)
 
     def get_location_coord(self, key):
         loc = self.locations[key]
@@ -68,9 +67,13 @@ class LocationManager():
         return (location['x'] * 2 + map_location[0], (location['y'] + 200) * 2 + map_location[1])
     
     def move_unit(self, unit, kind, destination):
-        self.locations[unit.location][kind].remove(unit)
+        if kind == 'investigators':
+            loc = next((loc for loc in self.locations.keys() if unit in self.locations[loc]['investigators']))
+        else:
+            loc = unit.location
+        self.locations[loc][kind].remove(unit)
         self.locations[destination][kind].append(unit)
-        return unit.location
+        return loc
     
     def get_encounters(self, location):
         encounters = ['generic']

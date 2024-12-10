@@ -66,6 +66,7 @@ class InvestigatorPane():
             tickets = self.investigator.get_ticket(kind)
             self.set_ticket_counts()
             self.hub.action_taken('ticket')
+            self.hub.networker.publish_payload({'message': 'update_tickets', 'ship': self.investigator.ship_tickets, 'rail': self.investigator.rail_tickets}, self.investigator.name)
             self.hub.undo_action = {'action': self.undo_ticket, 'args': {'tickets': tickets}}
 
     def undo_ticket(self, tickets):
@@ -74,6 +75,7 @@ class InvestigatorPane():
         self.hub.undo_action = None
         self.investigator.rail_tickets += tickets[0]
         self.investigator.ship_tickets += tickets[1]
+        self.hub.networker.publish_payload({'message': 'update_tickets', 'ship': self.investigator.ship_tickets, 'rail': self.investigator.rail_tickets}, self.investigator.name)
         self.set_ticket_counts()
 
     def set_ticket_counts(self):

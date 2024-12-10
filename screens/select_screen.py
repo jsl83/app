@@ -87,6 +87,8 @@ class SelectionScreen(arcade.View):
                             self.networker.publish_payload({'message': self.path + '_selected', 'value': self.selected}, 'login')
                             self.networker.set_subscriber_topic(self.selected + '_server')
                             self.networker.investigator = self.selected
+                            self.manager.children = {0:[]}
+                            self.manager.add(arcade.gui.UITextureButton(width=1280, y=700, text='Waiting for other players', texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons/placeholder.png')))
                         elif text == 'Back':
                             self.selected = None
                         elif text == 'Flip':

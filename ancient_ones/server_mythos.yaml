@@ -47,6 +47,7 @@
       lead_only: True
     no_peace_for_the_fallen:
       difficulty: 1
+      lead_only: True
     patrolling_the_border:
       difficulty: 1
     rising_terror:
@@ -127,6 +128,7 @@
       difficulty: 2
       actions:
         - on_reckoning
+        - spawn
       args:
         - args:
             recurring: 4
@@ -135,19 +137,27 @@
                 divisor: 2
             unsolve: lose_game
             name: dimensions_collide
+        - name: dimensions_collide
+          location: world:space_11
+          piece: rumor
     faded_from_society:
       difficulty: 1
       actions:
         - on_reckoning
+        - spawn
       args:
         - args:
             recurring: 4
             action: discard_cost
             name: faded_from_society
+        - location: world:space_16
+          name: faded_from_society
+          piece: rumor
     fractured_reality:
       difficulty: 0
       actions:
         - on_reckoning
+        - spawn
       args:
         - args:
             recurring: 4
@@ -155,20 +165,28 @@
             unsolve_args:
               all_gates: True
             name: fractured_reality
+        - location: world:space_2
+          name: fractured_reality
+          piece: rumor
     growing_madness:
       difficulty: 0
       actions:
         - on_reckoning
+        - spawn
       args:
         - args:
             recurring: 4
             rargs:
               count: lead_madness
             name: growing_madness
+        - location: world:space_8
+          name: growing_madness
+          piece: rumor
     lost_knowledge:
       difficulty: 0
       actions:
         - on_reckoning
+        - spawn
         - spawn
       args:
         - args:
@@ -177,8 +195,17 @@
         - piece: monsters
           name: tick_tock_men
           location: world:space_21
+        - piece: rumor
+          name: lost_knowledge
+          location: world:space_21
     mysterious_lights:
       difficulty: 2
+      actions:
+        - spawn
+      args:
+        - location: world:space_13
+          name: mysterious_lights
+          piece: rumor
     return_of_the_ancient_ones:
       difficulty: 1
     secrets_of_the_past:

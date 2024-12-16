@@ -29,9 +29,9 @@ class InvestigatorPane():
         for x in range(5):
             self.skills.append(arcade.gui.UITextureButton(x=1060, y=225 - 55 * x, width=200, texture=self.blank, align='center'))
             self.details.add(self.skills[x])
-        self.ship_button = ActionButton(x=1040, width=115, y=452, action=self.ticket_action, action_args={'kind': 'ship'}, texture='icons/ship_ticket.png',
+        self.ship_button = ActionButton(x=1040, width=115, y=452, action=self.ticket_action, action_args={'kind': 'ship'}, texture='icons/ship.png',
                                         text='x ' + str(self.investigator.ship_tickets), text_position=(35,-2))
-        self.rail_button = ActionButton(x=1040, width=115, y=397, action=self.ticket_action, action_args={'kind': 'rail'}, texture='icons/train_ticket.png',
+        self.rail_button = ActionButton(x=1040, width=115, y=397, action=self.ticket_action, action_args={'kind': 'rail'}, texture='icons/rail.png',
                                         text='x ' + str(self.investigator.rail_tickets), text_position=(35,-2))
         self.clue_button = ActionButton(x=1175, y=452, texture='icons/clue.png', text='x ' + str(len(self.investigator.clues)), text_position=(15,-2))
         self.focus_button = ActionButton(x=1175, y=397, action=self.focus_action, texture='icons/focus.png', text='x ' + str(self.investigator.focus), text_position=(15,-2))

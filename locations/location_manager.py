@@ -8,7 +8,7 @@ class LocationManager():
     def __init__(self):
 
         self.locations = {}
-        self.all_investigators = []
+        self.all_investigators = {}
         self.all_monsters = []
         self.dead_investigators = {}
         try:
@@ -55,7 +55,7 @@ class LocationManager():
         return monster
 
     def spawn_investigator(self, name, location):
-        self.all_investigators.append(name)
+        self.all_investigators[name] = {'assets': [], 'unique_assets': [], 'artifacts': [], 'spells': [], 'conditions': [], 'rail': 0, 'ship': 0}
         self.locations[location]['investigators'].append(name)
 
     def get_location_coord(self, key):
@@ -86,6 +86,9 @@ class LocationManager():
                 rumor = next((rumor for rumor in self.rumors if self.rumors[rumor]['location'] == location), None)
                 if rumor != None and self.rumors[rumor]['not_encounter']:
                     encounters.remove(kind)
+        for name in self.dead_investigators:
+            if self.dead_investigators[name]['location'] == location:
+                encounters.append(name)
         return encounters
     
     def get_all(self, kind, is_array=False):

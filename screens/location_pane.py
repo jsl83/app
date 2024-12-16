@@ -1,11 +1,13 @@
 import arcade, arcade.gui
 from screens.action_button import ActionButton
+from screens.possessions_pane import TradePane
 from util import *
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 
 class LocationPane():
-    def __init__(self, location_manager):
+    def __init__(self, location_manager, hub):
+        self.hub = hub
         self.location_manager = location_manager
         self.blank = arcade.load_texture(IMAGE_PATH_ROOT + 'blank.png')
 
@@ -71,6 +73,8 @@ class LocationPane():
                                           action=self.toggle_details, action_args={'flag': True}, texture_pressed='/buttons/pressed_placeholder.png')
         self.rumor_details = arcade.gui.UITextureButton(x=1000, y=0, height=390, width=280, texture=self.blank)
         self.rumor = None
+        self.possession_screen = TradePane(self.hub.investigator, self.hub)
+        self.possession_screen.close_button.action = self.on_show
         
     def toggle_details(self, flag):
         self.toggle_info.select(flag)
@@ -165,10 +169,18 @@ class LocationPane():
                 i += 1
 
     def trade(self, unit):
-        pass
+        if unit != self.hub.investigator.name:
+            if unit in self.location_manager.dead_investigators.keys():
+                self.show_possessions(self.location_manager.dead_investigators[unit], unit, True)
+            else:
+                self.hub.networker.publish_payload({'message': 'possession_update', 'value': unit}, self.hub.investigator.name)
 
-    def view_possessions(self, name):
-        pass
+    def show_possessions(self, possessions, name, dead=False):
+        trade = (self.hub.investigator.name in self.location_manager.locations[self.selected]['investigators']
+                 and not dead and self.hub.remaining_actions > 0 and not self.hub.actions_taken['trade']['taken'])
+        self.layout.clear()
+        self.possession_screen.setup(possessions, name, trade)
+        self.layout.add(self.possession_screen.layout)
 
     def update_all(self):
         self.update_tokens()

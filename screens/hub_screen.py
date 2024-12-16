@@ -1,8 +1,5 @@
-import arcade
-import arcade.csscolor
-import arcade.gui
-import math
-import random
+import arcade, arcade.csscolor, arcade.gui
+import math, random, copy
 from util import *
 from ancient_ones.ancient_one import AncientOne
 from screens.ancient_pane import AncientOnePane
@@ -74,7 +71,7 @@ class HubScreen(arcade.View):
             'investigator': InvestigatorPane(self.investigator, self),
             'possessions': PossessionsPane(self.investigator),
             'reserve': ReservePane(self),
-            'location': LocationPane(self.location_manager),
+            'location': LocationPane(self.location_manager, self),
             'ancient_one': AncientOnePane(self.ancient_one)
         }
 
@@ -321,7 +318,8 @@ class HubScreen(arcade.View):
                     if card[0:-1] == 'debt':
                         self.info_panes['reserve'].debt_button.disable()
             case 'asset':
-                self.item_received('assets', payload['value'])
+                if payload['value'] != None:
+                    self.item_received('assets', payload['value'])
             case 'receive_clue':
                 self.investigator.clues.append(payload['value'])
                 self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
@@ -332,7 +330,7 @@ class HubScreen(arcade.View):
             case 'choose_lead':
                 self.encounter_pane.finish(True)
                 portraits = []
-                for name in self.location_manager.all_investigators:
+                for name in self.location_manager.all_investigators.keys():
                     portraits.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.4, action=self.networker.publish_payload,
                                                 action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
                 self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
@@ -355,6 +353,7 @@ class HubScreen(arcade.View):
                                 #self.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
                             else:
                                 self.remaining_actions = 2
+                                self.ticket_move(self.investigator.name, 'space_15', 0, 0, 'space_15')
                                 '''
                                 #FOR TESTING
                                 self.remaining_actions = 3
@@ -455,9 +454,23 @@ class HubScreen(arcade.View):
             case 'exile_from_discard':
                 for item in payload['value'].split(':'):
                     self.info_panes['reserve'].discard_item(item, True)
-            case 'investigator_death':
+            case 'possession_info':
+                for key in ['assets', 'unique_assets', 'spells', 'clues', 'artifacts']:
+                    self.location_manager.all_investigators[payload['value']][key] = [] if payload[key] == '' else payload[key].split(',')
+                for ticket in ['rail', 'ship']:
+                    self.location_manager.all_investigators[payload['value']][ticket] = int(payload[ticket])
+                if payload.get('show', None) != None:
+                    self.info_panes['location'].show_possessions(self.location_manager.all_investigators[payload['value']], payload['value'])
+            case 'investigator_died':
                 self.location_manager.locations[payload['location']]['investigators'].remove(payload['value'])
-                self.location_manager.dead_investigators[payload['value']] = {'possessions': payload['possessions'], 'location': payload['location']}
+                self.location_manager.dead_investigators[payload['value']] = copy.deepcopy(self.location_manager.all_investigators[payload['value']])
+                self.location_manager.dead_investigators[payload['value']]['location'] = payload['location']
+            case 'trade':
+                del payload['message']
+                take = list(payload.keys())
+                take.remove(self.investigator.name)
+                self.info_panes['location'].possession_screen.swap_items(payload[self.investigator.name], payload[take[0]])
+                self.info_panes['possessions'].setup()
 
         if self.encounter_pane.wait_step != None:
             self.encounter_pane.set_buttons(self.encounter_pane.wait_step)

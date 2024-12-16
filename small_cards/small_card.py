@@ -52,7 +52,7 @@ class Spell(SmallCard):
         self.setup()
 
     def get_server_name(self):
-        return self.name + ':' + str(self.variant)
+        return self.name + str(self.variant)
 
 class Condition(SmallCard):
     def __init__(self, name, investigator):
@@ -63,10 +63,21 @@ class Condition(SmallCard):
         self.setup()
 
     def get_server_name(self):
-        return self.name + ':' + str(self.variant)
+        return self.name + str(self.variant)
 
 class Artifact(SmallCard):
     def __init__(self, name, investigator):
         SmallCard.__init__(self, name, investigator)
         self.kind = 'artifacts'
         self.setup()
+
+class UniqueAsset(SmallCard):
+    def __init__(self, name, investigator):
+        SmallCard.__init__(self, name, investigator)
+        self.kind = 'unique_assets'
+        self.setup()
+        self.variant = int(name[-1])
+        self.card_back = CARDS['conditions'][self.name][str(self.variant)]['back']
+
+    def get_server_name(self):
+        return self.name + str(self.variant)

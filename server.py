@@ -208,7 +208,7 @@ class Networker(threading.Thread, BanyanBase):
                 case 'investigators_selected':
                     self.selected_investigators.append(payload['value'])
                     self.investigators[payload['value']] = {
-                        'assets':[], 'conditions': [], 'artifacts': [], 'unique_assets':[], 'spells':[], 'hp': 0, 'san': 0, 'clues': [], 'paid': -1, 'tickets': (0,0)}
+                        'assets':[], 'conditions': [], 'artifacts': [], 'unique_assets':[], 'spells':[], 'hp': 0, 'san': 0, 'clues': [], 'paid': -1, 'tickets': [0,0]}
                     self.set_subscriber_topic(payload['value'])
                     self.screen.add_investigator(payload['value'])
                     if self.players_died and len(self.selected_investigators) == self.player_count:
@@ -265,7 +265,7 @@ class Networker(threading.Thread, BanyanBase):
                         item = self.asset_request(payload['command'], payload['value'], payload['tag'])
                         if item != None:
                             self.investigators[topic]['assets'].append(item)
-                            self.publish_payload({'message': 'asset', 'value': item}, topic + '_server')
+                        self.publish_payload({'message': 'asset', 'value': item}, topic + '_server')
                     case 'artifacts':
                         name = payload['value'] if payload['value'] != None else ''
                         tag = payload['tag'] if payload['tag'] != None else ''
@@ -396,27 +396,46 @@ class Networker(threading.Thread, BanyanBase):
                         self.investigators[topic]['san'] = payload['san']
                         if self.investigators[topic]['hp'] <= 0 or self.investigators[topic]['san'] <= 0:
                             self.players_died = True
-                            player = topic
                             current_lead = self.selected_investigators[self.lead_investigator]
-                            if current_lead == player:
+                            if current_lead == topic:
                                 self.temporary_lead =  self.lead_investigator + 1 if len(self.selected_investigators) - 1 != self.lead_investigator else 0
                                 self.publish_payload({'message': 'lead_selected', 'value': self.selected_investigators[self.lead_investigator], 'dead_trigger': True}, 'server_update')
-                            self.dead_investigators[player] = {}
-                            possessions_string = ''
-                            for keys in [key for key in self.investigators[player].keys() if key in ['assets', 'unique_assets', 'spells', 'clues', 'tickets', 'artifacts']]:
-                                self.dead_investigators[player][keys] = self.investigators[player][keys]
-                                for item in self.investigators[player][keys]:
-                                    if keys != 'tickets':
-                                        possessions_string += keys + ':' + item
-                                    else:
-                                        possessions_string += 'rail:' + str(self.investigators[player]['tickets'][0])
-                                        possessions_string += 'ship:' + str(self.investigators[player]['tickets'][1])
-                            self.publish_payload({'message': 'investigator_death', 'possessions': possessions_string, 'value': topic, 'location': payload['location']}, 'server_update')
-                            del self.investigators[player]
+                            self.send_player_update(topic)
+                            del self.investigators[topic]
                             self.move_doom()
+                            self.publish_payload({'message': 'investigator_died', 'value': topic, 'location': payload['location']}, 'server_update')
                     case 'update_tickets':
-                        tickets = (payload['rail'], payload['ship'])
+                        tickets = [payload['rail'], payload['ship']]
                         self.investigators[topic]['tickets'] = tickets
+                    case 'possession_update':
+                        self.send_player_update(payload['value'], True)
+                    case 'trade':
+                        del payload['message']
+                        give = list(payload.keys())[0]
+                        take = list(payload.keys())[1]
+                        tickets_ref = ['rail', 'ship']
+                        for x in range(2):
+                            self.investigators[give]['tickets'][x] += len(payload[give][tickets_ref[x]])
+                            self.investigators[take]['tickets'][x] -= len(payload[give][tickets_ref[x]])
+                            self.investigators[give]['tickets'][x] -= len(payload[take][tickets_ref[x]])
+                            self.investigators[take]['tickets'][x] += len(payload[take][tickets_ref[x]])
+                        for key in ['assets', 'unique_assets', 'spells', 'clues', 'artifacts']:
+                            for item in payload[give][key]:
+                                self.investigators[give][key].append(item)
+                                self.investigators[take][key].remove(item)
+                            for item in payload[take][key]:
+                                self.investigators[give][key].remove(item)
+                                self.investigators[take][key].append(item)
+
+    def send_player_update(self, name, show=False):
+        message = {'message': 'possession_info', 'value': name}
+        for keys in [key for key in self.investigators[name].keys() if key in ['assets', 'unique_assets', 'spells', 'clues', 'artifacts']]:
+            message[keys] = ','.join(self.investigators[name][keys])
+        message['rail'] = self.investigators[name]['tickets'][0]
+        message['ship'] = self.investigators[name]['tickets'][1]
+        if show:
+            message['show'] = True
+        self.publish_payload(message, 'server_update')
 
     def end_mythos(self):
         if not self.players_died:
@@ -558,8 +577,11 @@ class Networker(threading.Thread, BanyanBase):
                 self.publish_payload({'message': 'asset', 'discard': name}, 'server_update')
             case 'get':
                 if name != '':
+                    if name in self.assets['deck']:
                     #self.assets['deck'].remove(name)
-                    return name
+                        return name
+                    else:
+                        return None
                 elif tag != '':
                     name = random.choice([item for item in self.assets['deck'] if tag in ASSETS[item]['tags']])
                     #self.assets['deck'].remove(name)

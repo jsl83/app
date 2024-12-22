@@ -8,7 +8,7 @@ IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 
 class SelectionScreen(arcade.View):
 
-    def __init__(self, path, networker):
+    def __init__(self, path, networker, respawn=False):
         super().__init__()
         self.background = None
         self.selected = None
@@ -20,6 +20,7 @@ class SelectionScreen(arcade.View):
         self.initial_y = 0
         self.selection_options = []
         self.networker = networker
+        self.respawn = respawn
 
         try:
             with open(path + '/' + path + '.yaml') as stream:
@@ -84,11 +85,18 @@ class SelectionScreen(arcade.View):
                     if self.selected:
                         text = buttons[0].text
                         if text == 'Select':
-                            self.networker.publish_payload({'message': self.path + '_selected', 'value': self.selected}, 'login')
+                            payload = {'message': self.path + '_selected', 'value': self.selected}
+                            if self.respawn:
+                                self.networker.window.show_view(self.networker.game_screen)
+                                payload['replace'] = self.networker.investigator
+                            else:
+                                self.manager.children = {0:[]}
+                                self.manager.add(arcade.gui.UITextureButton(width=1280, y=700, text='Waiting for other players', texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons/placeholder.png')))
+                            self.networker.publish_payload(payload, 'login')
                             self.networker.set_subscriber_topic(self.selected + '_server')
                             self.networker.investigator = self.selected
-                            self.manager.children = {0:[]}
-                            self.manager.add(arcade.gui.UITextureButton(width=1280, y=700, text='Waiting for other players', texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons/placeholder.png')))
+                            if self.respawn:
+                                self.networker.game_screen.load_investigator(self.selected)
                         elif text == 'Back':
                             self.selected = None
                         elif text == 'Flip':

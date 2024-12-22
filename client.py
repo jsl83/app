@@ -19,7 +19,8 @@ class Networker(threading.Thread, BanyanBase):
         self.daemon = True
         self.run_the_thread = threading.Event()
         self.run_the_thread = True
-        self.screen = None
+        self.select_screen = None
+        self.game_screen = None
         self.investigator = None
         BanyanBase.__init__(self, back_plane_ip_address=back_plane_ip_address,
             process_name=process_name, loop_time=.0001)
@@ -50,18 +51,25 @@ class Networker(threading.Thread, BanyanBase):
                 case 'server_update':
                     match message:
                         case 'ancient_ones' | 'investigators' | 'number_select':
-                            self.screen = SelectionScreen(message, self)
+                            self.select_screen = SelectionScreen(message, self)
                             if (message == 'investigators'):
                                 for name in payload['value']:
-                                    self.screen.remove_option(name)
-                            self.window.show_view(self.screen)
+                                    self.select_screen.remove_option(name)
+                            self.window.show_view(self.select_screen)
                         case 'investigator_selected':
-                            self.screen.remove_option(payload['value'])
+                            self.select_screen.remove_option(payload['value'])
                         case 'start_game':
-                            self.screen = HubScreen(self, self.investigator, payload['value'])
-                            self.window.show_view(self.screen)
+                            self.game_screen = HubScreen(self, self.investigator, payload['value'])
+                            self.game_screen.location_manager.player_count = payload['count']
+                            self.window.show_view(self.game_screen)
             #'''
             #self.window.show_view(HubScreen(self, 'akachi_onyele', 'azathoth'))
+
+    def show_select(self, names):
+        self.select_screen = SelectionScreen('investigators', self, True)
+        for name in names:
+            self.select_screen.remove_option(name)
+        self.window.show_view(self.select_screen)
 
 def set_up_network():
     parser = argparse.ArgumentParser()

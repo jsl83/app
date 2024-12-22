@@ -6,7 +6,7 @@ ENCOUNTERS = {}
 MYTHOS = {}
 RUMORS = {}
 
-for kind in ['generic', 'green', 'orange', 'purple', 'expeditions', 'gate', 'rumor']:
+for kind in ['generic', 'green', 'orange', 'purple', 'expeditions', 'gate', 'rumor', 'investigators']:
     with open('encounters/' + kind + '.yaml') as stream:
         ENCOUNTERS[kind] = yaml.safe_load(stream)
 with open('encounters/mythos.yaml') as stream:
@@ -49,6 +49,7 @@ class EncounterPane():
             'monster_heal': self.monster_heal,
             'move_monster': self.move_monster,
             'mythos_reckoning': self.mythos_reckoning,
+            'recover': self.recover_investigator,
             'request_card': self.request_card,
             'server_check': lambda: self.set_buttons('pass') if self.mythos_switch else self.set_buttons('fail'),
             'set_buttons': self.set_buttons,
@@ -65,7 +66,7 @@ class EncounterPane():
         }
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
-            'spend_clue': lambda *args: len(self.investigator.clues) >= args[0].get('amt', math.ceil((len(self.hub.location_manager.all_investigators) / (2 if args[0].get('condition') == 'half' else 1)))),
+            'spend_clue': lambda *args: len(self.investigator.clues) >= args[0].get('amt', math.ceil((self.hub.location_manager.player_count / (2 if args[0].get('condition') == 'half' else 1)))),
             'discard': lambda *args: self.discard_check(args[0]['kind'], args[0].get('tag', 'any'), args[0].get('name', None)),
             'solve_rumor': lambda *args: len(self.hub.location_manager.rumors) > 0,
             'gain_asset': lambda *args: not args[0].get('reserve', False) or len([item for item in self.hub.info_panes['reserve'].reserve if args[0]['tag'] == 'any' or args[0]['tag'] in item['tags']]) > 0
@@ -87,6 +88,7 @@ class EncounterPane():
         self.mythos = None
         self.final_step = ''
         self.small_card_dict = None
+        self.recover_name = ''
 
     def get_rumor(self, name):
         return MYTHOS[name]['manager_object']
@@ -124,22 +126,36 @@ class EncounterPane():
         self.phase_button.text = 'Encounter Phase'
         self.text_button.text = 'Choose Encounter'
         for encounter in self.encounters:
-            button = ActionButton(texture='encounters/' + encounter + '.png', scale=0.3)
-            button.action = self.hub.networker.publish_payload if encounter != 'rumor' else self.start_encounter
-            payload = {'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}
-            button.action_args = {'topic': self.investigator.name, 'payload': payload} if encounter != 'rumor' else {'value': 'rumor:0'}            
+            request = False
+            args = {}
+            if encounter in ['clue', 'expedition', 'gate', 'generic', 'green', 'orange', 'purple']:
+                path = 'encounters/' + encounter + '.png'
+                request = True
+                args = {'topic': self.investigator.name, 'payload':{'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}}
+            elif encounter[:-2] in self.hub.location_manager.dead_investigators.keys():
+                path = 'investigators/' + encounter[:-2] + '_portrait.png'
+                args = {'value': 'investigators:' + '0' if self.hub.location_manager.dead_investigators[encounter[:-2]]['death'] else '1', 'loc': encounter[:-2]}
+            else:
+                path = 'encounters/rumor.png'
+                args = {'value': 'rumor:0', 'loc': encounter}
+            button = ActionButton(texture=path, scale=0.3)
+            button.action = self.hub.networker.publish_payload if request else self.start_encounter
+            button.action_args = args           
             choices.append(button)
         self.hub.choice_layout = create_choices('Choose Encounter', choices=choices)
         self.hub.show_overlay()
 
-    def start_encounter(self, value):
+    def start_encounter(self, value, loc=None):
         self.hub.clear_overlay()
         choice = value.split(':')
-        loc = 'gate' if choice[0] == 'gate' else self.investigator.location if (self.investigator.location.find('space') == -1 and choice[0] != 'generic') or choice[0] == 'rumor' else self.hub.location_manager.locations[self.investigator.location]['kind']
-        choice[0] = 'expeditions' if choice[0] in ['the_amazon', 'the_pyramids', 'the_heart_of_africa', 'antarctica', 'tunguska', 'the_himalayas'] else choice[0]
+        if loc == None:
+            location = self.investigator.location
+            loc = 'gate' if choice[0] == 'gate' else location if (location.find('space') == -1 and choice[0] != 'generic') else self.hub.location_manager.locations[location]['kind']
         self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
         if loc == 'gate':
             self.phase_button.text = self.encounter['world']
+        elif choice[0] == 'investigators':
+            self.recover_name = loc
         if self.encounter['test'] != 'None':
             self.set_buttons('test')
         else:
@@ -234,6 +250,7 @@ class EncounterPane():
         self.mythos_switch = False
         self.investigator.encounter_impairment = 0
         if not skip:
+            self.hub.my_turn = False
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
 
     def allow_gate_close(self, allow=True, step='finish'):
@@ -567,6 +584,16 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'mythos_reckoning', 'value': number}, self.investigator.name)
         self.set_buttons(step)
 
+    def recover_investigator(self, step='finish'):
+        self.hub.networker.publish_payload({'message': 'recover_body', 'body': self.recover_name}, self.investigator.name)
+        dead = self.hub.location_manager.dead_investigators[self.recover_name]
+        self.investigator.rail_tickets += dead['rail']
+        self.investigator.ship_tickets += dead['ship']
+        for key in ['assets', 'unique_assets', 'spells', 'clues', 'artifacts']:
+            for item in dead[key]:
+                self.hub.item_received(key, item)
+        self.set_buttons(step)
+
     def request_card(self, kind, step='finish', name='', tag='', trigger=False):
         card = next((card for card in self.investigator.possessions[kind] if card.name == name), None)
         if (trigger or name in ['cursed', 'blessed']) and card != None:
@@ -598,13 +625,11 @@ class EncounterPane():
                 self.proceed_button.action = self.set_buttons
                 self.proceed_button.action_args = {'key': 'finish'}
             elif key == 'dead':
-                self.proceed_button.enable()
-                self.proceed_button.text = 'End Turn'
+                self.layout.clear()
+                self.layout.add(self.text_button)
                 self.text_button.text = 'You have fallen to the forces of darkness'
-                if self.proceed_button not in self.layout.children:
-                    self.layout.add(self.proceed_button)
-                self.proceed_button.action = self.set_buttons
-                self.proceed_button.action_args = {'key': 'finish'}
+                if self.hub.my_turn:
+                    self.hub.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
             else:
                 buttons = [self.proceed_button, self.option_button, self.last_button]
                 actions = self.encounter[key]
@@ -683,7 +708,7 @@ class EncounterPane():
 
     def spend_clue(self, step='finish', clues=1, condition=None):
         if condition == 'half':
-            clues = math.ceil((len(self.hub.location_manager.all_investigators) / 2))
+            clues = math.ceil(self.hub.location_manager.player_count / 2)
         for x in range(min(clues, len(self.investigator.clues))):
             clue = random.choice(self.investigator.clues)
             self.investigator.clues.remove(clue)
@@ -709,6 +734,7 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'payment_info', 'kind': kind}, self.investigator.name)
 
     def take_damage(self, hp, san, action, args):
+        args = {} if args == None else args
         if hp == 0 and san == 0:
             action(**args)
         else:
@@ -722,12 +748,22 @@ class EncounterPane():
             def resolve_damage(hp, san):
                 self.investigator.health = self.investigator.health + hp if self.investigator.health + hp <= self.investigator.max_health else self.investigator.max_health
                 self.investigator.sanity = self.investigator.sanity + san if self.investigator.sanity + san <= self.investigator.max_sanity else self.investigator.max_sanity
-                self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity, 'location': self.investigator.location}, self.investigator.name)
-                if self.investigator.health <= 0 or self.investigator.sanity <= 0:
+                payload = {'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity, 'location': self.investigator.location}
+                def own_death():
                     self.investigator.is_dead = True
                     self.set_buttons('dead')
+                def choose_defeat(kind):
+                    payload['kind'] = kind.lower() == 'health'
+                    self.hub.networker.publish_payload(payload, self.investigator.name)
+                if self.investigator.health <= 0 and self.investigator.sanity <= 0:
+                    own_death()
+                    self.hub.choice_layout = create_choices('Choose Defeat Type', choices=[ActionButton(width=100, height=40, texture='buttons/placeholder.png', action=choose_defeat, action_args={'kind': kind}, text=kind) for kind in ['Health', 'Sanity']])
                 else:
-                    action(**args)
+                    self.hub.networker.publish_payload(payload, self.investigator.name)
+                    if self.investigator.health <= 0 or self.investigator.sanity <= 0:
+                        own_death()
+                    else:
+                        action(**args)
             next_button = ActionButton(
                 width=100, height=30, texture='buttons/placeholder.png', text='Next', action=resolve_damage, action_args={'hp': hp, 'san': san})
             self.hub.choice_layout = create_choices(choices = choices, options=[next_button], title='Taking Damage', subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))

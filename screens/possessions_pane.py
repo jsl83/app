@@ -159,10 +159,7 @@ class TradePane(PossessionsPane):
     def swap_items(self, take, give):
         self.investigator.rail_tickets - len(give['rail']) + len(take['rail'])
         self.investigator.ship_tickets - len(give['ship']) + len(give['ship'])
-        print(self.investigator.name)
         for kind in ['assets', 'unique_assets', 'artifacts', 'spells', 'conditions']:
-            print(self.investigator.possessions[kind])
-            print(give[kind])
             for item in give[kind]:
                 card = next((card for card in self.investigator.possessions[kind] if card.get_server_name() == item))
                 self.investigator.possessions[kind].remove(card)

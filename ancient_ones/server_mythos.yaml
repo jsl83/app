@@ -48,6 +48,8 @@
     no_peace_for_the_fallen:
       difficulty: 1
       lead_only: True
+      actions:
+        - clear_bodies
     patrolling_the_border:
       difficulty: 1
     rising_terror:

@@ -45,7 +45,7 @@ class LocationManager():
         return astar.find_path(start, goal, neighbors)
     
     def spawn_monster(self, name, location, world, monster_id):
-        monster = Monster(name, monster_id, len(self.all_investigators))
+        monster = Monster(name, monster_id, self.player_count)
         monster.location = location
         monster.map = world
         self.all_monsters.append(monster)
@@ -79,16 +79,14 @@ class LocationManager():
         encounters = ['generic']
         if self.locations[location].get('color', None) != None:
             encounters.append(self.locations[location].get('color'))
-        for kind in ['gate', 'eldritch', 'rumor', 'expedition', 'clue']:
+        for kind in ['gate', 'eldritch', 'expedition', 'clue']:
             if self.locations[location][kind]:
                 encounters.append(kind)
-            if kind == 'rumor':
-                rumor = next((rumor for rumor in self.rumors if self.rumors[rumor]['location'] == location), None)
-                if rumor != None and self.rumors[rumor]['not_encounter']:
-                    encounters.remove(kind)
+        rumors = [rumor for rumor in self.rumors.keys() if self.rumors[rumor]['location'] == location and self.rumors[rumor].get('not_encounter', None) == None]
+        encounters += rumors
         for name in self.dead_investigators:
             if self.dead_investigators[name]['location'] == location:
-                encounters.append(name)
+                encounters.append(name + ':' + ('0' if self.dead_investigators[name]['death'] else '1'))
         return encounters
     
     def get_all(self, kind, is_array=False):
@@ -106,3 +104,6 @@ class LocationManager():
     def create_ambush_monster(self, name=None):
         name = name if name != None else random.choice(self.monster_deck)
         return Monster(name, -1)
+    
+    def get_world(self, location):
+        return 'world'

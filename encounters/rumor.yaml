@@ -1,5 +1,5 @@
 ---
-  space_11:
+  dimensions_collide:
     - test:
         - skill
       targs:
@@ -21,7 +21,7 @@
           name: dimensions_collide
       test_text: You attempt to infiltrate a hidden sect of Tcho-Tchos that is destabilizing the fabric of reality by invoking Chaugnar Faugn.
       pass_text: You put an end to their rituals.
-  space_16:
+  faded_from_society:
     - test:
         - skill
       targs:
@@ -43,7 +43,7 @@
           name: faded_from_society
       test_text: You attempt to research similar occurences from the past.
       pass_text: You learn about a Russian folktale where children go missing.
-  space_2:
+  fractured_reality:
     - test: None
       pass:
         - trigger_encounter
@@ -52,7 +52,7 @@
           text: Trigger Other World Encounter
           kind: gate
       pass_text: You use an ancient portal created by a long-dead wizard of Mu.
-  space_8:
+  growing_madness:
     - test:
         - skill
       targs:
@@ -74,7 +74,7 @@
           name: growing_madness
       test_text: You attempt to find the uncharted isle.
       pass_text: The wizard returns to his time.
-  space_13:
+  mysterious_lights:
     - test:
         - skill
       targs:

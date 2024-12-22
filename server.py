@@ -1,4 +1,4 @@
-import arcade, threading, sys, subprocess, signal, argparse, yaml, random, math
+import arcade, threading, sys, subprocess, signal, argparse, yaml, random, math, copy
 from python_banyan.banyan_base import BanyanBase
 from screens.server_loading import ServerLoadingScreen
 
@@ -96,7 +96,6 @@ class Networker(threading.Thread, BanyanBase):
         self.investigators = {}
         self.dead_investigators = {}
         self.rumors = []
-        self.temporary_lead = None
 
         for map in LOCATIONS.keys():
             for location in LOCATIONS[map].keys():
@@ -138,7 +137,8 @@ class Networker(threading.Thread, BanyanBase):
             'discard_cost': self.discard_cost,
             'mythos_reckoning': self.mythos_reckoning,
             'from_beyond': self.from_beyond,
-            'set_payment': self.set_payment
+            'set_payment': self.set_payment,
+            'clear_bodies': self.clear_bodies
         }
         self.omen_cycle = ['green', 'blue', 'red', 'blue']
         self.mythos = None
@@ -206,18 +206,26 @@ class Networker(threading.Thread, BanyanBase):
                             }
                     self.publish_payload({'message': 'investigators', 'value': payload['value']}, 'server_update')
                 case 'investigators_selected':
-                    self.selected_investigators.append(payload['value'])
+                    if not self.players_died:
+                        self.selected_investigators.append(payload['value'])
                     self.investigators[payload['value']] = {
                         'assets':[], 'conditions': [], 'artifacts': [], 'unique_assets':[], 'spells':[], 'hp': 0, 'san': 0, 'clues': [], 'paid': -1, 'tickets': [0,0]}
                     self.set_subscriber_topic(payload['value'])
                     self.screen.add_investigator(payload['value'])
-                    if self.players_died and len(self.selected_investigators) == self.player_count:
-                        self.end_mythos()
-                    else:          
-                        if len(self.selected_investigators) == self.player_count:
-                            self.publish_payload({'message': 'start_game', 'value': self.ancient_one['name']}, 'server_update')
-                        else:
-                            self.publish_payload({'message': 'investigator_selected', 'value': payload['value']}, 'server_update')
+                    self.publish_payload({'message': 'investigator_selected', 'value': payload['value']}, 'server_update')
+                    if self.players_died:
+                        self.publish_payload({
+                            'message': 'spawn',
+                            'value': 'investigators',
+                            'name': payload['value'],
+                            'location': INVESTIGATORS[payload['value']]['location'],
+                            'map': 'world'}, 'server_update')
+                        self.selected_investigators = [name.replace(payload['replace'], payload['value']) for name in self.selected_investigators]
+                        if len(self.investigators) == self.player_count:
+                            self.players_died = False
+                            self.end_mythos()
+                    elif len(self.selected_investigators) == self.player_count:
+                        self.publish_payload({'message': 'start_game', 'value': self.ancient_one['name'], 'count': self.player_count}, 'server_update')
                 case 'number_selected':
                     self.player_count = payload['value']
                     self.reference = REFERENCES[int((int(payload['value']) + 1) / 2)]
@@ -311,7 +319,7 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'heat_wave_singes_the_globe'
+                                            name = 'no_peace_for_the_fallen'
                                             self.is_first = False
                                         else:
                                             name = 'mysterious_lights'
@@ -363,6 +371,7 @@ class Networker(threading.Thread, BanyanBase):
                             self.encounters[kind][1] = list(range(self.encounters[kind][0]))
                         if kind in self.expeditions:
                             self.spawn('expedition')
+                            kind = 'expeditions'
                         self.publish_payload({'message': 'encounter_choice', 'value': kind + ':' + str(encounter)}, topic + '_server')
                     case 'doom_change':
                         self.move_doom(int(payload['value']))
@@ -398,12 +407,18 @@ class Networker(threading.Thread, BanyanBase):
                             self.players_died = True
                             current_lead = self.selected_investigators[self.lead_investigator]
                             if current_lead == topic:
-                                self.temporary_lead =  self.lead_investigator + 1 if len(self.selected_investigators) - 1 != self.lead_investigator else 0
-                                self.publish_payload({'message': 'lead_selected', 'value': self.selected_investigators[self.lead_investigator], 'dead_trigger': True}, 'server_update')
+                                for x in range(len(self.selected_investigators) - 1):
+                                    index = self.lead_investigator + x + 1 % len(self.selected_investigators)
+                                    if self.selected_investigators[x] not in self.dead_investigators:
+                                        self.publish_payload({'message': 'lead_selected', 'value': self.selected_investigators[x], 'dead_trigger': True}, 'server_update')
+                                        break
                             self.send_player_update(topic)
+                            health_death = self.investigators[topic]['hp'] <= 0
+                            self.dead_investigators[topic] = copy.deepcopy(self.investigators[topic])
+                            self.dead_investigators[topic]['recovered'] = False
                             del self.investigators[topic]
                             self.move_doom()
-                            self.publish_payload({'message': 'investigator_died', 'value': topic, 'location': payload['location']}, 'server_update')
+                            self.publish_payload({'message': 'investigator_died', 'value': topic, 'location': payload['location'], 'kind': payload.get('kind', health_death)}, 'server_update')
                     case 'update_tickets':
                         tickets = [payload['rail'], payload['ship']]
                         self.investigators[topic]['tickets'] = tickets
@@ -426,6 +441,21 @@ class Networker(threading.Thread, BanyanBase):
                             for item in payload[take][key]:
                                 self.investigators[give][key].remove(item)
                                 self.investigators[take][key].append(item)
+                    case 'recover_body':
+                        take = self.investigators[topic]
+                        give = payload['body']
+                        for x in range(2):
+                            take['tickets'][x] += self.dead_investigators[give]['tickets'][x]
+                        for key in ['assets', 'unique_assets', 'spells', 'clues', 'artifacts']:
+                            for item in self.dead_investigators[give][key]:
+                                take[key].append(item)
+                        self.dead_investigators[give]['recovered'] = True
+                        self.publish_payload({'message': 'body_recovered', 'value': give}, 'server_update')
+
+    def clear_bodies(self):
+        for names in [name for name in self.dead_investigators if not self.dead_investigators[name]['recovered']]:
+            self.dead_investigators[names]['recovered'] = True
+            self.publish_payload({'message': 'body_recovered', 'value': names}, 'server_update')
 
     def send_player_update(self, name, show=False):
         message = {'message': 'possession_info', 'value': name}
@@ -439,17 +469,13 @@ class Networker(threading.Thread, BanyanBase):
 
     def end_mythos(self):
         if not self.players_died:
-            self.temporary_lead = None
             self.current_phase = 0
             self.payment_needed = 0
-            self.players_died = False
             for investigator in self.investigators.keys():
                 self.investigators[investigator]['paid'] = -1
             self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
         else:
-            for player in [key for key in self.dead_investigators.keys() if key in self.selected_investigators]:
-                self.selected_investigators.remove(player)
-            self.publish_payload({'message': 'choose_new'}, 'server_update')
+            self.publish_payload({'message': 'choose_new', 'names': self.selected_investigators + list(self.dead_investigators.keys())}, 'server_update')
 
     def on_reckoning(self, args):
         self.reckoning_actions.append(args)
@@ -737,8 +763,8 @@ class Networker(threading.Thread, BanyanBase):
                 color = int(character)
                 card = random.choice(list(cards[color].keys()))
                 #FOR TESTING
-                #if color == 0:
-                #    card = 'legitimate_banking'
+                if color == 0:
+                    card = 'no_peace_for_the_fallen'
                 if color == 1:
                     card = 'heat_wave_singes_the_globe'
                 if color == 2:
@@ -763,7 +789,7 @@ class Networker(threading.Thread, BanyanBase):
         self.publish_payload({'message': 'omen', 'value': self.omen}, 'server_update')
 
     def move_doom(self, amt=-1, gates=False, all_gates=False):
-        if not gates:
+        if gates:
             amt = -len(self.get_locations['gate_omen']())
         if all_gates:
             amt = -len(self.decks['gates']['board'])

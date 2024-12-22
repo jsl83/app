@@ -437,3 +437,14 @@
       location: space_13
       solve: Test Observation, then spend Clues equal to half Investigators.
       effect: Gates cannot be closed.
+  no_peace_for_the_fallen:
+    action:
+      - request_card
+    aargs:
+      - kind: conditions
+        name: cursed
+        text: Gain a Cursed Condition
+    lead_only: True
+    font_size: 12
+    flavor: You can feel the decay clinging to you. This sickening putrefaction is everywhere, and you fear the toll it's taking on your friends lying in hospital beds.
+    text: Discard all possessions on defeated investigators' sheets and return all defeated investigator tokens and sheets to the game box. Then the Lead Investigator gains a Cursed Condition.

@@ -46,7 +46,7 @@ class InvestigatorPane():
         self.layout.add(self.details)
 
     def focus_action(self):
-        if self.investigator.focus <= 2:
+        if self.investigator.focus < 2:
             self.investigator.focus += 1
             self.focus_button.clear()
             self.focus_button.text = 'x ' + str(self.investigator.focus)

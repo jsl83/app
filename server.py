@@ -138,14 +138,14 @@ class Networker(threading.Thread, BanyanBase):
             'mythos_reckoning': self.mythos_reckoning,
             'from_beyond': self.from_beyond,
             'set_payment': self.set_payment,
-            'clear_bodies': self.clear_bodies
+            'clear_bodies': self.clear_bodies,
+            'move_omen': self.set_omen
         }
         self.omen_cycle = ['green', 'blue', 'red', 'blue']
         self.mythos = None
         self.reckoning_actions = []
         self.payment_needed = 0
         self.players_died = False
-
         '''
         #FOR TESTING
         self.set_subscriber_topic('akachi_onyele')
@@ -166,7 +166,6 @@ class Networker(threading.Thread, BanyanBase):
         #END TESTING
         '''
         self.is_first = True
-
         self.get_locations = {
             'cultists': lambda: list(set(monster['location'] for monster in self.monsters if monster['name'] == 'cultist')),
             'gate_omen': lambda: [gate for gate in self.decks['gates']['board'] if LOCATIONS[gate.split(':')[0]][gate.split(':')[1]] == self.omen_cycle[self.omen]]
@@ -266,21 +265,21 @@ class Networker(threading.Thread, BanyanBase):
                 item = random.choice(items)
                 #self.decks[kind].remove(item)
                 self.investigators[topic][kind].append(item)
-                self.publish_payload({'message': payload['message'], 'value': item}, topic + '_server')
+                self.publish_payload({'message': 'card_received', 'kind': payload['message'], 'value': item}, topic + '_server')
             else:
                 match payload['message']:
                     case 'assets':
                         item = self.asset_request(payload['command'], payload['value'], payload['tag'])
                         if item != None:
                             self.investigators[topic]['assets'].append(item)
-                        self.publish_payload({'message': 'asset', 'value': item}, topic + '_server')
+                        self.publish_payload({'message': 'card_received', 'kind': 'assets', 'value': item}, topic + '_server')
                     case 'artifacts':
                         name = payload['value'] if payload['value'] != None else ''
                         tag = payload['tag'] if payload['tag'] != None else ''
                         item = self.get_artifact(name, tag)
                         if item != None:
                             self.investigators[topic]['artifacts'].append(item)
-                            self.publish_payload({'message': 'artifacts', 'value': item}, topic + '_server')
+                            self.publish_payload({'message': 'card_received', 'kind': 'artifacts', 'value': item}, topic + '_server')
                     case 'card_discarded':
                         if payload['kind'] == 'assets':
                             self.assets['discard'].append(payload['value'])
@@ -301,7 +300,7 @@ class Networker(threading.Thread, BanyanBase):
                     case 'spawn':
                         self.spawn(payload['value'], payload.get('name', None), payload.get('location', None), int(payload.get('number', 1)))
                     case 'move_investigator':
-                        self.publish_payload({'message': 'investigator_moved', 'value': payload['value'], 'destination': payload['destination']}, 'server_update')
+                        self.publish_payload({'message': 'unit_moved', 'value': payload['value'], 'destination': payload['destination']}, 'server_update')
                     case 'lead_selected':
                         self.lead_investigator = self.selected_investigators.index(payload['value'])
                         self.current_player = self.selected_investigators.index(payload['value'])
@@ -319,10 +318,10 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'no_peace_for_the_fallen'
+                                            name = 'rally_the_people'
                                             self.is_first = False
                                         else:
-                                            name = 'mysterious_lights'
+                                            name = 'omen_of_good_fortune'
                                         #END TESTING
                                         if name == None:
                                             break
@@ -345,23 +344,23 @@ class Networker(threading.Thread, BanyanBase):
                         if self.current_phase == 2:
                             self.mythos_reckoning()
                         if self.current_phase == 3:
-                            if self.yellow_card:
-                                self.spawn('gates', number=self.reference[0])
-                                self.yellow_card = False
                             if self.mythos.get('actions', None) != None:
                                 for x in range(len(self.mythos['actions'])):
                                     if self.mythos.get('args', None) != None:
                                         self.action_dict[self.mythos['actions'][x]](**self.mythos['args'][x])
                                     else:
                                         self.action_dict[self.mythos['actions'][x]]()
+                            if self.yellow_card:
+                                self.spawn('gates', number=self.reference[0])
+                                self.yellow_card = False
                         if self.current_phase == 4:
                             self.end_mythos()
                         else:
                             topic = ''
-                            if self.current_phase == 2 and self.mythos != None and self.mythos.get('lead_only', None) != None:
-                                topic = 'server_update'
-                            else:
-                                topic = self.selected_investigators[self.current_player] + '_server'
+                            #if self.current_phase == 2 and self.mythos != None and self.mythos.get('lead_only', None) != None:
+                            #    topic = 'server_update'
+                            #else:
+                            topic = self.selected_investigators[self.current_player] + '_server'
                             self.publish_payload({'message': 'player_turn', 'value': self.phases[self.current_phase]}, topic)
                     case 'get_encounter':
                         kind = payload['value']
@@ -394,7 +393,7 @@ class Networker(threading.Thread, BanyanBase):
                     case 'shuffle_mystery':
                         self.shuffle_mystery()
                     case 'move_monster':
-                        self.publish_payload({'message': 'monster_moved', 'value': payload['value'], 'location': payload['location']}, 'server_update')
+                        self.publish_payload({'message': 'unit_moved', 'value': int(payload['value']), 'destination': payload['location']}, 'server_update')
                         index = next((i for i, monster in enumerate(self.monsters) if monster['monster_id'] == int(payload['value'])), None)
                         chosen = self.monsters[index]
                         chosen['location'] = payload['location']
@@ -451,6 +450,8 @@ class Networker(threading.Thread, BanyanBase):
                                 take[key].append(item)
                         self.dead_investigators[give]['recovered'] = True
                         self.publish_payload({'message': 'body_recovered', 'value': give}, 'server_update')
+                    case 'set_omen':
+                        self.set_omen(payload.get('pos', None), payload.get('trigger', True))
 
     def clear_bodies(self):
         for names in [name for name in self.dead_investigators if not self.dead_investigators[name]['recovered']]:
@@ -612,11 +613,6 @@ class Networker(threading.Thread, BanyanBase):
                     name = random.choice([item for item in self.assets['deck'] if tag in ASSETS[item]['tags']])
                     #self.assets['deck'].remove(name)
                     return name
-
-    def variant_request(self, cardtype, name, tag=None, owned=''):
-        variant = random.choice(self.decks[cardtype][name])
-        #self.decks[cardtype][name].remove(variant)
-        return name + str(variant)
         
     def get_artifact(self, name, tag):
         if name != '' and name not in self.decks['used_artifacts']:
@@ -648,7 +644,7 @@ class Networker(threading.Thread, BanyanBase):
                         if len(self.decks['gates']['deck']) > 0:
                             #gate = random.choice(self.decks['gates']['deck'])
                             #self.decks['gates']['deck'].remove(gate)
-                            gate = 'world:arkham'
+                            gate = 'world:san_francisco'
                             self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
                             self.spawn('monsters', location=gate)
@@ -764,22 +760,24 @@ class Networker(threading.Thread, BanyanBase):
                 card = random.choice(list(cards[color].keys()))
                 #FOR TESTING
                 if color == 0:
-                    card = 'no_peace_for_the_fallen'
+                    card = 'patrolling_the_border'
                 if color == 1:
-                    card = 'heat_wave_singes_the_globe'
+                    card = 'rally_the_people'
                 if color == 2:
                     card = 'mysterious_lights'
                 #END TESTING
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color
 
-    def set_omen(self, pos=None, trigger=True):
+    def set_omen(self, pos=None, trigger=True, increment=1):
         if pos != None:
             self.omen = pos
         else:
-            self.omen += 1
+            self.omen += increment
             if self.omen == 4:
                 self.omen = 0
+            elif self.omen == -1:
+                self.omen = 3
         if trigger:
             if hasattr(self.triggers, 'omen' + str(self.omen)):
                 triggers = self.triggers['omen' + str(self.omen)]

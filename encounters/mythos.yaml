@@ -326,12 +326,13 @@
       reckoning: The Lead Investigator gains a Madness Condition, then discards 1 Eldritch token from this card for each Madness Condition they have.
       unsolved: Each Investigator loses 3 Sanity.
       eldritch: 4
-      unsolve_action:
-        - hp_san
-      unsolve_args:
-        - san: -3
-          step: reckoning
-          skip: True
+      unsolve_encounter:
+        unsolve_action:
+          - hp_san
+        uargs:
+          - san: -3
+            step: reckoning
+            skip: True
   haunting_nightmares:
     action:
       - spend_clue
@@ -411,14 +412,15 @@
       reckoning: Discard 1 Eldritch token from this card.
       unsolved: When there are no Eldritch tokens on this card, each investigator discards all Clues, and then discard all Clues on the game board.
       eldritch: 3
-      unsolve_action:
-        - despawn_clues
-      unsolve_args: 
-        - player: True
-          lead_only: True
-          location: all
-          step: reckoning
-          text: Discard Clues
+      unsolve_encounter:
+        unsolve_action:
+          - despawn_clues
+        uargs: 
+          - player: True
+            lead_only: True
+            location: all
+            step: reckoning
+            text: Discard Clues
       not_encounter: True
   mysterious_lights:
     action:
@@ -448,3 +450,66 @@
     font_size: 12
     flavor: You can feel the decay clinging to you. This sickening putrefaction is everywhere, and you fear the toll it's taking on your friends lying in hospital beds.
     text: Discard all possessions on defeated investigators' sheets and return all defeated investigator tokens and sheets to the game box. Then the Lead Investigator gains a Cursed Condition.
+  omen_of_good_fortune:
+    action:
+      - set_omen
+    aargs:
+      - skip: True
+    lead_only: True
+    flavor: You drop a penny into the peculiar mechanical device. The automaton waves its hand and turns over a card bearing the words, "Good luck is with you!"
+    text: The Lead Investigator may move the Omen to a space of their choice on the Omen track without advancing Doom.
+  patrolling_the_border:
+    action:
+      - choose_investigator
+    aargs:
+      - action: delay
+        skip: True
+    font_size: 13
+    lead_only: True
+    flavor: The soldiers refuse to explain why you must pass through this checkpoint, and simply asking makes you more suspicious in their eyes.
+    text: The Lead Investigator chooses 1 investigator to become Delayed. On the next Reckoning, each Investigator on a City space tests Observation. If they fail, they become Delayed and gain a Detained Condition.
+    manager_object:
+      unsolved: Each Investigator on a City space tests Observation. If they fail, they become Delayed and gain a Detained Condition.
+      unsolve_encounter:
+        unsolve_action:
+          - condition_check
+        uargs:
+          - space_type: city
+            fail: reckoning
+            step: observation
+            skip: True
+        observation:
+          - skill
+        oargs:
+          - stat: 2
+            step: reckoning
+        fail:
+          - request_card
+        fargs:
+          - kind: conditions
+            step: delay
+            text: Become Delayed and gain a Detained Condition
+        delay:
+          - delayed
+        dargs:
+          - skip: True
+            step: reckoning
+  perplexing_stars:
+    action:
+      - end_mythos
+    aargs:
+      - text: End turn (all)
+    flavor: Before your very eyes the stars shift in the night sky. Constellations break apart and reform, shattering your previous predictions of the omens.
+    text: Move the Omen counterclockwise by 1, then advance Doom by 1 for each Gate on the game board that corresponds to the current Omen.
+  rally_the_people:
+    action:
+      - request_card
+    aargs:
+      - kind: assets
+        tag: ally
+        text: Gain 1 Ally Asset
+    lead_only: True
+    font_size: 13
+    flavor: After the noise and violence is over, one of the shopkeepers peers out from his shuttered windows. Amazed to see you alive, he opens the window and calls out, "Is it over? Are we safe?" You wave to let him know that everything is fine.
+    text: The Lead Investigator gains 1 random Ally Asset from the deck.
+  

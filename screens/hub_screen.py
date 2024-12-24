@@ -79,13 +79,13 @@ class HubScreen(arcade.View):
         self.encounter_pane = EncounterPane(self)
 
         self.actions_taken = {
-            'focus': {'taken': False, 'buttons': [self.info_panes['investigator'].focus_button]},
-            'move': {'taken': False, 'buttons': []},
-            'ticket': {'taken': False, 'buttons': [self.info_panes['investigator'].rail_button, self.info_panes['investigator'].ship_button]},
-            'shop': {'taken': False, 'buttons': [self.info_panes['reserve'].acquire_button]},
-            'personal': {'taken': False, 'buttons': [self.info_panes['investigator'].skill_button]},
-            'rest': {'taken': False, 'buttons': [self.info_panes['investigator'].health_button]},
-            'trade': {'taken': False, 'buttons': []},
+            'focus': False,
+            'move': False,
+            'ticket': False,
+            'shop': False,
+            'personal': False,
+            'rest': False,
+            'trade': False,
         }
 
         self.map = self.maps['world']
@@ -114,7 +114,6 @@ class HubScreen(arcade.View):
             request = item.split(':')
             self.request_card(request[0], request[1])
         self.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, self.investigator.name)
-
         '''
         #FOR TESTING
         self.request_card('assets', 'arcane_tome')
@@ -125,6 +124,7 @@ class HubScreen(arcade.View):
         self.investigator.clues.append('world:arkham')
         self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
         self.is_first = True
+        self.location_manager.player_count = 1
         #self.request_card('conditions', 'blessed')
         #END TESTING
         '''
@@ -139,15 +139,6 @@ class HubScreen(arcade.View):
         self.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, self.investigator.name)
         self.gui_set(True)
         self.encounter_pane.finish(True)
-        self.actions_taken = {
-            'focus': {'taken': False, 'buttons': [self.info_panes['investigator'].focus_button]},
-            'move': {'taken': False, 'buttons': []},
-            'ticket': {'taken': False, 'buttons': [self.info_panes['investigator'].rail_button, self.info_panes['investigator'].ship_button]},
-            'shop': {'taken': False, 'buttons': [self.info_panes['reserve'].acquire_button]},
-            'personal': {'taken': False, 'buttons': [self.info_panes['investigator'].skill_button]},
-            'rest': {'taken': False, 'buttons': [self.info_panes['investigator'].health_button]},
-            'trade': {'taken': False, 'buttons': []},
-        }
         self.encounter_pane.investigator = self.investigator
         self.info_panes['location'].possession_screen.investigator = self.investigator
 
@@ -218,14 +209,12 @@ class HubScreen(arcade.View):
             if len(ui_buttons) > 0:
                 for button in ui_buttons:
                     if type(button) == ActionButton and button.enabled:
-                        key = next((key for key in self.actions_taken.keys() if button in self.actions_taken[key]['buttons']), None)
-                        if key == None or (not self.actions_taken[key]['taken'] and self.remaining_actions > 0):
-                            button.click_action()
-                            buttons = self.get_ui_buttons()
-                            if button in buttons:
-                                for x in buttons:
-                                    x.select(False)
-                                button.select(True)
+                        button.click_action()
+                        buttons = self.get_ui_buttons()
+                        if button in buttons:
+                            for x in buttons:
+                                x.select(False)
+                            button.select(True)
         self.holding = None
 
     def on_mouse_press(self, x, y, button, modifiers):
@@ -241,7 +230,7 @@ class HubScreen(arcade.View):
             self.holding = 'map'
             self.initial_click = (x, y)
             self.click_time = 0
-            if (self.remaining_actions > 0 and not self.actions_taken['move']['taken']) or self.encounter_pane.move_action != None:
+            if (self.remaining_actions > 0 and not self.actions_taken['move']) or self.encounter_pane.move_action != None:
                 location = self.location_manager.get_closest_location((x, y), self.zoom, self.map.get_location(), 40)
                 if location != None:
                     key = location[2]
@@ -310,6 +299,7 @@ class HubScreen(arcade.View):
     def set_listener(self, topic, payload):
         match payload['message']:
             case 'spawn':
+                no_token = False
                 name = payload.get('name', '')
                 monster_id = None
                 if payload['value'] == 'investigators':
@@ -318,37 +308,41 @@ class HubScreen(arcade.View):
                     monster = self.location_manager.spawn_monster(name, payload['location'], payload['map'], int(payload['monster_id']))
                     monster_id = str(monster.monster_id)
                 elif payload['value'] == 'rumor':
-                    self.location_manager.rumors[payload['value']] = self.encounter_pane.get_rumor(payload['name'])
-                    self.location_manager.rumors[payload['value']]['location'] = payload['location']
+                    if payload['location'] == 'no_spawn':
+                        no_token = True
+                    self.location_manager.rumors[payload['name']] = self.encounter_pane.get_rumor(payload['name'])
+                    self.location_manager.rumors[payload['name']]['location'] = payload.get('location', '')
                 if payload['location'] == self.info_panes['location'].selected:
                     self.info_panes['location'].update_all()
-                self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name, monster_id)
-            case 'spells':
-                self.item_received('spells', payload['value'])
-            case 'artifacts':
-                self.item_received('artifacts', payload['value'])
+                if not no_token:
+                    self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name, monster_id)
+            case 'card_received':
+                if payload['kind']!= 'conditions':
+                    if payload['value'] != None:
+                        self.item_received(payload['kind'], payload['value'])
+                else:
+                    card = payload['value']
+                    if next((condition for condition in self.investigator.possessions['conditions'] if condition.name == card[0:-1]), None) is not None:
+                        self.networker.publish_payload({'message': 'discard', 'value': payload['value']}, self.investigator.name)
+                    else:
+                        self.item_received('conditions', card)
+                        if card[0:-1] == 'debt':
+                            self.info_panes['reserve'].debt_button.disable()
             case 'restock':
                 removed = [] if payload['removed'] == '' or payload['removed'] == None else payload['removed'].split(':')
                 added = [] if payload['value'] == '' or payload['value'] == None else payload['value'].split(':')
                 self.info_panes['reserve'].restock(removed, added)
-            case 'conditions':
-                card = payload['value']
-                if next((condition for condition in self.investigator.possessions['conditions'] if condition.name == card[0:-1]), None) is not None:
-                    self.networker.publish_payload({'message': 'discard', 'value': payload['value']}, self.investigator.name)
-                else:
-                    self.item_received('conditions', card)
-                    if card[0:-1] == 'debt':
-                        self.info_panes['reserve'].debt_button.disable()
-            case 'asset':
-                if payload['value'] != None:
-                    self.item_received('assets', payload['value'])
             case 'receive_clue':
                 self.investigator.clues.append(payload['value'])
                 self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
             case 'discard':
                 self.info_panes['reserve'].discard_item(payload['value'])
-            case 'investigator_moved':
-                self.move_unit(payload['value'], payload['destination'])
+            case 'unit_moved':
+                kind = 'investigators'
+                if type(payload['value']) == int:
+                    payload['value'] = next((monster for monster in self.location_manager.all_monsters if monster.monster_id == int(payload['value'])), None)
+                    kind = 'monsters'
+                self.move_unit(payload['value'], payload['destination'], kind)
             case 'choose_lead':
                 self.encounter_pane.finish(True)
                 portraits = []
@@ -376,7 +370,6 @@ class HubScreen(arcade.View):
                                 self.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
                             else:
                                 self.remaining_actions = 2
-                                self.ticket_move(self.investigator.name, 'space_15', 0, 0, 'space_15')
                                 '''
                                 #FOR TESTING
                                 self.remaining_actions = 3
@@ -390,10 +383,10 @@ class HubScreen(arcade.View):
                                 '''
                         case 'encounter':
                             #FOR TESTING
-                            #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                            self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                             #END TESTING
-                            self.show_encounter_pane()
-                            self.encounter_pane.encounter_phase()
+                            #self.show_encounter_pane()
+                            #self.encounter_pane.encounter_phase()
                         case 'reckoning':
                             self.encounter_pane.reckoning()
                             #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -458,11 +451,12 @@ class HubScreen(arcade.View):
                     damage_monster(monster, damage)
             case 'rumor_solved':
                 rumor = self.location_manager.rumors[payload['value']]
-                self.location_manager.locations[rumor['location']]['rumor'] = False
-                self.maps['world'].remove_tokens('rumor', rumor['location'], payload['value'])
-                if not payload['solved'] and rumor.get('unsolve_action', None) != None:
-                    text = 'Unsolved Rumor - ' + human_readable(payload['value']) + '\n\n' + rumor.get('unsolved')
-                    self.encounter_pane.priority_reckonings.append((rumor['unsolve_action'], rumor.get('unsolve_args', {}), text))
+                if rumor['location'] != 'no_spawn':
+                    self.location_manager.locations[rumor['location']]['rumor'] = False
+                    self.maps['world'].remove_tokens('rumor', rumor['location'], payload['value'])
+                if not payload['solved'] and rumor.get('unsolve_encounter', None) != None:
+                    text = ('Unsolved Rumor - ' if rumor['location'] != 'no_spawn' else '') + human_readable(payload['value']) + '\n\n' + rumor.get('unsolved')
+                    self.encounter_pane.priority_reckonings.append((rumor['unsolve_encounter'], text))
                 del self.location_manager.rumors[payload['value']]
             case 'update_rumor':
                 if self.location_manager.rumors.get(payload['name'], None) != None:
@@ -471,9 +465,6 @@ class HubScreen(arcade.View):
                 self.encounter_pane.group_pay(payload['min'], payload['max'], payload['kind'])
             case 'mystery_count':
                 self.info_panes['ancient_one'].mystery_count.text = str(int(self.ancient_one.mysteries) - int(payload['value']))
-            case 'monster_moved':
-                monster = next((monster for monster in self.location_manager.all_monsters if monster.monster_id == int(payload['value'])), None)
-                self.move_unit(monster, payload['location'], 'monsters')
             case 'exile_from_discard':
                 for item in payload['value'].split(':'):
                     self.info_panes['reserve'].discard_item(item, True)
@@ -507,6 +498,8 @@ class HubScreen(arcade.View):
                     self.networker.show_select(payload['names'])
             case 'body_recovered':
                 del self.location_manager.dead_investigators[payload['value']]
+            case 'become_delayed':
+                self.investigator.delayed = True
 
         if self.encounter_pane.wait_step != None:
             self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
@@ -524,6 +517,7 @@ class HubScreen(arcade.View):
         arcade.draw_text(current, x, y+2, width=20, anchor_x='center', anchor_y='center', bold=True, font_size=17, font_name="calibri")
 
     def run_test(self, skill, mod=0, pane=None, options=[], subtitle='', allow_clues=True):
+        self.clear_overlay()
         choices = []
         rolls = []
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
@@ -671,7 +665,7 @@ class HubScreen(arcade.View):
         self.networker.publish_payload({'message': 'update_tickets', 'ship': self.investigator.ship_tickets, 'rail': self.investigator.rail_tickets}, self.investigator.name)
         self.info_panes['investigator'].set_ticket_counts()
         self.undo_action = None
-        self.actions_taken['move']['taken'] = False
+        self.actions_taken['move'] = False
         self.remaining_actions += 1
 
     def move_unit(self, unit, location, kind='investigators'):
@@ -763,14 +757,14 @@ class HubScreen(arcade.View):
             self.undo_action['action'](**self.undo_action['args'])
 
     def action_taken(self, action):
-        self.actions_taken[action]['taken'] = True
+        self.actions_taken[action] = True
         self.remaining_actions -= 1
         if self.remaining_actions == 0:
             self.undo_action = None
             self.my_turn = False
             self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
             for action in self.actions_taken:
-                self.actions_taken[action]['taken'] = False
+                self.actions_taken[action] = False
 
     def damage_monster(self, monster, damage):
         self.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)        

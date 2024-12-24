@@ -46,7 +46,7 @@ class InvestigatorPane():
         self.layout.add(self.details)
 
     def focus_action(self):
-        if self.investigator.focus < 2:
+        if self.investigator.focus < 2 and not self.hub.actions_taken['focus'] and self.hub.remaining_actions > 0:
             self.investigator.focus += 1
             self.focus_button.clear()
             self.focus_button.text = 'x ' + str(self.investigator.focus)
@@ -54,7 +54,7 @@ class InvestigatorPane():
             self.hub.undo_action = {'action': self.undo_focus, 'args': {}}
 
     def undo_focus(self):
-        self.hub.actions_taken['focus']['taken'] = False
+        self.hub.actions_taken['focus'] = False
         self.hub.remaining_actions += 1
         self.hub.undo_action = None
         self.investigator.focus -= 1
@@ -62,7 +62,7 @@ class InvestigatorPane():
         self.focus_button.text = 'x ' + str(self.investigator.focus)
 
     def ticket_action(self, kind):
-        if not ((kind == 'ship' and self.investigator.ship_tickets >= 2) or (kind == 'rail' and self.investigator.rail_tickets >= 2)):
+        if (not ((kind == 'ship' and self.investigator.ship_tickets >= 2) or (kind == 'rail' and self.investigator.rail_tickets >= 2))) and not self.hub.actions_taken['ticket'] and self.hub.remaining_actions > 0:
             tickets = self.investigator.get_ticket(kind)
             self.set_ticket_counts()
             self.hub.action_taken('ticket')
@@ -70,7 +70,7 @@ class InvestigatorPane():
             self.hub.undo_action = {'action': self.undo_ticket, 'args': {'tickets': tickets}}
 
     def undo_ticket(self, tickets):
-        self.hub.actions_taken['ticket']['taken'] = False
+        self.hub.actions_taken['ticket'] = False
         self.hub.remaining_actions += 1
         self.hub.undo_action = None
         self.investigator.rail_tickets += tickets[0]

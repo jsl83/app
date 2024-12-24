@@ -32,6 +32,7 @@ class EncounterPane():
             'allow_gate_close': self.allow_gate_close,
             'allow_move': self.allow_move,
             'ambush': self.ambush,
+            'choose_investigator': self.choose_investigator,
             'close_gate': self.close_gate,
             'combat': self.encounter_phase,
             'condition_check': self.condition_check,
@@ -54,6 +55,7 @@ class EncounterPane():
             'server_check': lambda: self.set_buttons('pass') if self.mythos_switch else self.set_buttons('fail'),
             'set_buttons': self.set_buttons,
             'set_doom': self.set_doom,
+            'set_omen': self.set_omen,
             'shuffle_mystery': self.shuffle_mystery,
             'single_roll': self.single_roll,
             'skill': self.skill_test,
@@ -84,11 +86,11 @@ class EncounterPane():
         self.set_button_set = set()
         self.mythos_switch = False
         self.reckonings = []
-        self.priority_reckonings = []
         self.mythos = None
         self.final_step = ''
         self.small_card_dict = None
         self.recover_name = ''
+        self.priority_reckonings = []
 
     def get_rumor(self, name):
         return MYTHOS[name]['manager_object']
@@ -249,6 +251,7 @@ class EncounterPane():
         self.rumor_not_gate = None
         self.mythos_switch = False
         self.investigator.encounter_impairment = 0
+        self.priority_reckonings = []
         if not skip:
             self.hub.my_turn = False
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -273,6 +276,18 @@ class EncounterPane():
         self.ambush_steps = (step, fail)
         self.combat_will(self.hub.location_manager.create_ambush_monster(name))
 
+    def choose_investigator(self, action, step='finish'):
+        choices = []
+        if action == 'delay':
+            def button_action(name):
+                self.hub.networker.publish_payload({'message': 'become_delayed'}, name + '_server')
+                self.set_buttons(step)
+            subtitle = 'to become Delayed'
+        for names in self.hub.location_manager.all_investigators:
+            choices.append(ActionButton(texture='investigators/' + names + '_portrait.png', action=button_action, action_args={'name': names}, scale=0.4))
+        self.hub.choice_layout = create_choices('Choose Investigator', subtitle, choices)
+        self.hub.show_overlay()
+
     def close_gate(self, step='finish'):
         if self.gate_close:
             self.wait_step = step
@@ -290,6 +305,7 @@ class EncounterPane():
             pass_check = False
         if item_type != None and len([item for item in self.investigator.possessions[item_type] if tag == None or tag in item.tags]) == 0:
             pass_check = False
+        print(pass_check, step, fail)
         self.set_buttons(step if pass_check else fail)
 
     def damage_monsters(self, damage, step='finish', single=True, epic=True, lose_hp=False):
@@ -664,6 +680,18 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'doom_change', 'value': increment}, self.investigator.name)
         self.set_buttons(step)
 
+    def set_omen(self, advance_doom=False, step='finish'):
+        colors = ['green', 'blue', 'red', 'blue']
+        choices = []
+        def choose_omen(color):
+            self.hub.networker.publish_payload({'message': 'set_omen', 'pos': color, 'trigger': advance_doom}, self.investigator.name)
+            self.hub.clear_overlay()
+            self.set_buttons(step)
+        for x in range(4):
+            choices.append(ActionButton(height=150, width=150, texture='icons/' + colors[x] + '_omen.png', action=choose_omen, action_args={'color': x}, scale=0.5))
+        self.hub.choice_layout = create_choices('Set Omen', choices=choices)
+        self.hub.show_overlay()
+
     def shuffle_mystery(self, step='finish'):
         self.hub.networker.publish_payload({'message': 'shuffle_mystery'}, self.investigator.name)
         self.set_buttons(step)
@@ -755,9 +783,11 @@ class EncounterPane():
                 def choose_defeat(kind):
                     payload['kind'] = kind.lower() == 'health'
                     self.hub.networker.publish_payload(payload, self.investigator.name)
+                    self.hub.clear_overlay()
                 if self.investigator.health <= 0 and self.investigator.sanity <= 0:
                     own_death()
                     self.hub.choice_layout = create_choices('Choose Defeat Type', choices=[ActionButton(width=100, height=40, texture='buttons/placeholder.png', action=choose_defeat, action_args={'kind': kind}, text=kind) for kind in ['Health', 'Sanity']])
+                    self.hub.show_overlay()
                 else:
                     self.hub.networker.publish_payload(payload, self.investigator.name)
                     if self.investigator.health <= 0 or self.investigator.sanity <= 0:
@@ -799,19 +829,15 @@ class EncounterPane():
     def reckoning(self):
         if len(self.priority_reckonings) > 0:
             action = self.priority_reckonings.pop(0)
-            self.text_button.text = 'Reckoning\n\n' + action[2]
-            self.encounter['zaction'] = action[0]
-            self.encounter['zargs'] = action[1]
-            self.set_buttons('zaction')
+            self.text_button.text = 'Reckoning\n\n' + action[1]
+            self.encounter = action[0]
+            self.set_buttons('unsolve_action')
             #action[0](**action[1])
         elif len(self.reckonings) > 0:
             pass
         else:
             self.finish()
-            text = human_readable(self.mythos) + '\n\n' + self.encounter['flavor'] + '\n\n' + self.encounter.get('text', '')
-            if self.encounter.get('font_size', None) != None:
-                self.text_button.style = {'font_size': int(self.encounter['font_size'])}
-            self.text_button.text = text
+            self.load_mythos(self.mythos)
             self.hub.show_encounter_pane()
 
 class SmallCardPane(EncounterPane):

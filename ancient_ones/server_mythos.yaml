@@ -52,6 +52,17 @@
         - clear_bodies
     patrolling_the_border:
       difficulty: 1
+      lead_only: True
+      actions:
+        - on_reckoning
+        - spawn
+      args:
+        - args:
+            recurring: 1
+            name: patrolling_the_border
+        - location: world:no_spawn
+          name: patrolling_the_border
+          piece: rumor
     rising_terror:
       difficulty: 2
     strange_sightings:
@@ -107,9 +118,15 @@
       difficulty: 1
     omen_of_good_fortune:
       difficulty: 0
+      lead_only: True
     perplexing_stars:
       difficulty: 2
+      actions:
+        - move_omen
+      args:
+        - increment: -1
     rally_the_people:
+      lead_only: True
       difficulty: 0
     silver_twilight_aid:
       difficulty: 0

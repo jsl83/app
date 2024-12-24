@@ -74,7 +74,7 @@ class ReservePane():
                 self.hub.request_card('assets', item, 'acquire')
                 self.reserve = [item for item in self.reserve if item['name'] != item]
             self.reset()
-        else:
+        elif not self.hub.actions_taken['shop'] and self.hub.remaining_actions > 0:
             self.is_shopping = True
             self.hub.gui_set(False)
             self.rolls = self.hub.run_test(1, pane=self)
@@ -187,7 +187,6 @@ class ReservePane():
             item.reset_position()
 
     def on_show(self):
-        self.reset_discard()
         self.close_discard()
 
     def reroll(self, new, old):

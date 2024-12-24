@@ -154,6 +154,8 @@ class LocationPane():
             row_num = number - row * 4
             offset = (280 - (row_num * 49 + (row_num - 1) * 12)) / 2 if row_num < 4 else 24
             for unit in self.location_manager.locations[self.selected][kind] + dead:
+                if kind == 'monsters':
+                    unit = unit.name
                 column = i % 4
                 texture = 'monsters/' + unit + '.png' if kind == 'monsters' else 'investigators/' + unit + '_portrait.png'
                 button = ActionButton(texture=texture, action=self.show_monster if kind == 'monsters' else self.trade, action_args={'unit':unit}, scale=0.25 if kind == 'monsters' else 0.2)
@@ -179,7 +181,7 @@ class LocationPane():
 
     def show_possessions(self, possessions, name, dead=False):
         trade = (self.hub.investigator.name in self.location_manager.locations[self.selected]['investigators']
-                 and not dead and self.hub.remaining_actions > 0 and not self.hub.actions_taken['trade']['taken'])
+                 and not dead and self.hub.remaining_actions > 0 and not self.hub.actions_taken['trade'])
         self.layout.clear()
         self.possession_screen.setup(possessions, name, trade)
         self.layout.add(self.possession_screen.layout)

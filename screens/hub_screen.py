@@ -29,6 +29,9 @@ class HubScreen(arcade.View):
         self.doom = 0
         self.omen = 0
         self.remaining_actions = 0
+        self.triggers = {
+            'monster_kill': []
+        }
         
         self.item_actions = {}
         self.investigator_token = None
@@ -128,6 +131,8 @@ class HubScreen(arcade.View):
         #self.request_card('conditions', 'blessed')
         #END TESTING
         '''
+        self.investigator.clues.append('world:arkham')
+
     def load_investigator(self, name):
         self.investigator = Investigator(name)
         self.info_panes['investigator'] = InvestigatorPane(self.investigator, self)
@@ -370,23 +375,23 @@ class HubScreen(arcade.View):
                                 self.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
                             else:
                                 self.remaining_actions = 2
-                                '''
+                                #'''
                                 #FOR TESTING
                                 self.remaining_actions = 3
-                                if self.is_first:
-                                    self.ticket_move('akachi_onyele', 'space_16', 0, 0, 'space_15')
-                                else:
-                                    self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
-                                    self.investigator.focus = 0
+                                #if self.is_first:
+                                self.ticket_move('akachi_onyele', 'space_19', 0, 0, 'space_15')
+                                #else:
+                                    #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
+                                self.investigator.focus = 0
                                 self.info_panes['investigator'].focus_action()
                                 #END TESTING
-                                '''
+                                #'''
                         case 'encounter':
                             #FOR TESTING
-                            self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                            #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                             #END TESTING
-                            #self.show_encounter_pane()
-                            #self.encounter_pane.encounter_phase()
+                            self.show_encounter_pane()
+                            self.encounter_pane.encounter_phase()
                         case 'reckoning':
                             self.encounter_pane.reckoning()
                             #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -460,7 +465,8 @@ class HubScreen(arcade.View):
                 del self.location_manager.rumors[payload['value']]
             case 'update_rumor':
                 if self.location_manager.rumors.get(payload['name'], None) != None:
-                    self.location_manager.rumors[payload['name']]['eldritch'] = payload['value']
+                    is_solve = self.location_manager.rumors[payload['name']].get('is_solve', False)
+                    self.location_manager.rumors[payload['name']]['eldritch'] = payload['value'] if not is_solve else payload.get('solve', self.location_manager.rumors[payload['name']]['eldritch'])
             case 'group_pay_update':
                 self.encounter_pane.group_pay(payload['min'], payload['max'], payload['kind'])
             case 'mystery_count':
@@ -767,4 +773,25 @@ class HubScreen(arcade.View):
                 self.actions_taken[action] = False
 
     def damage_monster(self, monster, damage):
-        self.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)        
+        choices = []
+        if monster.damage + damage >= monster.toughness:
+            for trigger in self.triggers['monster_kill']:
+                passes = True
+                if trigger.get('location', None) != None and self.investigator.location != trigger.get('location'):
+                    passes = False
+                if trigger.get('spend_clue', False) and len(self.investigator.clues) == 0:
+                    passes = False
+                def result_action():
+                    match trigger['result']:
+                        case 'rumor_add':
+                            self.networker.publish_payload({'message': 'update_rumor_solve', 'value': monster.toughness, 'name': trigger['name']}, self.investigator.name)
+                if passes:
+                    if trigger.get('spend_clue', False):
+                        def clue_spend():
+                            self.encounter_pane.spend_clue('nothing')
+                            result_action()
+                        choices.append(ActionButton(texture='buttons/placeholder.png', text='Spend 1 Clue ' + trigger['clue_text'], action=clue_spend, style={'font_size': 10}))
+                    else:
+                        result_action()
+        self.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
+        return choices

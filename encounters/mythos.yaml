@@ -40,14 +40,15 @@
       - end_mythos
     eargs:
       - skip: True
-    font_size: 13
+    font_size: 12
     flavor: You wrap the towel around some ice and apply it to your injuries, hoping to reduce the swelling. You make a mental list of all the sacrifices that you've had to make and those that you've asked of others. All that terrible loss and you can't for the life of you think of any good that's been accomplished.
-    text: Shuffle a solved Mystery back into the deck unless investigators as a group spend Clues equal to half the number of investigators.
+    text: Shuffle a solved Mystery back into the deck unless investigators as a group spend Clues equal to half the number of investigators. If there are no solved Mysteries, advance Doom by 1.
   ancient_guardians:
     action:
       - end_mythos
     aargs:
       - text: End Turn (All)
+    font_size: 12
     flavor: An article on the back page of the newspaper catches your attention. An unexplained attack on a remote outpost left no survivors. You've read about two other similar attacks happening in the same region. You can see that the forgotten corners of the globe are growing more dangerous.
     text: 2 Monsters spawn on the Active Expedition space.
   arrests_made_in_murder_case!:
@@ -58,7 +59,7 @@
         item_type: assets
         tag: weapon
         step: influence
-        fail: nothing
+        fail: nada
         skip: True
     influence:
       - skill
@@ -79,7 +80,7 @@
       - kind: assets
         tag: weapon
         skip: True
-    nothing:
+    nada:
       - set_buttons
     nargs:
       - key: finish
@@ -105,9 +106,9 @@
       - item_type: assets
         tag: item
         step: discard
-        fail: nothing
+        fail: nada
         skip: True
-    nothing:
+    nada:
       - set_buttons
     nargs:
       - key: finish
@@ -179,7 +180,7 @@
     aargs:
       - text: End turn (all)
     flavor: Everywhere that these portals have been reported, earthquakes shake the streets into rubble, and sinkholes swallow buildings whole.
-    text: A rumor has spawned on Space 11
+    text: A Rumor has spawned on Space 11
     manager_object:
       solve: Test Observation, then spend Clues equal to half the number of Investigators.
       reckoning: Discard Eldritch tokens from this card equal to half the number of Gates on the game board.
@@ -219,7 +220,7 @@
       - effects:
           '12': damage
           '345': fight
-          '6': nothing
+          '6': nada
         skip: True
     damage:
       - hp_san
@@ -231,7 +232,7 @@
       - ambush
     fargs:
       - text: A Monster ambushes you
-    nothing:
+    nada:
       - set_buttons
     nargs:
       - key: no_effect
@@ -247,7 +248,7 @@
     aargs:
       - text: End turn (all)
     flavor: Some dark magic has taken hold in you. Friends have started ignoring you as if you weren't even in the room. It's getting worse, and you fear that soon you'll be invisible to every other person on Earth!
-    text: A rumor has spawned on Space 16.
+    text: A Rumor has spawned on Space 16.
     manager_object:
       solve: Test Observation, then spend clues equal to half the number of Investigators.
       reckoning: Search the Asset deck, discard pile, and reserve for all Assets with value equal to or greater than the number of Eldritch token Eldritch tokens on this card and return them to the game box. Then discard 1 Eldritch token from this card.
@@ -259,7 +260,7 @@
     aargs:
       - text: End turn (all)
     flavor: The strange phenomenon is an echo of the catastrophic destruction of Mu. The repercussions of the serpent people's overreaching ambition still take their toll.
-    text: A rumor has spawned on Space 2.
+    text: A Rumor has spawned on Space 2.
     manager_object:
       location: space_2
       solve: Resolve an Other World Encounter; if an effect would close a Gate, solve this Rumor instead.
@@ -320,7 +321,7 @@
     aargs:
       - text: End turn (all)
     flavor: You dream of a life as an insane wizard thousands of years ago in Atlantis. You also dream of that same wizard still alive today on an uncharted island.
-    text: A rumor has spawned on Space 8.
+    text: A Rumor has spawned on Space 8.
     manager_object:
       solve: Test Observation, then spend Clues equal to half Investigators.
       reckoning: The Lead Investigator gains a Madness Condition, then discards 1 Eldritch token from this card for each Madness Condition they have.
@@ -403,10 +404,10 @@
   lost_knowledge:
     action:
       - end_mythos
-    eargs:
+    aargs:
       - text: End turn (all)
     flavor: Your contact in the capital is hesitant to speak about those called "The Watches." He says they work for a number of different governments, but answer to some other authority.
-    text: The Tick Tock Men Epic Monster has spawned on Space 21
+    text: The Tick Tock Men Epic Monster and a Rumor have spawned on Space 21
     manager_object:
       solve: Defeat the Tick Tock Men Epic Monster.
       reckoning: Discard 1 Eldritch token from this card.
@@ -512,4 +513,30 @@
     font_size: 13
     flavor: After the noise and violence is over, one of the shopkeepers peers out from his shuttered windows. Amazed to see you alive, he opens the window and calls out, "Is it over? Are we safe?" You wave to let him know that everything is fine.
     text: The Lead Investigator gains 1 random Ally Asset from the deck.
+  return_of_the_ancient_ones:
+    action:
+      - add_trigger
+    aargs:
+      - skip: True
+        kind: monster_kill
+        args:
+          location: space_19
+          spend_clue: True
+          clue_text: to progress Rumor
+          result: rumor_add
+          name: return_of_the_ancient_ones
+        step: end
+    end:
+      - end_mythos
+    eargs:
+      - text: End turn (all)
+    flavor: After a sudden burst of flying debris, you are confronted by a terrifying figure. It is a stark reminder that dark forces in this world are working tirelessly to annihilate you.
+    text: A Rumor has spawned on Space 19
+    manager_object:
+      solve: When an investigator on Space 19 defeats a Monster, they may spend 1 Clue to place that Monster on this card. When the total toughness of Monsters on this card is equal to or greater than No. Investigators, solve this Rumor.
+      reckoning: Spawn 1 Monster on Space 19.
+      unsolved: If there are 4 or more Monsters on Space 19, advance Doom to 0.
+      eldritch: 0
+      is_solve: True
+      not_encounter: True
   

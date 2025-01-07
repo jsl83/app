@@ -202,7 +202,7 @@ class LocationPane():
             for x in ['solve', 'unsolved', 'reckoning', 'effect']:
                 if self.location_manager.rumors[self.rumor].get(x, None) != None:
                     self.rumor_details.text += '\n\n' + human_readable(x) + '\n' + self.location_manager.rumors[self.rumor].get(x)
-            self.rumor_details.style = {'font_size': 12}
+            self.rumor_details.style = {'font_size': self.location_manager.rumors[self.rumor].get('font_size', 12)}
         self.toggle_details(True)
 
     def show_monster(self, unit):

@@ -63,20 +63,6 @@
         - location: world:no_spawn
           name: patrolling_the_border
           piece: rumor
-    rising_terror:
-      difficulty: 2
-    strange_sightings:
-      difficulty: 2
-    support_of_the_church:
-      difficulty: 0
-    that_which_consumes:
-      difficulty: 0
-    tied_to_a_dark_purpose:
-      difficulty: 2
-    torn_asunder:
-      difficulty: 2
-    unexpected_betrayal:
-      difficulty: 1
   -
     a_dark_power:
       difficulty: 1
@@ -128,20 +114,6 @@
     rally_the_people:
       lead_only: True
       difficulty: 0
-    silver_twilight_aid:
-      difficulty: 0
-    the_bermuda_triangle:
-      difficulty: 1
-    the_storm:
-      difficulty: 2
-    the_world_fights_back:
-      difficulty: 0
-    the_world_shakes:
-      difficulty: 1
-    tide_of_despair:
-      difficulty: 1
-    treacherous_magic:
-      difficulty: 1
   -
     dimensions_collide:
       difficulty: 2
@@ -227,13 +199,26 @@
           piece: rumor
     return_of_the_ancient_ones:
       difficulty: 1
-    secrets_of_the_past:
-      difficulty: 0
-    spreading_sickness:
-      difficulty: 2
-    stars_aligned:
-      difficulty: 1
-    the_wind_walker:
-      difficulty: 1
-    web_between_worlds:
-      difficulty: 2
+      actions:
+        - on_reckoning
+        - spawn
+      args:
+        - args:
+            recurring: 4
+            check: monsters_on_loc
+            chargs:
+              loc: space_19
+            check_type: threshold
+            action: spawn
+            args:
+              location: world:space_19
+              piece: monsters
+            name: return_of_the_ancient_ones
+            unsolve: move_doom
+            unsolve_args:
+              amt: -99
+            solve_threshold: 1
+            solve_amt: 0
+        - name: return_of_the_ancient_ones
+          location: world:space_19
+          piece: rumor

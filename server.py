@@ -168,7 +168,8 @@ class Networker(threading.Thread, BanyanBase):
         self.is_first = True
         self.get_locations = {
             'cultists': lambda: list(set(monster['location'] for monster in self.monsters if monster['name'] == 'cultist')),
-            'gate_omen': lambda: [gate for gate in self.decks['gates']['board'] if LOCATIONS[gate.split(':')[0]][gate.split(':')[1]] == self.omen_cycle[self.omen]]
+            'gate_omen': lambda: [gate for gate in self.decks['gates']['board'] if LOCATIONS[gate.split(':')[0]][gate.split(':')[1]] == self.omen_cycle[self.omen]],
+            'monsters_on_loc': lambda loc: len([monster for monster in self.monsters if monster['location'] == loc])
         }
 
     def start_backplane(self):
@@ -290,7 +291,7 @@ class Networker(threading.Thread, BanyanBase):
                             self.decks[payload['kind']].append(payload['value'])
                         if payload['value'] in self.investigators[topic][payload['kind']]:
                             self.investigators[topic][payload['kind']].remove(payload['value'])
-                        elif payload['kind'] == 'clues':
+                        elif payload['kind'] == 'clues' and payload.get('from_map', False):
                             self.publish_payload({'message': 'token_removed', 'value': payload['value'], 'kind': 'clue'}, 'server_update')
                     case 'get_clue':
                         clue = random.choice(self.decks['clues'])
@@ -318,13 +319,9 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'rally_the_people'
+                                            name = 'return_of_the_ancient_ones'
                                             self.is_first = False
-                                        else:
-                                            name = 'omen_of_good_fortune'
                                         #END TESTING
-                                        if name == None:
-                                            break
                                         self.mythos = self.mythos_deck[x][name]
                                         self.publish_payload({'message': 'mythos', 'value': name}, 'server_update')
                                         kind = self.mythos['color']
@@ -339,7 +336,7 @@ class Networker(threading.Thread, BanyanBase):
                                         elif kind == 2:
                                             self.current_phase += 1
                                             self.spawn('clues', number=self.reference[1])
-                                        #del self.mythos_deck[x][name]
+                                        del self.mythos_deck[x][name]
                                         break
                         if self.current_phase == 2:
                             self.mythos_reckoning()
@@ -452,6 +449,14 @@ class Networker(threading.Thread, BanyanBase):
                         self.publish_payload({'message': 'body_recovered', 'value': give}, 'server_update')
                     case 'set_omen':
                         self.set_omen(payload.get('pos', None), payload.get('trigger', True))
+                    case 'update_rumor_solve':
+                        rumor = next((rumor for rumor in self.reckoning_actions if rumor['name'] == payload['name']), None)
+                        if rumor != None:
+                            rumor['solve_amt'] += payload['value']
+                            if rumor['solve_amt'] >= math.ceil(self.player_count / rumor['solve_threshold']):
+                                self.solve_rumor(rumor)
+                            else:
+                                self.publish_payload({'message': 'update_rumor', 'name': rumor['name'], 'value': rumor['recurring'], 'solve': rumor['solve_amt']}, 'server_update')
 
     def clear_bodies(self):
         for names in [name for name in self.dead_investigators if not self.dead_investigators[name]['recovered']]:
@@ -508,21 +513,27 @@ class Networker(threading.Thread, BanyanBase):
                     action = actions.get('action', None)
                     if action != None:
                         if actions.get('args', None) != None:
-                            self.action_dict[actions['action']](actions.get('args', None))
+                            self.action_dict[action](**actions['args'])
                         else:
-                            self.action_dict[actions['action']]()
+                            self.action_dict[action]()
                     if not actions.get('recurring', True):
                         self.reckoning_actions.remove(actions)
                     else:
                         tokens = 1
                         if actions.get('rargs', None) != None:
                             tokens = self.rumor_tick(**actions['rargs'])
+                        elif actions.get('check', None) != None:
+                            number = self.get_locations[actions['check']](**actions['chargs'])
+                            if actions.get('check_type', None) == 'treshold':
+                                tokens = actions['recurring'] if number >= actions['recurring'] else 0
+                            elif actions.get('check_type', None) == 'equal':
+                                tokens = number
                         actions['recurring'] -= tokens
                         if actions['recurring'] <= 0:
                             if actions.get('unsolve', None) != None:
                                 self.action_dict[actions['unsolve']](**actions['unsolve_args'])
                             self.solve_rumor(actions, False)
-                        else:
+                        elif tokens != 0:
                             self.publish_payload({'message': 'update_rumor', 'name': actions['name'], 'value': actions['recurring']}, 'server_update')
 
     def rumor_tick(self, count, divisor=1):
@@ -578,7 +589,7 @@ class Networker(threading.Thread, BanyanBase):
             monster['damage'] = damage if damage >= 0 else damage
             value = 0
             toughness = MONSTERS[monster['name']].get('toughness')
-            if '+' in toughness:
+            if type(toughness) == str and '+' in toughness:
                 value = self.player_count + len(toughness)
             else:
                 value = int(toughness)
@@ -642,9 +653,9 @@ class Networker(threading.Thread, BanyanBase):
                         self.spawn('monsters', location=location)
                     elif location == None:
                         if len(self.decks['gates']['deck']) > 0:
-                            #gate = random.choice(self.decks['gates']['deck'])
-                            #self.decks['gates']['deck'].remove(gate)
-                            gate = 'world:san_francisco'
+                            gate = random.choice(self.decks['gates']['deck'])
+                            self.decks['gates']['deck'].remove(gate)
+                            #gate = 'world:san_francisco'
                             self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
                             self.spawn('monsters', location=gate)
@@ -759,15 +770,18 @@ class Networker(threading.Thread, BanyanBase):
                 color = int(character)
                 card = random.choice(list(cards[color].keys()))
                 #FOR TESTING
-                if color == 0:
-                    card = 'patrolling_the_border'
-                if color == 1:
-                    card = 'rally_the_people'
-                if color == 2:
-                    card = 'mysterious_lights'
+                #if color == 0:
+                #    card = 'patrolling_the_border'
+                #if color == 1:
+                #    card = 'rally_the_people'
+                #if color == 2:
+                #    card = 'return_of_the_ancient_ones'
                 #END TESTING
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color
+        #FOR TESTING
+        self.mythos_deck[0]['return_of_the_ancient_ones'] = cards[2]['return_of_the_ancient_ones']
+        self.mythos_deck[0]['return_of_the_ancient_ones']['color'] = 2
 
     def set_omen(self, pos=None, trigger=True, increment=1):
         if pos != None:
@@ -792,6 +806,10 @@ class Networker(threading.Thread, BanyanBase):
         if all_gates:
             amt = -len(self.decks['gates']['board'])
         self.ancient_one['doom'] += amt
+        self.ancient_one['doom'] = self.ancient_one['doom'] if self.ancient_one['doom'] >= 0 else 0
+        if self.ancient_one['doom'] == 0:
+            #AWAKEN LOGIC
+            pass
         self.publish_payload({'message': 'doom', 'value': self.ancient_one['doom']}, 'server_update')
     
     def strengthen_ao(self, amt=1):

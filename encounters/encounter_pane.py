@@ -29,6 +29,7 @@ class EncounterPane():
         self.option_button = ActionButton(1020, 125, 240, 50, 'buttons/placeholder.png')
         self.last_button = ActionButton(1020, 50, 240, 50, 'buttons/placeholder.png')
         self.action_dict = {
+            'add_trigger': self.add_trigger,
             'allow_gate_close': self.allow_gate_close,
             'allow_move': self.allow_move,
             'ambush': self.ambush,
@@ -117,11 +118,7 @@ class EncounterPane():
         elif not combat_only and len(monsters) == 0:
             self.choose_encounter()
         else:
-            if self.proceed_button not in self.layout.children:
-                self.layout.add(self.proceed_button)
-            self.proceed_button.text = 'End Combat'
-            self.proceed_button.action = self.set_buttons
-            self.proceed_button.action_args = {'key': step}
+            self.set_buttons(step)
 
     def choose_encounter(self):
         choices = []
@@ -216,10 +213,28 @@ class EncounterPane():
             self.ambush_steps = None
             self.hub.show_encounter_pane()
         else:
-            self.hub.show_encounter_pane()
-            self.monsters.remove(monster)
-            self.encounter_phase()
-            self.hub.damage_monster(monster, successes)
+            triggers = self.hub.damage_monster(monster, successes)
+            if len(triggers) > 0:
+                for trigger in triggers:
+                    button_action = trigger.action
+                    button_args = trigger.action_args
+                    def action():
+                        if button_args != None:
+                            button_action(**button_args)
+                        else:
+                            button_action()
+                        self.hub.clear_overlay()
+                        self.hub.show_encounter_pane()
+                        self.monsters.remove(monster)
+                        self.encounter_phase()
+                    trigger.action = action
+                    trigger.action_args = None
+                self.hub.choice_layout = create_choices(choices=triggers, title=human_readable(monster.name) + ' killed')
+                self.hub.show_overlay()
+            else:
+                self.hub.show_encounter_pane()
+                self.monsters.remove(monster)
+                self.encounter_phase()
 
     def mists(self):
         self.monsters = []
@@ -255,6 +270,10 @@ class EncounterPane():
         if not skip:
             self.hub.my_turn = False
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+
+    def add_trigger(self, kind, args, step='finish'):
+        self.hub.triggers[kind].append(args)
+        self.set_buttons(step)
 
     def allow_gate_close(self, allow=True, step='finish'):
         self.gate_close = allow
@@ -305,7 +324,6 @@ class EncounterPane():
             pass_check = False
         if item_type != None and len([item for item in self.investigator.possessions[item_type] if tag == None or tag in item.tags]) == 0:
             pass_check = False
-        print(pass_check, step, fail)
         self.set_buttons(step if pass_check else fail)
 
     def damage_monsters(self, damage, step='finish', single=True, epic=True, lose_hp=False):
@@ -373,11 +391,11 @@ class EncounterPane():
                     stats = self.hub.location_manager.locations[loc]
                     if stats['clue']:
                         stats['clue'] = False
-                        self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': stats['map'] + ':' + loc}, self.investigator.name)
+                        self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': stats['map'] + ':' + loc, 'from_map': True}, self.investigator.name)
             elif self.hub.location_manager.locations[location]['clue']:
                 stats = self.hub.location_manager.locations[location]
                 stats['clue'] = False
-                self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': stats['map'] + ':' + location}, self.investigator.name)
+                self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': stats['map'] + ':' + location, 'from_map': True}, self.investigator.name)
         self.set_buttons(step)
 
     def discard(self, kind, step='finish', tag='any', amt='one', name=None):

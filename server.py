@@ -319,7 +319,7 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'return_of_the_ancient_ones'
+                                            name = 'rising_terror'
                                             self.is_first = False
                                         #END TESTING
                                         self.mythos = self.mythos_deck[x][name]
@@ -655,10 +655,10 @@ class Networker(threading.Thread, BanyanBase):
                         if len(self.decks['gates']['deck']) > 0:
                             gate = random.choice(self.decks['gates']['deck'])
                             self.decks['gates']['deck'].remove(gate)
-                            #gate = 'world:san_francisco'
+                            gate = 'world:san_francisco'
                             self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
-                            self.spawn('monsters', location=gate)
+                            self.spawn('monsters', location=gate, name='avian_thrall')
                         elif len(self.decks['gates']['discard']) > 0:
                             self.decks['gates']['deck'].append(item for item in self.decks['gates']['discard'])
                             self.decks['gates']['discard'] = []
@@ -780,8 +780,9 @@ class Networker(threading.Thread, BanyanBase):
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color
         #FOR TESTING
-        self.mythos_deck[0]['return_of_the_ancient_ones'] = cards[2]['return_of_the_ancient_ones']
-        self.mythos_deck[0]['return_of_the_ancient_ones']['color'] = 2
+        self.mythos_deck[0]['rising_terror'] = cards[0]['rising_terror']
+        self.mythos_deck[0]['rising_terror']['color'] = 0
+        #END TESTING
 
     def set_omen(self, pos=None, trigger=True, increment=1):
         if pos != None:

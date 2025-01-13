@@ -94,6 +94,7 @@ class SelectionScreen(arcade.View):
                                 self.manager.add(arcade.gui.UITextureButton(width=1280, y=700, text='Waiting for other players', texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons/placeholder.png')))
                             self.networker.publish_payload(payload, 'login')
                             self.networker.set_subscriber_topic(self.selected + '_server')
+                            self.networker.set_subscriber_topic(self.selected + '_player')
                             self.networker.investigator = self.selected
                             if self.respawn:
                                 self.networker.game_screen.load_investigator(self.selected)

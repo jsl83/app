@@ -139,6 +139,7 @@ class Map():
         zoom_out.move(zoom_out.initial_x - zoom_out.x, zoom_out.initial_y - zoom_out.y)
 
     def get_tokens(self, kind, location, name):
+        name = str(name)
         zoom_in = next((button for button in self.layouts[kind].children if button.name == location and (True if name == None else button.item_name == name)), None)
         zoom_out = next((button for button in self.zoom_layout.children if button.name == location and (True if name == None else button.item_name == name)), None)
 

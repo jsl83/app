@@ -539,4 +539,23 @@
       eldritch: 0
       is_solve: True
       not_encounter: True
+  rising_terror:
+    action:
+      - monster_reckoning
+    aargs:
+      - none_step: doom
+        step: monster
+        text: Resolve Reckoning effects
+    monster:
+      - monster_reckoning
+    margs:
+      - skip: True
+    doom:
+      - set_doom
+    dargs:
+      - increment: -1
+        text: Advance Doom by 1
+    lead_only: True
+    flavor: The full moon seems to stir the blood of every beast. Even listless, old hounds seem possessed by the spirit of some feral ancestor, vicious and cruel.
+    text: Resolve the Reckoning effect on each Monster on the game board twice. If there are no Monsters on the game board with a Reckoning effect, advance Doom by 1.
   

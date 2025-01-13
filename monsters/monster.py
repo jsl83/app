@@ -29,14 +29,10 @@ class Monster():
         if '+' in str(self.toughness):
             self.toughness = int(inv_number + len(self.toughness))
 
-        self.reckoning = self.set_reckoning(self.reckoning) if hasattr(self, 'reckoning') else None
         self.spawn = self.set_spawn(self.spawn) if hasattr(self, 'spawn') else None
         self.damage = 0
         self.monster_id = monster_id
 
-    def set_reckoning(self, actions):
-        pass
-    
     def set_spawn(self, action):
         pass
 

@@ -41,7 +41,7 @@ class LocationManager():
         return None
     
     def find_path(self, start, goal):
-        neighbors = lambda name: list(map(lambda route: list(route.keys())[0], self.locations[name]['routes']))
+        neighbors = lambda name: list(map(lambda route: route, self.locations[name]['routes']))
         return astar.find_path(start, goal, neighbors)
     
     def spawn_monster(self, name, location, world, monster_id):
@@ -55,7 +55,7 @@ class LocationManager():
         return monster
 
     def spawn_investigator(self, name, location):
-        self.all_investigators[name] = {'assets': [], 'unique_assets': [], 'artifacts': [], 'spells': [], 'conditions': [], 'rail': 0, 'ship': 0}
+        self.all_investigators[name] = {'assets': [], 'unique_assets': [], 'artifacts': [], 'spells': [], 'conditions': [], 'rail': 0, 'ship': 0, 'location': location}
         self.locations[location]['investigators'].append(name)
 
     def get_location_coord(self, key):
@@ -69,8 +69,11 @@ class LocationManager():
     def move_unit(self, unit, kind, destination):
         if kind == 'investigators':
             loc = next((loc for loc in self.locations.keys() if unit in self.locations[loc]['investigators']))
+            self.all_investigators[unit]['location'] = destination
         else:
+            unit = next((monster for monster in self.all_monsters if monster.monster_id == unit))
             loc = unit.location
+            unit.location = destination
         self.locations[loc][kind].remove(unit)
         self.locations[destination][kind].append(unit)
         return loc

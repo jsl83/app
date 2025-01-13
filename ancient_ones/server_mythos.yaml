@@ -63,6 +63,9 @@
         - location: world:no_spawn
           name: patrolling_the_border
           piece: rumor
+    rising_terror:
+      difficulty: 2
+      lead_only: True
   -
     a_dark_power:
       difficulty: 1

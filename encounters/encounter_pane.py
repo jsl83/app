@@ -49,6 +49,8 @@ class EncounterPane():
             'improve_skill': self.improve_skill,
             'loss_per_condition': self.loss_per_condition,
             'monster_heal': self.monster_heal,
+            'monster_reckoning': self.monster_reckoning,
+            'monster_reckoning_move': self.monster_reckoning_move,
             'move_monster': self.move_monster,
             'mythos_reckoning': self.mythos_reckoning,
             'recover': self.recover_investigator,
@@ -82,6 +84,8 @@ class EncounterPane():
         self.click_action = None
         self.allowed_locs = {}
         self.wait_step = None
+        self.player_wait_step = None
+        self.player_wait_args = None
         self.ambush_steps = None
         self.payment = 0
         self.set_button_set = set()
@@ -91,7 +95,10 @@ class EncounterPane():
         self.final_step = ''
         self.small_card_dict = None
         self.recover_name = ''
-        self.priority_reckonings = []
+        self.mythos_reckonings = []
+        self.monster_reckonings = []
+        self.monster_reckoning_loaded = False
+        self.monster_death_triggers = []
 
     def get_rumor(self, name):
         return MYTHOS[name]['manager_object']
@@ -160,7 +167,7 @@ class EncounterPane():
         else:
             self.set_buttons('pass')
 
-    def combat_will(self, monster):
+    def combat_will(self, monster, player_request=None):
         self.first_fight = False
         self.hub.info_manager.children = {0:[]}
         self.hub.info_panes['location'].show_monster(monster)
@@ -174,7 +181,7 @@ class EncounterPane():
                 successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
                 dmg = successes - monster.horror['san']
                 dmg = dmg if dmg < 0 else 0
-                self.take_damage(0, dmg, self.combat_strength, {'monster': monster})
+                self.take_damage(0, dmg, self.combat_strength, {'monster': monster, 'player_request': player_request})
             next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_san)
             self.rolls = self.hub.run_test(monster.horror['index'],
                                         monster.horror['mod'],
@@ -183,7 +190,7 @@ class EncounterPane():
                                         'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity),
                                         allow_clues=not hasattr(monster, 'no_clues'))
         
-    def combat_strength(self, monster):
+    def combat_strength(self, monster, player_request=None):
         self.hub.clear_overlay()
         if monster.strength['mod'] == '-':
             self.resolve_combat(monster)
@@ -193,7 +200,7 @@ class EncounterPane():
                 successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
                 dmg = successes - monster.strength['str']
                 dmg = dmg if dmg < 0 else 0
-                self.take_damage(dmg, 0, self.resolve_combat, {'monster': monster})
+                self.take_damage(dmg, 0, self.resolve_combat, {'monster': monster, 'player_request': player_request})
             next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_hp)
             self.rolls = self.hub.run_test(monster.strength['index'],
                                         monster.strength['mod'],
@@ -202,39 +209,59 @@ class EncounterPane():
                                         'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity),
                                         allow_clues=not hasattr(monster, 'no_clues'))
         
-    def resolve_combat(self, monster):
+    def resolve_combat(self, monster, player_request=None):
         self.hub.clear_overlay()
         successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
-        if self.ambush_steps != None:
-            if successes >= monster.toughness:
-                pass
-                #monster death triggers
+        is_ambush = self.ambush_steps != None
+        self.monster_death_triggers = self.hub.damage_monster(monster, successes, is_ambush)
+        def finish_combat():
+            if player_request == None:
+                self.hub.clear_overlay()
+                self.hub.show_encounter_pane()
+                self.monsters.remove(monster)
+                self.encounter_phase()
+            else:
+                self.hub.clear_overlay()
+                self.hub.show_encounter_pane()
+                self.hub.networker.publish_payload({'message': 'action_done'}, player_request + '_player')
+        if len(self.monster_death_triggers) > 0:
+            def show_triggers():
+                if len(self.monster_death_triggers) > 0:
+                    self.hub.choice_layout = create_choices(choices=self.monster_death_triggers, title=human_readable(monster.name) + ' killed')
+                    self.hub.show_overlay()
+                    show_triggers()
+                else:
+                    finish_combat()
+            triggers = []
+            for trigger in self.monster_death_triggers:
+                button_action = trigger.action
+                button_args = trigger.action_args
+                def action():
+                    if button_args != None:
+                        button_action(**button_args)
+                    else:
+                        button_action()
+                    self.hub.clear_overlay()
+                trigger.action = action
+                trigger.action_args = None
+            self.monster_death_triggers = triggers
+            show_triggers()
+        elif is_ambush:
             self.set_buttons(self.ambush_steps[0] if successes >= monster.toughness else self.ambush_steps[1])
             self.ambush_steps = None
             self.hub.show_encounter_pane()
         else:
-            triggers = self.hub.damage_monster(monster, successes)
-            if len(triggers) > 0:
-                for trigger in triggers:
-                    button_action = trigger.action
-                    button_args = trigger.action_args
-                    def action():
-                        if button_args != None:
-                            button_action(**button_args)
-                        else:
-                            button_action()
-                        self.hub.clear_overlay()
-                        self.hub.show_encounter_pane()
-                        self.monsters.remove(monster)
-                        self.encounter_phase()
-                    trigger.action = action
-                    trigger.action_args = None
-                self.hub.choice_layout = create_choices(choices=triggers, title=human_readable(monster.name) + ' killed')
-                self.hub.show_overlay()
-            else:
-                self.hub.show_encounter_pane()
-                self.monsters.remove(monster)
-                self.encounter_phase()
+            finish_combat()
+
+    def resolve_monster_reckoning(self, step, none_step, is_wait=False):
+        if is_wait:
+            self.hub.clear_overlay()
+            self.hub.choice_layout = create_choices('Waiting for other player to finish')
+            self.hub.show_overlay()
+            self.player_wait_step = 'monster_reckoning'
+            self.player_wait_args = {'step': step, 'none_step': none_step}
+        else:
+            self.monster_reckoning(step, none_step)
 
     def mists(self):
         self.monsters = []
@@ -266,7 +293,8 @@ class EncounterPane():
         self.rumor_not_gate = None
         self.mythos_switch = False
         self.investigator.encounter_impairment = 0
-        self.priority_reckonings = []
+        self.mythos_reckonings = []
+        self.monster_reckonings = []
         if not skip:
             self.hub.my_turn = False
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -618,6 +646,72 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'mythos_reckoning', 'value': number}, self.investigator.name)
         self.set_buttons(step)
 
+    def monster_reckoning(self, step='finish', none_step='finish'):
+        if not self.monster_reckoning_loaded:
+            monsters = [monster for monster in self.hub.location_manager.all_monsters if hasattr(monster, 'reckoning')]
+            if len(monsters) == 0:
+                self.set_buttons(none_step)
+            else:
+                choices = []
+                for monster in monsters:
+                    def choice(monster):
+                        args = getattr(monster, 'reckoning_args', {})
+                        args['monster'] = monster
+                        args['step'] = step
+                        args['none_step'] = none_step
+                        self.action_dict[monster.reckoning](**args)
+                        self.monster_reckonings = [button for button in self.monster_reckonings if button.action_args['monster'] != monster]
+                    button = ActionButton(texture='monsters/' + monster.name + '.png', action=choice, action_args={'monster': monster}, scale=0.5)
+                    choices.append(button)
+                self.monster_reckonings = choices
+                self.monster_reckoning_loaded = True
+                self.monster_reckoning(step, none_step)
+        else:
+            if self.player_wait_step == None:
+                if len(self.monster_reckonings) == 0:
+                    self.monster_reckoning_loaded = False
+                    self.set_buttons(step)
+                else:
+                    self.hub.clear_overlay()
+                    options = [ActionButton(texture='buttons/placeholder.png', text=button.action_args['monster'].option_text, action=button.action, action_args=button.action_args) for button in self.monster_reckonings]
+                    self.hub.choice_layout = create_choices('Monster Reckoning Effects', choices=self.monster_reckonings, options=options)
+                    self.hub.show_overlay()
+
+    def monster_reckoning_move(self, monster, step, none_step, distance=1, encounter=True, damage=0):
+        is_wait = damage > 0
+        paths = {}
+        closest = 100
+        investigators = self.hub.location_manager.all_investigators
+        for investigator in investigators:
+            route = list(self.hub.location_manager.find_path(monster.location, investigators[investigator]['location']))
+            if len(route) < closest:
+                paths = {}
+                closest = len(route)
+            if len(route) == closest:
+                paths[investigator] = route
+        if closest - 1 <= distance and encounter:
+            is_wait = True
+        self.player_wait_step = 'waiting' if is_wait else None
+        def move_to_investigator(monster, distance, investigator):
+            route = paths[investigator]
+            distance = distance if distance < len(route) else len(route) - 1
+            self.hub.networker.publish_payload({'message': 'move_monster', 'value': monster.monster_id, 'location': route[distance]}, self.investigator.name)
+            self.resolve_monster_reckoning(step, none_step, is_wait)
+            if route[distance] == investigators[investigator]['location'] and encounter:
+                self.hub.networker.publish_payload({'message': 'combat', 'value': monster.monster_id, 'sender': self.investigator.name}, investigator + '_player')
+        if len(paths) > 1:
+            choices = []
+            for name in paths:
+                choices.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.3, action=move_to_investigator, action_args={
+                    'monster': monster, 'distance': distance, 'investigator': name
+                }))
+            self.hub.clear_overlay()
+            self.hub.choice_layout = create_choices(choices=choices, title='Select Investigator to move to')
+            self.hub.show_overlay()
+        else:
+            investigator = list(paths.keys())[0]
+            move_to_investigator(monster, distance, investigator)
+
     def recover_investigator(self, step='finish'):
         self.hub.networker.publish_payload({'message': 'recover_body', 'body': self.recover_name}, self.investigator.name)
         dead = self.hub.location_manager.dead_investigators[self.recover_name]
@@ -845,8 +939,8 @@ class EncounterPane():
             self.set_buttons('action')
 
     def reckoning(self):
-        if len(self.priority_reckonings) > 0:
-            action = self.priority_reckonings.pop(0)
+        if len(self.mythos_reckonings) > 0:
+            action = self.mythos_reckonings.pop(0)
             self.text_button.text = 'Reckoning\n\n' + action[1]
             self.encounter = action[0]
             self.set_buttons('unsolve_action')

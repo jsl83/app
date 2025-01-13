@@ -31,6 +31,7 @@ class LocationManager():
         for key in monster_counts.keys():
             for x in range(monster_counts[key]):
                 self.monster_deck.append(key)
+        self.expeditions_enabled = True
 
     def get_closest_location(self, point, zoom, map_location, area=None):
         for key in self.locations.keys():
@@ -82,11 +83,15 @@ class LocationManager():
         encounters = ['generic']
         if self.locations[location].get('color', None) != None:
             encounters.append(self.locations[location].get('color'))
-        for kind in ['gate', 'eldritch', 'expedition', 'clue']:
+        for kind in ['gate', 'eldritch', 'clue']:
             if self.locations[location][kind]:
                 encounters.append(kind)
+        if self.locations[location]['expedition'] and self.expeditions_enabled:
+            encounters.append('expedition')
         rumors = [rumor for rumor in self.rumors.keys() if self.rumors[rumor]['location'] == location and self.rumors[rumor].get('not_encounter', None) == None]
         encounters += rumors
+        if self.rumors.get('secrets_of_the_past', None) != None and self.locations[location]['expedition']:
+            encounters.append('secrets_of_the_past')
         for name in self.dead_investigators:
             if self.dead_investigators[name]['location'] == location:
                 encounters.append(name + ':' + ('0' if self.dead_investigators[name]['death'] else '1'))

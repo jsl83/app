@@ -139,7 +139,8 @@ class Networker(threading.Thread, BanyanBase):
             'from_beyond': self.from_beyond,
             'set_payment': self.set_payment,
             'clear_bodies': self.clear_bodies,
-            'move_omen': self.set_omen
+            'move_omen': self.set_omen,
+            'secrets_of_the_past': self.secrets_of_the_past
         }
         self.omen_cycle = ['green', 'blue', 'red', 'blue']
         self.mythos = None
@@ -319,7 +320,7 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'rising_terror'
+                                            name = 'secrets_of_the_past'
                                             self.is_first = False
                                         #END TESTING
                                         self.mythos = self.mythos_deck[x][name]
@@ -483,7 +484,9 @@ class Networker(threading.Thread, BanyanBase):
         else:
             self.publish_payload({'message': 'choose_new', 'names': self.selected_investigators + list(self.dead_investigators.keys())}, 'server_update')
 
-    def on_reckoning(self, args):
+    def on_reckoning(self, args, recur_value=None):
+        if recur_value == 'expeditions':
+            args['recurring'] = len(self.expeditions)
         self.reckoning_actions.append(args)
 
     def lose_game(self):
@@ -744,6 +747,14 @@ class Networker(threading.Thread, BanyanBase):
         self.restock_reserve([item for item in self.assets['reserve'] if item in to_remove])
         self.assets['discard'] = [item for item in self.assets['discard'] if item not in to_remove]
 
+    def secrets_of_the_past(self):
+        self.expeditions.remove(self.expedition)
+        del self.encounters[self.expedition]
+        if len(self.expeditions) == 0:
+            pass #LOSE GAME
+        else:
+            self.spawn('expedition')        
+
     def restock_reserve(self, removed=[], discard=False, refill=True, cycle=False):
         if cycle:
             removed = [item for item in self.assets['reserve']]
@@ -780,8 +791,8 @@ class Networker(threading.Thread, BanyanBase):
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color
         #FOR TESTING
-        self.mythos_deck[0]['rising_terror'] = cards[0]['rising_terror']
-        self.mythos_deck[0]['rising_terror']['color'] = 0
+        self.mythos_deck[0]['secrets_of_the_past'] = cards[2]['secrets_of_the_past']
+        self.mythos_deck[0]['secrets_of_the_past']['color'] = 2
         #END TESTING
 
     def set_omen(self, pos=None, trigger=True, increment=1):

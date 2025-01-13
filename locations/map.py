@@ -107,6 +107,7 @@ class Map():
             case 'expedition':
                 path = 'maps/expedition.png'
                 location['expedition'] = True
+                name = 'expedition'
             case 'rumor':
                 path = 'maps/rumor.png'
                 location['rumor'] = True

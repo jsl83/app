@@ -250,7 +250,7 @@
     flavor: Some dark magic has taken hold in you. Friends have started ignoring you as if you weren't even in the room. It's getting worse, and you fear that soon you'll be invisible to every other person on Earth!
     text: A Rumor has spawned on Space 16.
     manager_object:
-      solve: Test Observation, then spend clues equal to half the number of Investigators.
+      solve: Test Observation, then spend Clues equal to half the number of Investigators.
       reckoning: Search the Asset deck, discard pile, and reserve for all Assets with value equal to or greater than the number of Eldritch token Eldritch tokens on this card and return them to the game box. Then discard 1 Eldritch token from this card.
       unsolved: When there are no Eldritch tokens on this card, solve this Rumor.
       eldritch: 4
@@ -558,4 +558,21 @@
     lead_only: True
     flavor: The full moon seems to stir the blood of every beast. Even listless, old hounds seem possessed by the spirit of some feral ancestor, vicious and cruel.
     text: Resolve the Reckoning effect on each Monster on the game board twice. If there are no Monsters on the game board with a Reckoning effect, advance Doom by 1.
-  
+  secrets_of_the_past:
+    action:
+      - disable_expeditions
+    aargs:
+      - enabled: False
+        step: end
+        skip: True
+    end:
+      - end_mythos
+    eargs:
+      - text: End turn (all)
+    flavor: At the market you learn that another group of men have been asking about the same lost temple. You hope you get there first.
+    text: Investigators cannot resolve Expedition Encounters. A Rumor has spawned on the active Expedition.
+    manager_object:
+      solve: Test Observation, then spend Clues equal to half the number of Investigators.
+      reckoning: Search the Expedition Encounter deck for each card corresponding to the Active Expedition and return those cards to the game box.
+      unsolved: When the Expedition Deck is empty, Investigators lose the game.
+      eldritch: 6

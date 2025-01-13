@@ -40,6 +40,7 @@ class EncounterPane():
             'damage_monsters': self.damage_monsters,
             'delayed': self.delay,
             'despawn_clues': self.despawn_clues,
+            'disable_expeditions': self.disable_expeditions,
             'discard': self.discard,
             'end_mythos': self.end_mythos,
             'gain_asset': self.gain_asset,
@@ -424,6 +425,10 @@ class EncounterPane():
                 stats = self.hub.location_manager.locations[location]
                 stats['clue'] = False
                 self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': stats['map'] + ':' + location, 'from_map': True}, self.investigator.name)
+        self.set_buttons(step)
+
+    def disable_expeditions(self, enabled, step='finish'):
+        self.hub.location_manager.expeditions_enabled = enabled
         self.set_buttons(step)
 
     def discard(self, kind, step='finish', tag='any', amt='one', name=None):

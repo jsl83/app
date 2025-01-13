@@ -92,6 +92,8 @@ class LocationPane():
         self.selected = key
         location = self.location_manager.locations[key]
         self.rumor = next((rumor for rumor in self.location_manager.rumors.keys() if self.location_manager.rumors[rumor]['location'] == self.selected), None)
+        if self.location_manager.rumors.get('secrets_of_the_past', None) != None and location['expedition']:
+            self.rumor = 'secrets_of_the_past'
         self.tokens['rumor'].text = ''
         self.layout.clear()
         self.location_layout.clear()

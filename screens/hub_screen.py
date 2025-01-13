@@ -332,6 +332,11 @@ class HubScreen(arcade.View):
                             no_token = True
                         self.location_manager.rumors[payload['name']] = self.encounter_pane.get_rumor(payload['name'])
                         self.location_manager.rumors[payload['name']]['location'] = payload.get('location', '')
+                    elif payload['value'] == 'expedition':
+                        loc = next((loc for loc in self.location_manager.locations.keys() if self.location_manager.locations[loc]['expedition']), None)
+                        if loc != None:
+                            self.location_manager.locations[loc]['expedition'] = False
+                            self.map.remove_tokens('expedition', loc, 'expedition')
                     if payload['location'] == self.info_panes['location'].selected:
                         self.info_panes['location'].update_all()
                     if not no_token:
@@ -394,7 +399,8 @@ class HubScreen(arcade.View):
                                     #FOR TESTING
                                     self.remaining_actions = 3
                                     #if self.is_first:
-                                    self.ticket_move(self.investigator.name, 'space_4' if self.investigator.name == 'akachi_onyele' else 'arkham', 0, 0, self.investigator.location)
+                                    location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
+                                    self.ticket_move(self.investigator.name, location if self.investigator.name == 'akachi_onyele' else 'arkham', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     self.investigator.focus = 0
@@ -403,10 +409,10 @@ class HubScreen(arcade.View):
                                     #'''
                             case 'encounter':
                                 #FOR TESTING
-                                self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                 #END TESTING
-                                #self.show_encounter_pane()
-                                #self.encounter_pane.encounter_phase()
+                                self.show_encounter_pane()
+                                self.encounter_pane.encounter_phase()
                             case 'reckoning':
                                 self.encounter_pane.reckoning()
                                 #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)

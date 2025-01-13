@@ -127,8 +127,8 @@
         - args:
             recurring: 4
             rargs:
-              - count: gates
-                divisor: 2
+              count: gates
+              divisor: 2
             unsolve: lose_game
             name: dimensions_collide
         - name: dimensions_collide
@@ -224,4 +224,17 @@
             solve_amt: 0
         - name: return_of_the_ancient_ones
           location: world:space_19
+          piece: rumor
+    secrets_of_the_past:
+      difficulty: 0
+      actions:
+        - on_reckoning
+        - spawn
+      args:
+        - args:
+            name: secrets_of_the_past
+            action: secrets_of_the_past
+          recur_value: expeditions
+        - location: world:no_spawn
+          name: secrets_of_the_past
           piece: rumor

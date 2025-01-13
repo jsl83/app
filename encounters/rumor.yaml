@@ -102,4 +102,32 @@
           skip: True
       test_text: You fly a plane over the arctic ice to scout for the source of these unusually intense northern lights.
       pass_text: You catch sight of an unoccupied mi-go outpost and attempt to turn off their bizarre devices.
+  secrets_of_the_past:
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          fail: no_effect
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - condition: half
+          text: Spend Clues
+          step: solve
+        - text: You lack the knowledge (skip)
+          key: finish
+      exp:
+        - disable_expeditions
+      eargs:
+        - enabled: True
+          step: solve
+          skip: True
+      solve:
+        - solve_rumor
+      sargs:
+        - skip: True
+          name: secrets_of_the_past
+      test_text: You attempt to uncover secrets lost to time and history.
+      pass_text: You discover the ruins and the knowledge within before the cultists.
   

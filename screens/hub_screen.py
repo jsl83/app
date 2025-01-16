@@ -131,7 +131,7 @@ class HubScreen(arcade.View):
         #self.request_card('conditions', 'blessed')
         #END TESTING
         '''
-        self.investigator.clues.append('world:arkham')
+        #self.investigator.clues.append('world:arkham')
 
     def load_investigator(self, name):
         self.investigator = Investigator(name)
@@ -399,8 +399,8 @@ class HubScreen(arcade.View):
                                     #FOR TESTING
                                     self.remaining_actions = 3
                                     #if self.is_first:
-                                    location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
-                                    self.ticket_move(self.investigator.name, location if self.investigator.name == 'akachi_onyele' else 'arkham', 0, 0, self.investigator.location)
+                                    #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
+                                    self.ticket_move(self.investigator.name, 'space_17' if self.investigator.name == 'akachi_onyele' else 'arkham', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     self.investigator.focus = 0
@@ -527,6 +527,8 @@ class HubScreen(arcade.View):
                     del self.location_manager.dead_investigators[payload['value']]
                 case 'become_delayed':
                     self.investigator.delayed = True
+                case 'player_mythos_reckoning':
+                    self.encounter_pane.mythos_reckonings.append((payload['value'], payload['text']))
 
             if self.encounter_pane.wait_step != None:
                 self.encounter_pane.set_buttons(self.encounter_pane.wait_step)

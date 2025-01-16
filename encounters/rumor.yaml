@@ -130,4 +130,21 @@
           name: secrets_of_the_past
       test_text: You attempt to uncover secrets lost to time and history.
       pass_text: You discover the ruins and the knowledge within before the cultists.
+  spreading_sickness:
+    - test: None
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - condition: rumor_tokens:spreading_sickness
+          text: Spend Clues
+          step: solve
+        - text: You lack the knowledge (skip)
+          key: finish
+      solve:
+        - solve_rumor
+      sargs:
+        - skip: True
+          name: spreading_sickness
+      pass_text: You consult the Bombay doctors. The more patients they treat, the closer they get to finding a cure.
   

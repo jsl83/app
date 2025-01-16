@@ -72,7 +72,7 @@ class EncounterPane():
         }
         self.req_dict = {
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
-            'spend_clue': lambda *args: len(self.investigator.clues) >= args[0].get('amt', math.ceil((self.hub.location_manager.player_count / (2 if args[0].get('condition') == 'half' else 1)))),
+            'spend_clue': lambda args: self.spend_clue(is_check=True, **args),
             'discard': lambda *args: self.discard_check(args[0]['kind'], args[0].get('tag', 'any'), args[0].get('name', None)),
             'solve_rumor': lambda *args: len(self.hub.location_manager.rumors) > 0,
             'gain_asset': lambda *args: not args[0].get('reserve', False) or len([item for item in self.hub.info_panes['reserve'].reserve if args[0]['tag'] == 'any' or args[0]['tag'] in item['tags']]) > 0
@@ -598,6 +598,7 @@ class EncounterPane():
     def loss_per_condition(self, lose, per, step='finish'):
         amt = self.discard_check('conditions', per)
         if lose == 'clues':
+            amt = amt if amt <= len(self.investigator.clues) else len(self.investigator.clues)
             self.spend_clue(step, amt)
         else:
             self.hp_san(step, -amt if lose == 'health' else 0, -amt if lose == 'sanity' else 0)
@@ -771,20 +772,18 @@ class EncounterPane():
                     args = self.encounter[key[0] + 'args'][x]
                     buttons[x].text = args.get('text', '')
                     buttons[x].enable()
-                    if actions[x] in self.req_dict and not self.req_dict[actions[x]](args) and len(actions) > 0:
+                    omit_args = {}
+                    for keys in [key for key in args.keys() if key not in ['text', 'check', 'skip']]:
+                        omit_args[keys] = args[keys]
+                    if actions[x] in self.req_dict and not self.req_dict[actions[x]](omit_args) and len(actions) > 0:
                         buttons[x].disable()
-                    for arg in ['text', 'check']:
-                        if arg in args:
-                            del args[arg]
                     if actions[x] == 'skill' or args.get('skip', None) != None:
-                        if 'skip' in args:
-                            del args['skip']
                         buttons[x].action = lambda: None
                         buttons[x].action_args = None
-                        self.action_dict[actions[x]](**args)
+                        self.action_dict[actions[x]](**omit_args)
                     else:
                         buttons[x].action = self.action_dict[actions[x]]
-                        buttons[x].action_args = args
+                        buttons[x].action_args = omit_args
                     self.set_button_set.add(buttons[x])
                 self.layout.clear()
                 self.layout.add(self.text_button)
@@ -851,15 +850,22 @@ class EncounterPane():
                     self.set_buttons(step)
             self.click_action = clue_click
 
-    def spend_clue(self, step='finish', clues=1, condition=None):
-        if condition == 'half':
-            clues = math.ceil(self.hub.location_manager.player_count / 2)
-        for x in range(min(clues, len(self.investigator.clues))):
-            clue = random.choice(self.investigator.clues)
-            self.investigator.clues.remove(clue)
-            self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
-        self.set_buttons(step)
-        self.hub.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
+    def spend_clue(self, step='finish', clues=1, condition=None, is_check=False):
+        if condition != None:
+            if condition == 'half':
+                clues = math.ceil(self.hub.location_manager.player_count / 2)
+            elif 'rumor_token' in condition:
+                rumor = self.hub.location_manager.rumors[condition.split(':')[1]]['eldritch']
+                clues = self.hub.location_manager.player_count - rumor
+                clues = clues if clues > 0 else 0
+        if not is_check:
+            for x in range(clues):
+                clue = random.choice(self.investigator.clues)
+                self.investigator.clues.remove(clue)
+                self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
+            self.set_buttons(step)
+            self.hub.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
+        return len(self.investigator.clues) >= clues
 
     def solve_rumor(self, choice=False, step='finish', name=None):
         def choose_rumor(key):
@@ -948,7 +954,7 @@ class EncounterPane():
             action = self.mythos_reckonings.pop(0)
             self.text_button.text = 'Reckoning\n\n' + action[1]
             self.encounter = action[0]
-            self.set_buttons('unsolve_action')
+            self.set_buttons('action')
             #action[0](**action[1])
         elif len(self.reckonings) > 0:
             pass

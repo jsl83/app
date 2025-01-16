@@ -134,13 +134,17 @@ class Networker(threading.Thread, BanyanBase):
             'on_reckoning': self.on_reckoning,
             'lose_game': self.lose_game,
             'solve_rumor': self.solve_rumor,
-            'discard_cost': self.discard_cost,
             'mythos_reckoning': self.mythos_reckoning,
             'from_beyond': self.from_beyond,
             'set_payment': self.set_payment,
             'clear_bodies': self.clear_bodies,
             'move_omen': self.set_omen,
-            'secrets_of_the_past': self.secrets_of_the_past
+        }
+        self.rumor_actions = {
+            'discard_cost': self.discard_cost,
+            'spawn': self.spawn,
+            'secrets_of_the_past': self.secrets_of_the_past,
+            'spreading_sickness': self.spreading_sickness
         }
         self.omen_cycle = ['green', 'blue', 'red', 'blue']
         self.mythos = None
@@ -320,7 +324,7 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'secrets_of_the_past'
+                                            name = 'spreading_sickness'
                                             self.is_first = False
                                         #END TESTING
                                         self.mythos = self.mythos_deck[x][name]
@@ -339,8 +343,7 @@ class Networker(threading.Thread, BanyanBase):
                                             self.spawn('clues', number=self.reference[1])
                                         del self.mythos_deck[x][name]
                                         break
-                        if self.current_phase == 2:
-                            self.mythos_reckoning()
+                                self.mythos_reckoning()
                         if self.current_phase == 3:
                             if self.mythos.get('actions', None) != None:
                                 for x in range(len(self.mythos['actions'])):
@@ -516,10 +519,10 @@ class Networker(threading.Thread, BanyanBase):
                     action = actions.get('action', None)
                     if action != None:
                         if actions.get('args', None) != None:
-                            self.action_dict[action](**actions['args'])
+                            self.rumor_actions[action](**actions['args'])
                         else:
-                            self.action_dict[action]()
-                    if not actions.get('recurring', True):
+                            self.rumor_actions[action]()
+                    if actions.get('recurring', None) == None:
                         self.reckoning_actions.remove(actions)
                     else:
                         tokens = 1
@@ -539,8 +542,7 @@ class Networker(threading.Thread, BanyanBase):
                         elif tokens != 0:
                             self.publish_payload({'message': 'update_rumor', 'name': actions['name'], 'value': actions['recurring']}, 'server_update')
 
-    def rumor_tick(self, count, divisor=1):
-        tick = 0
+    def rumor_tick(self, count='', divisor=1, tick=1):
         if count == 'gates':
             tick = len(self.decks['gates']['board'])
         elif count == 'lead_madness':
@@ -623,8 +625,8 @@ class Networker(threading.Thread, BanyanBase):
                         return name
                     else:
                         return None
-                elif tag != '':
-                    name = random.choice([item for item in self.assets['deck'] if tag in ASSETS[item]['tags']])
+                else:
+                    name = random.choice([item for item in self.assets['deck'] if tag in ASSETS[item]['tags'] or tag == 'any'])
                     #self.assets['deck'].remove(name)
                     return name
         
@@ -753,7 +755,12 @@ class Networker(threading.Thread, BanyanBase):
         if len(self.expeditions) == 0:
             pass #LOSE GAME
         else:
-            self.spawn('expedition')        
+            self.spawn('expedition')
+
+    def spreading_sickness(self):
+        amt = [rumor for rumor in self.reckoning_actions if rumor['name'] == 'spreading_sickness'][0]['recurring'] + 1
+        encounter = {'action': ['hp_san'], 'aargs': [{'hp':-amt, 'step': 'reckoning', 'skip': True}]}
+        self.publish_payload({'message': 'player_mythos_reckoning', 'value': encounter, 'text': 'Rumor - Spreading Sickness'}, 'server_update')
 
     def restock_reserve(self, removed=[], discard=False, refill=True, cycle=False):
         if cycle:
@@ -791,8 +798,8 @@ class Networker(threading.Thread, BanyanBase):
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color
         #FOR TESTING
-        self.mythos_deck[0]['secrets_of_the_past'] = cards[2]['secrets_of_the_past']
-        self.mythos_deck[0]['secrets_of_the_past']['color'] = 2
+        self.mythos_deck[0]['spreading_sickness'] = cards[2]['spreading_sickness']
+        self.mythos_deck[0]['spreading_sickness']['color'] = 1
         #END TESTING
 
     def set_omen(self, pos=None, trigger=True, increment=1):

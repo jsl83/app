@@ -164,6 +164,7 @@
       - increment: -2
         text: Advance Doom by 2
     font_size: 13
+    lead_only: True
     flavor: You hear it again and again on the news. Every day the world takes another step toward utter annihilation. You ask yourself, how much would you sacrifice to prevent that disaster? Even if you could only grant humanity one more day of existence, could you honestly say that the price was too high?
     text: Doom advances by 2 unless the Lead Investigator gains a Dark Pact Condition.
   dimensional_instability:
@@ -328,9 +329,9 @@
       unsolved: Each Investigator loses 3 Sanity.
       eldritch: 4
       unsolve_encounter:
-        unsolve_action:
+        action:
           - hp_san
-        uargs:
+        aargs:
           - san: -3
             step: reckoning
             skip: True
@@ -407,16 +408,16 @@
     aargs:
       - text: End turn (all)
     flavor: Your contact in the capital is hesitant to speak about those called "The Watches." He says they work for a number of different governments, but answer to some other authority.
-    text: The Tick Tock Men Epic Monster and a Rumor have spawned on Space 21
+    text: The Tick Tock Men Epic Monster and a Rumor have spawned on Space 21.
     manager_object:
       solve: Defeat the Tick Tock Men Epic Monster.
       reckoning: Discard 1 Eldritch token from this card.
       unsolved: When there are no Eldritch tokens on this card, each investigator discards all Clues, and then discard all Clues on the game board.
       eldritch: 3
       unsolve_encounter:
-        unsolve_action:
+        action:
           - despawn_clues
-        uargs: 
+        aargs: 
           - player: True
             lead_only: True
             location: all
@@ -472,9 +473,9 @@
     manager_object:
       unsolved: Each Investigator on a City space tests Observation. If they fail, they become Delayed and gain a Detained Condition.
       unsolve_encounter:
-        unsolve_action:
+        action:
           - condition_check
-        uargs:
+        aargs:
           - space_type: city
             fail: reckoning
             step: observation
@@ -576,3 +577,25 @@
       reckoning: Search the Expedition Encounter deck for each card corresponding to the Active Expedition and return those cards to the game box.
       unsolved: When the Expedition Deck is empty, Investigators lose the game.
       eldritch: 6
+  silver_twilight_aid:
+    action:
+      - gain_clue
+      - gain_asset
+      - request_card
+    aargs:
+      - text: Gain 1 Clue
+      - text: Gain 1 Asset
+      - text: Gain 1 Spell
+        kind: spells
+    flavor: One inside the lodge, your host invites you to follow him upstairs. Several members stare in astonishment. Outsiders are rarely granted such access. At the top of the stairs you are ushered into a library, filled with rare and exotic tomes. "Now," he says, "how can we help you?"
+  spreading_sickness:
+    action:
+      - end_mythos
+    aargs:
+      - text: End turn (all)
+    flavor: When people see your jaundiced skin or hear your loud coughing fits, they avoid you like a leper. Without exception, the disease next brings fever and swollen red sores. Death follows in a few weeks.
+    text: A Rumor has spawned on Space 17.
+    manager_object:
+      solve: Spend Clues equal to number of Investigators, reduced by 1 for each Health Token on this Rumor.
+      reckoning: Place a Health Token on this card, then each Investigator loses Health equal to the number of tokens on this card.
+      eldritch: 0

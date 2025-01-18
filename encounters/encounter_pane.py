@@ -45,6 +45,7 @@ class EncounterPane():
             'end_mythos': self.end_mythos,
             'gain_asset': self.gain_asset,
             'gain_clue': self.gain_clue,
+            'group_pay': self.group_pay,
             'hp_san': self.hp_san,
             'impair_encounter': self.impair_encounter,
             'improve_skill': self.improve_skill,
@@ -67,7 +68,6 @@ class EncounterPane():
             'spawn_clue': self.spawn_clue,
             'spend_clue': self.spend_clue,
             'solve_rumor': self.solve_rumor,
-            'start_group_pay': self.start_group_pay,
             'trigger_encounter': self.trigger_encounter
         }
         self.req_dict = {
@@ -88,7 +88,8 @@ class EncounterPane():
         self.player_wait_step = None
         self.player_wait_args = None
         self.ambush_steps = None
-        self.payment = 0
+        self.payment_needed = 0
+        self.total_payment = 0
         self.set_button_set = set()
         self.mythos_switch = False
         self.reckonings = []
@@ -141,7 +142,7 @@ class EncounterPane():
                 args = {'topic': self.investigator.name, 'payload':{'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}}
             elif encounter[:-2] in self.hub.location_manager.dead_investigators.keys():
                 path = 'investigators/' + encounter[:-2] + '_portrait.png'
-                args = {'value': 'investigators:' + '0' if self.hub.location_manager.dead_investigators[encounter[:-2]]['death'] else '1', 'loc': encounter[:-2]}
+                args = {'value': 'investigators:' + '0' if self.hub.location_manager.dead_investigators[encounter[:-2]].hp_death else '1', 'loc': encounter[:-2]}
             else:
                 path = 'encounters/rumor.png'
                 args = {'value': 'rumor:0', 'loc': encounter}
@@ -500,56 +501,61 @@ class EncounterPane():
                 self.wait_step = step
             self.hub.networker.publish_payload({'message': 'get_clue', 'value': amt}, self.investigator.name)
 
-    def group_pay(self, minimum, max, kind, step='finish'):
-        calc_max = min(max, self.investigator.get_number(kind))
-        if calc_max == 0:
-            self.set_buttons(step)
-        else:
-            self.payment = minimum
-            title = ''
-            match kind:
-                case 'clues':
-                    title = 'Clues'
-                case 'hp':
-                    title = 'Health'
-                case 'san':
-                    title = 'Sanity'
-            payment_button = ActionButton(height=100, width=100, text=str(self.payment), texture='buttons/placeholder.png')
-            minus_button = ActionButton(height=50, width=50, text='-', texture='buttons/placeholder.png', action_args={'amt': -1})
-            submit_button = ActionButton(height=50, width=100, text='Submit Payment', texture='buttons/placeholder.png')
-            plus_button =  ActionButton(height=50, width=50, text='+', texture='buttons/placeholder.png', action_args={'amt': 1})
-            options = [minus_button, submit_button, plus_button]
-            def increment(amt):
-                for button in options:
-                    button.enable()
-                self.payment += amt
-                payment_button.text = str(self.payment)
-                if self.payment < minimum or self.payment > calc_max:
-                    submit_button.disable()
-                if self.payment <= minimum:
-                    minus_button.disable()
-                if self.payment >= calc_max:
-                    plus_button.disable()
-            def pay():
-                self.hub.networker.publish_payload({'message': 'payment_made', 'value': self.payment}, self.investigator.name)
-                if kind == 'clues':
-                    self.spend_clue(step, self.payment)
-                elif kind == 'hp':
-                    self.hp_san(step, self.payment)
-                else:
-                    self.hp_san(step, 0, self.payment)
-            minus_button.action = increment
-            plus_button.action = increment
-            submit_button.action = pay
-            subtitle = 'Minimum: ' + str(minimum) + '  ' + 'Maximum: ' + str(calc_max)
-            self.hub.choice_layout = create_choices(choices=[payment_button], options=options, title='Spend ' + title, subtitle=subtitle)
-            if self.hub.lead_investigator != self.investigator.name and self.proceed_button in self.layout.children:
-                self.layout.remove(self.proceed_button)
-                self.proceed_button.unset()
-            minus_button.disable()
-            if self.payment == calc_max:
+    def group_pay(self, kind, step='finish'):
+        if self.hub.lead_investigator != self.investigator.name or self.payment_needed == 0:
+            for button in [self.proceed_button, self.option_button, self.last_button]:
+                if button in self.layout.children:
+                    self.layout.children.remove(button) 
+        if self.payment_needed == 0:
+            self.proceed_button.action = self.set_buttons
+            self.proceed_button.action_args = {'key': step}
+            self.proceed_button.text = 'Proceed: Payment met'
+            self.layout.add(self.proceed_button)
+        qty = self.investigator.get_number(kind)
+        max_pay = min(self.total_payment, qty)
+        remaining_total = self.total_payment - qty
+        min_pay = max(self.total_payment - remaining_total, 0)
+        title = ''
+        payment = 0
+        match kind:
+            case 'clues':
+                title = 'Clues'
+            case 'hp':
+                title = 'Health'
+            case 'san':
+                title = 'Sanity'
+        payment_button = ActionButton(height=100, width=100, text=str(payment), texture='buttons/placeholder.png')
+        minus_button = ActionButton(height=50, width=50, text='-', texture='buttons/placeholder.png', action_args={'amt': -1})
+        submit_button = ActionButton(height=50, width=100, text='Submit Payment', texture='buttons/placeholder.png')
+        plus_button =  ActionButton(height=50, width=50, text='+', texture='buttons/placeholder.png', action_args={'amt': 1})
+        options = [minus_button, submit_button, plus_button]
+        def increment(amt):
+            for button in options:
+                button.enable()
+            payment += amt
+            payment_button.text = str(payment)
+            if payment < min_pay or payment > max_pay:
+                submit_button.disable()
+            if payment <= min_pay:
+                minus_button.disable()
+            if payment >= max_pay:
                 plus_button.disable()
-            self.hub.show_overlay()
+        def pay():
+            self.hub.networker.publish_payload({'message': 'group_pay_update', 'needed': self.payment_needed - payment, 'total': remaining_total}, 'server_update')
+            if kind == 'clues':
+                self.spend_clue(step, payment)
+            elif kind == 'hp':
+                self.hp_san(step, payment)
+            else:
+                self.hp_san(step, 0, payment)
+        minus_button.action = increment
+        plus_button.action = increment
+        submit_button.action = pay
+        minus_button.disable()
+        submit_button.disable()
+        subtitle = 'Minimum: ' + str(min_pay) + '  ' + 'Maximum: ' + str(max_pay)
+        self.hub.choice_layout = create_choices(choices=[payment_button], options=options, title='Spend ' + title, subtitle=subtitle)
+        self.hub.show_overlay()
 
     def hp_san(self, step='finish', hp=0, san=0, stat=None, kind=None, tag=None):
         self.layout.clear()
@@ -720,13 +726,7 @@ class EncounterPane():
 
     def recover_investigator(self, step='finish'):
         self.hub.networker.publish_payload({'message': 'recover_body', 'body': self.recover_name}, self.investigator.name)
-        dead = self.hub.location_manager.dead_investigators[self.recover_name]
-        self.investigator.rail_tickets += dead['rail']
-        self.investigator.ship_tickets += dead['ship']
-        for key in ['assets', 'unique_assets', 'spells', 'clues', 'artifacts']:
-            for item in dead[key]:
-                self.hub.item_received(key, item)
-        self.set_buttons(step)
+        self.wait_step = step
 
     def request_card(self, kind, step='finish', name='', tag='', trigger=False):
         card = next((card for card in self.investigator.possessions[kind] if card.name == name), None)
@@ -881,9 +881,6 @@ class EncounterPane():
         else:
             choose_rumor(name)
 
-    def start_group_pay(self, kind):
-        self.hub.networker.publish_payload({'message': 'payment_info', 'kind': kind}, self.investigator.name)
-
     def take_damage(self, hp, san, action, args):
         args = {} if args == None else args
         if hp == 0 and san == 0:
@@ -899,7 +896,7 @@ class EncounterPane():
             def resolve_damage(hp, san):
                 self.investigator.health = self.investigator.health + hp if self.investigator.health + hp <= self.investigator.max_health else self.investigator.max_health
                 self.investigator.sanity = self.investigator.sanity + san if self.investigator.sanity + san <= self.investigator.max_sanity else self.investigator.max_sanity
-                payload = {'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity, 'location': self.investigator.location}
+                payload = {'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}
                 def own_death():
                     self.investigator.is_dead = True
                     self.set_buttons('dead')

@@ -59,8 +59,7 @@ class Networker(threading.Thread, BanyanBase):
                         case 'investigator_selected':
                             self.select_screen.remove_option(payload['value'])
                         case 'start_game':
-                            self.game_screen = HubScreen(self, self.investigator, payload['value'])
-                            self.game_screen.location_manager.player_count = payload['count']
+                            self.game_screen = HubScreen(self, self.investigator, payload['value'], payload['investigators'])
                             self.window.show_view(self.game_screen)
             #'''
             #self.window.show_view(HubScreen(self, 'akachi_onyele', 'azathoth'))

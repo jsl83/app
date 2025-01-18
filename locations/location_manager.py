@@ -5,8 +5,8 @@ from monsters.monster import Monster
 from investigators.investigator import Investigator
 
 class LocationManager():
-    def __init__(self):
-
+    def __init__(self, number):
+        self.player_count = number
         self.locations = {}
         self.all_investigators = {}
         self.all_monsters = []
@@ -18,11 +18,9 @@ class LocationManager():
                     self.locations[name]['gate'] = False
                     self.locations[name]['clue'] = False
                     self.locations[name]['monsters'] = []
-                    self.locations[name]['investigators'] = []
                     self.locations[name]['expedition'] = False
                     self.locations[name]['eldritch'] = False
                     self.locations[name]['rumor'] = False
-                    self.locations[name]['dead'] = []
         except:
             self.locations = {}
         self.rumors = {}
@@ -55,9 +53,10 @@ class LocationManager():
             self.monster_deck.remove(name)
         return monster
 
-    def spawn_investigator(self, name, location):
-        self.all_investigators[name] = {'assets': [], 'unique_assets': [], 'artifacts': [], 'spells': [], 'conditions': [], 'rail': 0, 'ship': 0, 'location': location}
-        self.locations[location]['investigators'].append(name)
+    def spawn_investigator(self, name):
+        investigator = Investigator(name)
+        self.all_investigators[name] = investigator
+        return investigator
 
     def get_location_coord(self, key):
         loc = self.locations[key]
@@ -68,15 +67,12 @@ class LocationManager():
         return (location['x'] * 2 + map_location[0], (location['y'] + 200) * 2 + map_location[1])
     
     def move_unit(self, unit, kind, destination):
-        if kind == 'investigators':
-            loc = next((loc for loc in self.locations.keys() if unit in self.locations[loc]['investigators']))
-            self.all_investigators[unit]['location'] = destination
-        else:
-            unit = next((monster for monster in self.all_monsters if monster.monster_id == unit))
-            loc = unit.location
-            unit.location = destination
-        self.locations[loc][kind].remove(unit)
-        self.locations[destination][kind].append(unit)
+        unit_object = self.all_investigators[unit] if kind == 'investigators' else next((monster for monster in self.all_monsters if monster.monster_id == unit))
+        loc = unit_object.location
+        unit_object.location = destination
+        if kind == 'monsters':
+            self.locations[loc][kind].remove(unit_object)
+            self.locations[destination][kind].append(unit_object)
         return loc
     
     def get_encounters(self, location):
@@ -92,7 +88,7 @@ class LocationManager():
         encounters += rumors
         if self.rumors.get('secrets_of_the_past', None) != None and self.locations[location]['expedition']:
             encounters.append('secrets_of_the_past')
-        for name in self.dead_investigators:
+        for name in self.dead_investigators.keys():
             if self.dead_investigators[name]['location'] == location:
                 encounters.append(name + ':' + ('0' if self.dead_investigators[name]['death'] else '1'))
         return encounters

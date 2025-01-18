@@ -80,6 +80,7 @@
       args:
         - kind: investigators
           divisor: 2
+          payment: clues
     ancient_guardians:
       difficulty: 1
       actions:
@@ -173,7 +174,7 @@
         - args:
             recurring: 4
             rargs:
-              count: lead_madness
+              count: growing_madness
             name: growing_madness
         - location: world:space_8
           name: growing_madness

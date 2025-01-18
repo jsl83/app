@@ -136,18 +136,20 @@ class LocationPane():
 
     def update_list(self, kind):
         y_offset = 0
-        dead = [] if kind != 'investigators' else [name for name in self.location_manager.dead_investigators.keys() if self.location_manager.dead_investigators[name]['location'] == self.selected]
+        investigators = [inv.name for inv in self.location_manager.all_investigators.values() if inv.location == self.selected]
+        dead = [] if kind != 'investigators' else [name for name in self.location_manager.dead_investigators.keys() if self.location_manager.dead_investigators[name].location == self.selected]
         if kind == 'monsters':
             layout = self.monster_layout
             label = self.monster_label
-            inv_number = len(self.location_manager.locations[self.selected]['investigators']) + len(dead)
+            inv_number = len(investigators) + len(dead)
             y_offset = 0 if inv_number == 0 else 35 + (int((inv_number - 1) / 4) + 1) * 60
             label.move(0, 335 - y_offset - label.y)
+            number = len(self.location_manager.locations[self.selected]['monsters'])
         else:
             layout = self.investigator_layout
             label = self.investigator_label
+            number = len(investigators) + len(dead)
         layout.clear()
-        number = len(self.location_manager.locations[self.selected][kind]) + len(dead)
         if number > 0:
             layout.add(label)
             i = 0
@@ -155,9 +157,7 @@ class LocationPane():
             y = 260 - y_offset + (19 if kind == 'monsters' else 0)
             row_num = number - row * 4
             offset = (280 - (row_num * 49 + (row_num - 1) * 12)) / 2 if row_num < 4 else 24
-            for unit in self.location_manager.locations[self.selected][kind] + dead:
-                if kind == 'monsters':
-                    unit = unit.name
+            for unit in [monster.name for monster in self.location_manager.locations[self.selected][kind]] if kind == 'monsters' else investigators + dead:
                 column = i % 4
                 texture = 'monsters/' + unit + '.png' if kind == 'monsters' else 'investigators/' + unit + '_portrait.png'
                 button = ActionButton(texture=texture, action=self.show_monster if kind == 'monsters' else self.trade, action_args={'unit':unit}, scale=0.25 if kind == 'monsters' else 0.2)
@@ -176,17 +176,13 @@ class LocationPane():
 
     def trade(self, unit):
         if unit != self.hub.investigator.name:
-            if unit in self.location_manager.dead_investigators.keys():
-                self.show_possessions(self.location_manager.dead_investigators[unit], unit, True)
-            else:
-                self.hub.networker.publish_payload({'message': 'possession_update', 'value': unit}, self.hub.investigator.name)
-
-    def show_possessions(self, possessions, name, dead=False):
-        trade = (self.hub.investigator.name in self.location_manager.locations[self.selected]['investigators']
-                 and not dead and self.hub.remaining_actions > 0 and not self.hub.actions_taken['trade'])
-        self.layout.clear()
-        self.possession_screen.setup(possessions, name, trade)
-        self.layout.add(self.possession_screen.layout)
+            investigator = self.hub.location_manager.all_investigators.get(unit, self.hub.location_manager.dead_investigators.get(unit))
+            trade = (investigator.location == self.hub.investigator.location
+                 and not unit in self.location_manager.dead_investigators.keys() and self.hub.remaining_actions > 0 and not self.hub.actions_taken['trade'])
+            self.layout.clear()
+            self.possession_screen.investigator = investigator
+            self.possession_screen.setup(trade)
+            self.layout.add(self.possession_screen.layout)
 
     def update_all(self):
         self.update_tokens()

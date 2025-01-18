@@ -401,10 +401,10 @@ class HubScreen(arcade.View):
                                     #'''
                             case 'encounter':
                                 #FOR TESTING
-                                #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                 #END TESTING
-                                self.show_encounter_pane()
-                                self.encounter_pane.encounter_phase()
+                                #self.show_encounter_pane()
+                                #self.encounter_pane.encounter_phase()
                             case 'reckoning':
                                 self.encounter_pane.reckoning()
                                 #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)

@@ -53,6 +53,12 @@ class Investigator():
         self.encounter_impairment = 0
         self.is_dead = False
 
+        self.recover_restrictions = []
+        self.health_recover_restrictions = []
+        self.sanity_recover_restrictions = []
+
+        self.rest_triggers = []
+
     def get_ticket(self, kind):
         rail = 0
         ship = 0
@@ -103,3 +109,13 @@ class Investigator():
             return self.sanity
         else:
             return len([card for card in self.possessions[kind] if tag == None or tag in card['tags']])
+        
+    def rest(self):
+        if not ((self.health == self.max_health and self.sanity == self.max_sanity and len(self.rest_triggers) == 0) or len(self.recover_restrictions) != 0):
+            if len(self.sanity_recover_restrictions) == 0:
+                self.sanity += 1
+            if len(self.health_recover_restrictions) == 0:
+                self.health += 1
+            return True
+        else:
+            return False

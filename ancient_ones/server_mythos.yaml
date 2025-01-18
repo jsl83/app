@@ -66,6 +66,19 @@
     rising_terror:
       difficulty: 2
       lead_only: True
+    strange_sightings:
+      difficulty: 2
+      lead_only: True
+      actions:
+        - on_reckoning
+        - spawn
+      args:
+        - args:
+            recurring: 1
+            name: strange_sightings
+        - location: world:no_spawn
+          name: strange_sightings
+          piece: rumor
   -
     a_dark_power:
       difficulty: 1
@@ -256,3 +269,19 @@
             recurring: 0
             rargs:
               tick: -1
+    stars_aligned:
+      difficulty: 1
+      actions:
+        - spawn
+        - on_reckoning
+      args:
+        - location: world:space_7
+          name: stars_aligned
+          piece: rumor
+        - args:
+            name: stars_aligned
+            action: move_omen
+            recurring: 99
+            rargs:
+              tick: 0
+    

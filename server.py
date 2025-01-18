@@ -144,7 +144,9 @@ class Networker(threading.Thread, BanyanBase):
             'discard_cost': self.discard_cost,
             'spawn': self.spawn,
             'secrets_of_the_past': self.secrets_of_the_past,
-            'spreading_sickness': self.spreading_sickness
+            'spreading_sickness': self.spreading_sickness,
+            'move_omen': self.set_omen,
+            'restock_reserve': self.restock_reserve,
         }
         self.omen_cycle = ['green', 'blue', 'red', 'blue']
         self.mythos = None
@@ -329,7 +331,7 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'spreading_sickness'
+                                            name = 'strange_sightings'
                                             self.is_first = False
                                         #END TESTING
                                         self.mythos = self.mythos_deck[x][name]
@@ -542,7 +544,10 @@ class Networker(threading.Thread, BanyanBase):
                         actions['recurring'] -= tokens
                         if actions['recurring'] <= 0:
                             if actions.get('unsolve', None) != None:
-                                self.action_dict[actions['unsolve']](**actions['unsolve_args'])
+                                if actions.get('unsolve_args', None) != None:
+                                    self.action_dict[actions['unsolve']](**actions['unsolve_args'])
+                                else:
+                                    self.action_dict[actions['unsolve']]()
                             self.solve_rumor(actions, False)
                         elif tokens != 0:
                             self.publish_payload({'message': 'update_rumor', 'name': actions['name'], 'value': actions['recurring']}, 'server_update')
@@ -787,8 +792,8 @@ class Networker(threading.Thread, BanyanBase):
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color
         #FOR TESTING
-        self.mythos_deck[0]['spreading_sickness'] = cards[2]['spreading_sickness']
-        self.mythos_deck[0]['spreading_sickness']['color'] = 1
+        self.mythos_deck[0]['strange_sightings'] = cards[0]['strange_sightings']
+        self.mythos_deck[0]['strange_sightings']['color'] = 0
         #END TESTING
 
     def set_omen(self, pos=None, trigger=True, increment=1):

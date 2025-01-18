@@ -114,7 +114,7 @@
       pargs:
         - condition: half
           text: Spend Clues
-          step: solve
+          step: exp
         - text: You lack the knowledge (skip)
           key: finish
       exp:
@@ -147,4 +147,25 @@
         - skip: True
           name: spreading_sickness
       pass_text: You consult the Bombay doctors. The more patients they treat, the closer they get to finding a cure.
-  
+  stars_aligned:
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          fail: no_effect
+      pass:
+        - spend_clue
+        - set_buttons
+      pargs:
+        - condigion: half
+          text: Spend Clues
+          step: solve
+        - text: You lack the knowledge (skip)
+          key: finish
+      solve:
+        - solve_rumor
+      sargs:
+        - skip: True
+          name: stars_aligned
+      test_text: You attempt to find these strangers based on your observation of the stars.
+      pass_text: You convince la policía to remove these strangers.

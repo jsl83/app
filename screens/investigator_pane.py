@@ -16,7 +16,7 @@ class InvestigatorPane():
         self.layout.add(arcade.gui.UITextureButton(x=1005, width=150, y=675, text=investigator.subtitle, texture=self.blank, font="Typical Writer", style={'font_size': 14}))
         self.layout.add(arcade.gui.UITextureButton(x=1155, y=625, texture=arcade.load_texture(
             IMAGE_PATH_ROOT +'investigators\\' + investigator.name + '_portrait.png'), scale=0.5))
-        self.health_button = ActionButton(x=1031, y=530, texture='icons/health_' + str(investigator.max_health) + '.png')
+        self.health_button = ActionButton(x=1031, y=530, texture='icons/health_' + str(investigator.max_health) + '.png', action=self.rest)
         self.layout.add(self.health_button)
         self.toggle_attributes = ActionButton(1000, y=340, width=140, height=30, texture='buttons/placeholder.png', text='Attributes',
                                               action=self.toggle_details, action_args={'flag': False}, texture_pressed='/buttons/pressed_placeholder.png')
@@ -114,3 +114,8 @@ class InvestigatorPane():
 
     def on_show(self):
         pass
+
+    def rest(self):
+        if self.investigator.rest():
+            self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, self.investigator.name)
+            self.hub.action_taken('rest')

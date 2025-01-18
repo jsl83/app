@@ -599,3 +599,38 @@
       solve: Spend Clues equal to number of Investigators, reduced by 1 for each Health Token on this Rumor.
       reckoning: Place a Health Token on this card, then each Investigator loses Health equal to the number of tokens on this card.
       eldritch: 0
+  stars_aligned:
+    action:
+      - end_mythos
+    aargs:
+      - text: End turn (all)
+    flavor: A dozen unpleasant-looking strangers have settled into Panama with a large collection of astronomical reference books. There is something unique about this place and time that allows them to rip apart the fabric of reality.
+    text: A Rumor has spawned on Space 7
+    manager_object:
+      solve: Test Observation, then spend Clues equal to half Investigators.
+      reckoning: Advance the Omen by 1.
+  strange_sightings:
+    action:
+      - resting_enabled
+    aargs:
+      - enabled: False
+        origin: strange_sightings
+        skip: True
+        step: end
+    end:
+      - end_mythos
+    eargs:
+      - text: End turn (all)
+    flavor: Pulling the curtain back slightly, you see that same suspicious man watching your hotel. You're going to have to sneak out the back exit and try to lose him again.
+    text: Investigators cannot preform Rest actions until the next Reckoning.
+    manager_object:
+      unsolved: Investigators can perform Rest actions again.
+      unsolve_encounter:
+        action:
+          - resting_enabled
+        aargs:
+          - enabled: True
+            origin: strange_sightings
+            step: reckoning
+            text: Next
+    

@@ -57,6 +57,7 @@ class EncounterPane():
             'mythos_reckoning': self.mythos_reckoning,
             'recover': self.recover_investigator,
             'request_card': self.request_card,
+            'resting_enabled': self.resting_enabled,
             'server_check': lambda: self.set_buttons('pass') if self.mythos_switch else self.set_buttons('fail'),
             'set_buttons': self.set_buttons,
             'set_doom': self.set_doom,
@@ -90,6 +91,7 @@ class EncounterPane():
         self.ambush_steps = None
         self.payment_needed = 0
         self.total_payment = 0
+        self.payment = 0
         self.set_button_set = set()
         self.mythos_switch = False
         self.reckonings = []
@@ -516,7 +518,7 @@ class EncounterPane():
         remaining_total = self.total_payment - qty
         min_pay = max(self.total_payment - remaining_total, 0)
         title = ''
-        payment = 0
+        self.payment = 0
         match kind:
             case 'clues':
                 title = 'Clues'
@@ -524,7 +526,7 @@ class EncounterPane():
                 title = 'Health'
             case 'san':
                 title = 'Sanity'
-        payment_button = ActionButton(height=100, width=100, text=str(payment), texture='buttons/placeholder.png')
+        payment_button = ActionButton(height=100, width=100, text=str(self.payment), texture='buttons/placeholder.png')
         minus_button = ActionButton(height=50, width=50, text='-', texture='buttons/placeholder.png', action_args={'amt': -1})
         submit_button = ActionButton(height=50, width=100, text='Submit Payment', texture='buttons/placeholder.png')
         plus_button =  ActionButton(height=50, width=50, text='+', texture='buttons/placeholder.png', action_args={'amt': 1})
@@ -532,22 +534,22 @@ class EncounterPane():
         def increment(amt):
             for button in options:
                 button.enable()
-            payment += amt
-            payment_button.text = str(payment)
-            if payment < min_pay or payment > max_pay:
+            self.payment += amt
+            payment_button.text = str(self.payment)
+            if self.payment < min_pay or self.payment > max_pay:
                 submit_button.disable()
-            if payment <= min_pay:
+            if self.payment <= min_pay:
                 minus_button.disable()
-            if payment >= max_pay:
+            if self.payment >= max_pay:
                 plus_button.disable()
         def pay():
-            self.hub.networker.publish_payload({'message': 'group_pay_update', 'needed': self.payment_needed - payment, 'total': remaining_total}, 'server_update')
+            self.hub.networker.publish_payload({'message': 'group_pay_update', 'needed': self.payment_needed - self.payment, 'total': remaining_total}, 'server_update')
             if kind == 'clues':
-                self.spend_clue(step, payment)
+                self.spend_clue(step, self.payment)
             elif kind == 'hp':
-                self.hp_san(step, payment)
+                self.hp_san(step, self.payment)
             else:
-                self.hp_san(step, 0, payment)
+                self.hp_san(step, 0, self.payment)
         minus_button.action = increment
         plus_button.action = increment
         submit_button.action = pay
@@ -738,6 +740,13 @@ class EncounterPane():
             if not message_sent:
                 self.wait_step = None
                 self.set_buttons(step)
+
+    def resting_enabled(self, enabled, origin, step='finish'):
+        if enabled and origin in self.investigator.recover_restrictions:
+            self.investigator.recover_restrictions.remove(origin)
+        else:
+            self.investigator.recover_restrictions.append(origin)
+        self.set_buttons(step)
 
     def set_buttons(self, key):
         self.wait_step = None

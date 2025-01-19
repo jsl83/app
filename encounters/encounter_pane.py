@@ -74,8 +74,9 @@ class EncounterPane():
             'trigger_encounter': self.trigger_encounter
         }
         self.req_dict = {
+            'damage_monsters': lambda *args: len(self.hub.location_manager.get_all('monsters', True)) > 0 and (args[0].get('location', None) == None or len(self.hub.location_manager.locations[args[0]['location'] if args[0]['location'] != 'self' else self.investigator.location]['monsters']) > 0),
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
-            'spend_clue': lambda args: self.spend_clue(is_check=True, **args),
+            'spend_clue': lambda args: len(self.investigator.clues) >= self.spend_clue(is_check=True, **args),
             'discard': lambda *args: self.discard_check(args[0]['kind'], args[0].get('tag', 'any'), args[0].get('name', None)),
             'solve_rumor': lambda *args: len(self.hub.location_manager.rumors) > 0,
             'gain_asset': lambda *args: not args[0].get('reserve', False) or len([item for item in self.hub.info_panes['reserve'].reserve if args[0]['tag'] == 'any' or args[0]['tag'] in item['tags']]) > 0
@@ -369,7 +370,9 @@ class EncounterPane():
             pass_check = False
         self.set_buttons(step if pass_check else fail)
 
-    def damage_monsters(self, damage, step='finish', single=True, epic=True, lose_hp=False):
+    def damage_monsters(self, damage, step='finish', single=True, epic=True, lose_hp=False, location=None):
+        if location == 'self':
+            location = self.investigator.location
         if len(self.hub.location_manager.get_all('monsters', True)) == 0:
             self.proceed_button.text = 'The world is peaceful'
             self.proceed_button.action = self.set_buttons
@@ -412,12 +415,15 @@ class EncounterPane():
                             width=100, height=100, texture='monsters/' + monster.name + '.png', action=select if single else lambda: None, action_args={'monster': monster, 'dmg': damage} if single else None))
                         options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
                     self.hub.clear_overlay()
-                    self.hub.choice_layout = create_choices(title='Select Monster(s)', subtitle='Damage: ' + str(damage), choices=choices, options=options)
+                    self.hub.choice_layout = create_choices(title='Select Monster(s)', subtitle=('Damage: ' + str(damage)) if damage != 99 else 'Discard Monster', choices=choices, options=options)
                     self.hub.show_overlay()
-            self.click_action = damage_loc
-            self.option_button.text = 'Close Monster Selection'
-            self.option_button.action = self.hub.clear_overlay
-            self.layout.add(self.option_button)
+            if location != None:
+                damage_loc(location)
+            else:
+                self.click_action = damage_loc
+                self.option_button.text = 'Close Monster Selection'
+                self.option_button.action = self.hub.clear_overlay
+                self.layout.add(self.option_button)
 
     def delay(self, step='finish'):
         self.investigator.delayed = True
@@ -837,6 +843,16 @@ class EncounterPane():
                     else:
                         buttons[x].action = self.action_dict[actions[x]]
                         buttons[x].action_args = omit_args
+                        if actions[x] == 'spend_clue':
+                            clues = self.spend_clue(is_check=True, **omit_args)
+                            buttons[x].text = buttons[x].text.replace('Spend Clues', 'Spend ' + str(clues) + ' Clue' + ('s' if clues == 1 else ''))
+                            rumor_count = 0
+                            for map in self.hub.maps.values():
+                                rumor_count += len(map.layouts['rumor'].children)
+                            if args.get('condition') == 'the_storm' and rumor_count == 0:
+                                buttons[x].text = 'Spawn a Rumor'
+                                buttons[x].action = self.hub.networker.publish_payload
+                                buttons[x].action_args = {'payload': {'message': 'spawn_rumor'}, 'topic': self.investigator.name}
                     self.set_button_set.add(buttons[x])
                 self.layout.clear()
                 self.layout.add(self.text_button)
@@ -911,6 +927,11 @@ class EncounterPane():
                 rumor = self.hub.location_manager.rumors[condition.split(':')[1]]['eldritch']
                 clues = self.hub.location_manager.player_count - rumor
                 clues = clues if clues > 0 else 0
+            elif condition == 'the_storm':
+                rumor_count = 0
+                for map in self.hub.maps.values():
+                    rumor_count += len(map.layouts['rumor'].children)
+                clues = min(rumor_count, len(self.investigator.clues))
         if not is_check:
             for x in range(clues):
                 clue = random.choice(self.investigator.clues)
@@ -918,7 +939,7 @@ class EncounterPane():
                 self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
             self.set_buttons(step)
             self.hub.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
-        return len(self.investigator.clues) >= clues
+        return clues
 
     def solve_rumor(self, choice=False, step='finish', name=None):
         def choose_rumor(key):
@@ -1000,6 +1021,7 @@ class EncounterPane():
             self.set_buttons('action')
 
     def reckoning(self):
+        print(self.mythos_reckonings)
         if len(self.mythos_reckonings) > 0:
             action = self.mythos_reckonings.pop(0)
             self.text_button.text = 'Reckoning\n\n' + action[1]

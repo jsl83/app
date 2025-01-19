@@ -687,3 +687,53 @@
     text: Roll 1 die and take actions based on the result.
     move_text: Move to Space 8 and become Delayed.
     nada_text: You escape the storm.
+  the_storm:
+    action:
+      - spend_clue
+    aargs:
+      - condition: the_storm
+        text: Spend Clues
+    flavor: The wind suddenly picks up, causing a shiver despite the clear, blue sky. Looking to the horizon, you see steely-gray clouds approaching.
+    text: Each investigator discards Clues equal to the number of Rumor Mythos cards in play. If there are no Rumor Mythos cards in play, draw and resolve 1 Rumor Mythos card from the game box.
+    font_size: 14
+  the_wind-walker:
+    action:
+      - end_mythos
+    aargs:
+      - text: End turn (all)
+    flavor: The weather grows worse. Snow and ice cover cities that have never seen such weather before in their history.
+    text: The Wind-Walker Epic Monster and a Rumor have spawned on Space 4.
+    manager_object:
+      solve: Defeat the Wind-Walker Epic Monster.
+      reckoning: Discard 1 Eldritch token from this card.
+      unsolved: When there are no Eldritch tokens on this card, each investigator becomes Delayed and loses 6 Health.
+      eldritch: 4
+      unsolve_encounter:
+        action:
+          - delayed
+        aargs: 
+          - skip: True
+            step: health
+        health:
+          - hp_san
+        hargs:
+          - hp: -6
+            skip: True
+      not_encounter: True
+  the_world_fights_back:
+    action:
+      - hp_san
+      - hp_san
+      - damage_monsters
+    aargs:
+      - hp: 2
+        text: Recover 2 Health
+      - san: 2
+        text: Recover 2 Sanity
+      - location: self
+        damage: 99
+        text: Discard 1 Monster on your space
+    flavor: Across the globe, headlines announce terrors that threaten to engulf humanity. Individuals everywhere take action against these horrors and assist those who have already been fighting the ancient one.
+    text: Choose one of the following
+  
+  

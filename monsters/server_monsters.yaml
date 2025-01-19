@@ -7,3 +7,6 @@
   tick_tock_men:
     toughness: ++
     epic: True
+  wind-walker:
+    toughness: ++
+    epic: True

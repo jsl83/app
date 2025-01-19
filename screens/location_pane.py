@@ -136,8 +136,8 @@ class LocationPane():
 
     def update_list(self, kind):
         y_offset = 0
-        investigators = [inv.name for inv in self.location_manager.all_investigators.values() if inv.location == self.selected]
-        dead = [] if kind != 'investigators' else [name for name in self.location_manager.dead_investigators.keys() if self.location_manager.dead_investigators[name].location == self.selected]
+        investigators = [val for val in self.location_manager.all_investigators.values() if val.location == self.selected]
+        dead = [] if kind != 'investigators' else [name for name in self.location_manager.dead_investigators.values() if name.location == self.selected]
         if kind == 'monsters':
             layout = self.monster_layout
             label = self.monster_label
@@ -157,10 +157,11 @@ class LocationPane():
             y = 260 - y_offset + (19 if kind == 'monsters' else 0)
             row_num = number - row * 4
             offset = (280 - (row_num * 49 + (row_num - 1) * 12)) / 2 if row_num < 4 else 24
-            for unit in [monster.name for monster in self.location_manager.locations[self.selected][kind]] if kind == 'monsters' else investigators + dead:
+            for unit_obj in [monster for monster in self.location_manager.locations[self.selected][kind]] if kind == 'monsters' else investigators + dead:
+                unit = unit_obj.name
                 column = i % 4
                 texture = 'monsters/' + unit + '.png' if kind == 'monsters' else 'investigators/' + unit + '_portrait.png'
-                button = ActionButton(texture=texture, action=self.show_monster if kind == 'monsters' else self.trade, action_args={'unit':unit}, scale=0.25 if kind == 'monsters' else 0.2)
+                button = ActionButton(texture=texture, action=self.show_monster if kind == 'monsters' else self.trade, action_args={'unit':unit_obj}, scale=0.25 if kind == 'monsters' else 0.2)
                 layout.add(button)
                 if unit in dead:
                     dead_button = ActionButton(texture='investigators/dead.png', scale=0.2)

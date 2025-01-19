@@ -43,3 +43,20 @@
     dargs:
       name: lost_knowledge
       step: nothing
+  wind-walker:
+    epic: True
+    count: 1
+    strength:
+      index: 3
+      mod: -2
+      str: 2
+    horror:
+      index: 4
+      mod: 0
+      san: 2
+    toughness: ++
+    text: Before resolving the Will test, lose 1 Health and 1 Sanity unless you spend 1 Clue.
+    death: solve_rumor
+    dargs:
+      name: the_wind-walker
+      step: nothing

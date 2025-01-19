@@ -141,6 +141,10 @@
       difficulty: 0
     the_bermuda_triangle:
       difficulty: 1
+    the_storm:
+      difficulty: 2
+    the_world_fights_back:
+      difficulty: 0
   -
     dimensions_collide:
       difficulty: 2
@@ -292,4 +296,19 @@
             recurring: 99
             rargs:
               tick: 0
-    
+    the_wind-walker:
+      difficulty: 1
+      actions:
+        - on_reckoning
+        - spawn
+        - spawn
+      args:
+        - args:
+            recurring: 1
+            name: the_wind-walker
+        - piece: monsters
+          name: wind-walker
+          location: world:space_4
+        - piece: rumor
+          name: the_wind-walker
+          location: world:space_4

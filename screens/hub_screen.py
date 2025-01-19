@@ -394,7 +394,7 @@ class HubScreen(arcade.View):
                                     self.remaining_actions = 3
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
-                                    self.ticket_move(self.investigator.name, 'space_17', 0, 0, self.investigator.location)
+                                    self.ticket_move(self.investigator.name, 'san_francisco', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     self.investigator.focus = 0
@@ -791,7 +791,7 @@ class HubScreen(arcade.View):
 
     def damage_monster(self, monster, damage, is_ambush=False):
         choices = []
-        if monster.damage + damage >= monster.toughness:
+        if damage != 99 and monster.damage + damage >= monster.toughness:
             for trigger in self.triggers['monster_kill']:
                 passes = True
                 if trigger.get('location', None) != None and self.investigator.location != trigger.get('location'):

@@ -30,6 +30,7 @@ class Monster():
             self.toughness = int(inv_number + len(self.toughness))
 
         self.spawn = self.set_spawn(self.spawn) if hasattr(self, 'spawn') else None
+        self.reckoning_text = self.reckoning_text if hasattr(self, 'reckoning_text') else ''
         self.damage = 0
         self.monster_id = monster_id
 

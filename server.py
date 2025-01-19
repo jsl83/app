@@ -26,6 +26,8 @@ with open('monsters/server_monsters.yaml') as stream:
     MONSTERS = yaml.safe_load(stream)
 with open('small_cards/server_artifacts.yaml') as stream:
     ARTIFACTS = yaml.safe_load(stream)
+with open('ancient_ones/server_mythos.yaml') as stream:
+    MYTHOS = yaml.safe_load(stream)
 
 class Networker(threading.Thread, BanyanBase):
     def __init__(self, back_plane_ip_address=None, process_name=None, player=0, screen=None):
@@ -331,8 +333,11 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'the_bermuda_triangle'
+                                            name = 'the_world_fights_back'
                                             self.is_first = False
+                                        else:
+                                            pass
+                                            #name = 'the_storm'
                                         #END TESTING
                                         self.mythos = self.mythos_deck[x][name]
                                         self.publish_payload({'message': 'mythos', 'value': name}, 'server_update')
@@ -463,6 +468,13 @@ class Networker(threading.Thread, BanyanBase):
                                 self.solve_rumor(rumor)
                             else:
                                 self.publish_payload({'message': 'update_rumor', 'name': rumor['name'], 'value': rumor['recurring'], 'solve': rumor['solve_amt']}, 'server_update')
+                    case 'spawn_rumor':
+                        rumor = random.choice(list(MYTHOS[2].keys()))
+                        for num in range(len(MYTHOS[2][rumor]['actions'])):
+                            self.action_dict[MYTHOS[2][rumor]['actions'][num]](**MYTHOS[2][rumor]['args'][num])
+                        self.publish_payload({'message': 'mythos', 'value': rumor}, 'server_update')
+                        topic = self.selected_investigators[self.current_player] + '_server'
+                        self.publish_payload({'message': 'player_turn', 'value': self.phases[self.current_phase]}, topic)
 
     def clear_bodies(self):
         for names in [name for name in self.dead_investigators if not self.dead_investigators[name]['recovered']]:
@@ -775,12 +787,11 @@ class Networker(threading.Thread, BanyanBase):
         self.publish_payload({'message': 'restock', 'value': items[0:-1], 'removed': removed_items}, 'server_update')
 
     def mythos_setup(self):
-        with open('ancient_ones/server_mythos.yaml') as stream:
-            cards = yaml.safe_load(stream)
         for x in range(3):
             for character in self.ancient_one['mythos'][x]:
                 color = int(character)
-                card = random.choice(list(cards[color].keys()))
+                card = random.choice(list(MYTHOS[color].keys()))
+                if card != 'the_world_fights_back':
                 #FOR TESTING
                 #if color == 0:
                 #    card = 'patrolling_the_border'
@@ -789,11 +800,12 @@ class Networker(threading.Thread, BanyanBase):
                 #if color == 2:
                 #    card = 'return_of_the_ancient_ones'
                 #END TESTING
-                self.mythos_deck[x][card] = cards[color][card]
-                self.mythos_deck[x][card]['color'] = color
+                    self.mythos_deck[x][card] = MYTHOS[color][card]
+                    self.mythos_deck[x][card]['color'] = color
+                    del MYTHOS[color][card]
         #FOR TESTING
-        self.mythos_deck[0]['the_bermuda_triangle'] = cards[1]['the_bermuda_triangle']
-        self.mythos_deck[0]['the_bermuda_triangle']['color'] = 1
+        self.mythos_deck[0]['the_world_fights_back'] = MYTHOS[1]['the_world_fights_back']
+        self.mythos_deck[0]['the_world_fights_back']['color'] = 1
         #END TESTING
 
     def set_omen(self, pos=None, trigger=True, increment=1):

@@ -53,11 +53,13 @@ class EncounterPane():
             'monster_heal': self.monster_heal,
             'monster_reckoning': self.monster_reckoning,
             'monster_reckoning_move': self.monster_reckoning_move,
+            'move_investigator': self.move_investigator,
             'move_monster': self.move_monster,
             'mythos_reckoning': self.mythos_reckoning,
             'recover': self.recover_investigator,
             'request_card': self.request_card,
             'resting_enabled': self.resting_enabled,
+            'select_location': self.select_location,
             'server_check': lambda: self.set_buttons('pass') if self.mythos_switch else self.set_buttons('fail'),
             'set_buttons': self.set_buttons,
             'set_doom': self.set_doom,
@@ -103,6 +105,14 @@ class EncounterPane():
         self.monster_reckonings = []
         self.monster_reckoning_loaded = False
         self.monster_death_triggers = []
+        self.no_loc_click = False
+
+    def clear_buttons(self, buttons=[]):
+        self.layout.clear()
+        self.layout.add(self.text_button)
+        self.layout.add(self.phase_button)
+        for button in buttons:
+            self.layout.add(button)
 
     def get_rumor(self, name):
         return MYTHOS[name]['manager_object']
@@ -299,6 +309,7 @@ class EncounterPane():
         self.investigator.encounter_impairment = 0
         self.mythos_reckonings = []
         self.monster_reckonings = []
+        self.no_loc_click = False
         if not skip:
             self.hub.my_turn = False
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -617,6 +628,14 @@ class EncounterPane():
                 monster.heal(amt)
         self.set_buttons(step)
 
+    def move_investigator(self, investigator=None, location=None, step='finish'):
+        investigator = self.investigator.name if investigator == None else investigator
+        if location == None:
+            pass
+        else:
+            self.hub.networker.publish_payload({'message': 'move_investigator', 'value': investigator, 'destination': location}, self.investigator.name)
+        self.set_buttons(step)
+
     def move_monster(self, step='finish', encounter=True, move_to='self', optional=False):
         if len(self.hub.location_manager.get_all('monsters', True)) == 0:
             self.set_buttons(step)
@@ -747,6 +766,31 @@ class EncounterPane():
         else:
             self.investigator.recover_restrictions.append(origin)
         self.set_buttons(step)
+
+    def select_location(self, mythos='', step='finish'):
+        self.clear_buttons()
+        self.no_loc_click = True
+        if mythos == 'that_which_consumes' and len([gate for gate in self.hub.location_manager.locations.values() if gate['gate']]) == 0:
+            self.set_buttons(step)
+            return
+        def doom_end(loc, doom):
+            map_name = self.hub.location_manager.get_map_name(loc)
+            self.hub.networker.publish_payload({'message': 'remove_gate', 'value': map_name + ':' + loc}, self.investigator.name)
+            if doom:
+                self.hub.networker.publish_payload({'message': 'doom_change', 'value': -1}, self.investigator.name)
+            self.hub.networker.publish_payload({'message': 'end_mythos'}, self.investigator.name)
+        def select_loc(location):
+            if mythos == 'that_which_consumes'and self.hub.location_manager.locations[location]['gate']:
+                on_omen = self.hub.location_manager.locations[location]['color'] == ['green', 'blue', 'red', 'blue'][self.hub.omen]
+                self.clear_buttons()
+                self.proceed_button.action = doom_end
+                self.proceed_button.action_args = {'loc': location, 'doom': not on_omen}
+                self.proceed_button.text = 'Discard Gate' + ('' if on_omen else '; Advance Doom by 1')
+                self.option_button.text = human_readable(location)
+                self.option_button.disable()
+                self.layout.add(self.proceed_button)
+                self.layout.add(self.option_button)
+        self.click_action = select_loc
 
     def set_buttons(self, key):
         self.wait_step = None

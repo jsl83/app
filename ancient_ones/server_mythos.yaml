@@ -79,6 +79,12 @@
         - location: world:no_spawn
           name: strange_sightings
           piece: rumor
+    support_of_the_church:
+      difficulty: 0
+      lead_only: True
+    that_which_consumes:
+      difficulty: 0
+      lead_only: True
   -
     a_dark_power:
       difficulty: 1
@@ -132,7 +138,9 @@
       lead_only: True
       difficulty: 0
     silver_twilight_aid:
-      difficult: 0
+      difficulty: 0
+    the_bermuda_triangle:
+      difficulty: 1
   -
     dimensions_collide:
       difficulty: 2

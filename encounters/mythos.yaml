@@ -633,4 +633,57 @@
             origin: strange_sightings
             step: reckoning
             text: Next
-    
+  support_of_the_church:
+    action:
+      - request_card
+    aargs:
+      - kind: conditions
+        name: blessed
+        text: Gain a Blessed Condition
+    lead_only: True
+    font_size: 14
+    flavor: You hang your head in exhaustion and frustration. You jump suddenly when a hand rests on your shoulder. To your relief, you turn to find the local priest. "Have faith, my child," he tells you. "Your good works have not gone unseen. Your brave acts are making a difference."
+    text: The Lead Investigator gains a Blessed Condition.
+  that_which_consumes:
+    action:
+      - select_location
+    aargs:
+      - mythos: that_which_consumes
+        step: end
+        text: Select Gate
+        skip: True
+    end:
+      - end_mythos
+    eargs:
+      - text: No Gates
+    flavor: In one night, the whole monstrous undertaking has disappeared. Every occult sigil has been sanded from the wall and painted over. Every name on your list has moved to a new city without notice. You would like to believe that you managed to drive them out, but you fear that it signifies something worse. The dark goal they'd been pursuing is now accomplished.
+    text: Investigators, as a group, choose 1 Gate on the game board and discard it. If the discarded Gate does not correspond to the current Omen, advance Doom by 1.
+    font_size: 12
+    lead_only: True
+  the_bermuda_triangle:
+    action:
+      - single_roll
+    aargs:
+      - effects:
+          '12': move
+          '3456': nada
+        skip: Cast the die
+    move:
+      - move_investigator
+    margs:
+      - text: Next
+        location: space_8
+        step: delay
+    delay:
+      - delayed
+    dargs:
+      - skip: True
+    nada:
+      - set_buttons
+    nargs:
+      - key: finish
+        text: Next
+    flavor: These sudden thunderstorms have grown more common. Twice a day, rain that smells like seawater floods the streets, and cold winds that cut like glass threaten to pull doors off their hinges.
+    text: Roll 1 die and take actions based on the result.
+    move_text: Move to Space 8 and become Delayed.
+    nada_text: You escape the storm.

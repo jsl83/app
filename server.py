@@ -331,7 +331,7 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'strange_sightings'
+                                            name = 'the_bermuda_triangle'
                                             self.is_first = False
                                         #END TESTING
                                         self.mythos = self.mythos_deck[x][name]
@@ -792,8 +792,8 @@ class Networker(threading.Thread, BanyanBase):
                 self.mythos_deck[x][card] = cards[color][card]
                 self.mythos_deck[x][card]['color'] = color
         #FOR TESTING
-        self.mythos_deck[0]['strange_sightings'] = cards[0]['strange_sightings']
-        self.mythos_deck[0]['strange_sightings']['color'] = 0
+        self.mythos_deck[0]['the_bermuda_triangle'] = cards[1]['the_bermuda_triangle']
+        self.mythos_deck[0]['the_bermuda_triangle']['color'] = 1
         #END TESTING
 
     def set_omen(self, pos=None, trigger=True, increment=1):

@@ -205,6 +205,8 @@ class HubScreen(arcade.View):
                     self.switch_info_pane('location')
                     self.select_ui_button(3)
                     self.info_manager.trigger_render()
+            elif self.encounter_pane.no_loc_click:
+                self.encounter_pane.clear_buttons()
             buttons = list(self.ui_manager.get_widgets_at((x,y)))
             if len(buttons) > 0 and type(buttons[0]) == ActionButton:
                 buttons[0].action()
@@ -437,12 +439,9 @@ class HubScreen(arcade.View):
                     self.set_doom(int(payload['value']))
                 case 'token_removed':
                     kind = payload['kind']
-                    loc = payload['value']
-                    loc = loc.split(':')
-                    map_name = loc[0]
-                    location = loc[1]
-                    self.location_manager.locations[location][kind] = False
-                    self.maps[map_name].remove_tokens(kind, location)
+                    loc = payload['value'].split(':')
+                    self.location_manager.locations[loc[1]][kind] = False
+                    self.maps[loc[0]].remove_tokens(kind, loc[1])
                     self.map.token_manager.trigger_render()
                 case 'monster_damaged':
                     monster_id = int(payload['value'])
@@ -684,6 +683,7 @@ class HubScreen(arcade.View):
     def set_omen(self, index):
         positions = [(921, 757), (956, 737), (937, 703), (904, 724)]
         self.omen_counter.move(positions[index][0] - self.omen_counter.x, positions[index][1] - self.omen_counter.y)
+        self.omen = index
 
     def undo_move(self, loc, rail, ship):
         self.networker.publish_payload({'message': 'move_investigator', 'value': self.investigator.name, 'destination': loc}, self.investigator.name)

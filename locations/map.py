@@ -120,6 +120,7 @@ class Map():
         zoom_button = ActionButton(location['x'] - item['size'] * item['zoom_scale'] / 2, location['y'] - item['size'] * item['zoom_scale'] / 2 - offset * 25,
                                     texture=path, scale=item['zoom_scale'], name=location_name)
         zoom_button.item_name = name if monster_id == None else monster_id
+        zoom_button.kind = kind
         self.zoom_layout.add(zoom_button)
 
     def move_tokens(self, kind, location, destination, zoom_destination, dest_name, name=None):
@@ -140,9 +141,9 @@ class Map():
         zoom_out.move(zoom_out.initial_x - zoom_out.x, zoom_out.initial_y - zoom_out.y)
 
     def get_tokens(self, kind, location, name):
-        name = str(name)
+        name = str(name) if name != None else None
         zoom_in = next((button for button in self.layouts[kind].children if button.name == location and (True if name == None else button.item_name == name)), None)
-        zoom_out = next((button for button in self.zoom_layout.children if button.name == location and (True if name == None else button.item_name == name)), None)
+        zoom_out = next((button for button in self.zoom_layout.children if button.name == location and button.kind == kind and (True if name == None else button.item_name == name)), None)
 
         return (zoom_in, zoom_out)
 

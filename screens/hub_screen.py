@@ -394,7 +394,7 @@ class HubScreen(arcade.View):
                                     self.remaining_actions = 3
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
-                                    self.ticket_move(self.investigator.name, 'san_francisco', 0, 0, self.investigator.location)
+                                    self.ticket_move(self.investigator.name, self.location_manager.active_expedition, 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     self.investigator.focus = 0
@@ -524,13 +524,14 @@ class HubScreen(arcade.View):
                     if payload['kind'] == 'clue':
                         self.location_manager.all_investigators[payload['owner']].clues.remove(payload['value'])
                     else:
-                        card = next((card for card in self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']] if card.name == payload['value']))
-                        self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']].remove(card)
+                        items = self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']]
+                        self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']] = [item for item in items if item.get_server_name() != payload['value']]
+                    if payload['owner'] == self.investigator.name:
+                        self.info_panes['possessions'].setup()
                 case 'player_update':
                     investigator = self.location_manager.all_investigators[payload['owner']]
                     for key in ['health', 'sanity', 'ship_tickets', 'rail_tickets']:
                         setattr(self.location_manager.all_investigators[payload['owner']], key, payload[key])
-
             if self.encounter_pane.wait_step != None:
                 self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
 
@@ -554,7 +555,7 @@ class HubScreen(arcade.View):
         subtitle = subtitle if subtitle != '' else '' if mod == 0 else 'Mod: ' + str(mod)
         dice = self.investigator.skills[3 if skill == 5 else skill] + mod + self.investigator.skill_tokens[skill]
         for x in range(dice if dice > 1 else 1):
-            roll = random.randint(1, 6) - self.investigator.encounter_impairment
+            roll = random.randint(1, 6) + self.investigator.encounter_impairment
             roll = 1 if roll < 1 else roll
             rolls.append(roll)
             choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
@@ -612,7 +613,8 @@ class HubScreen(arcade.View):
         return rolls
     
     def single_roll(self, pane, options, title='', subtitle=''):
-        roll = random.randint(1, 6)
+        roll = random.randint(1, 6) + self.investigator.encounter_impairment
+        roll = 1 if roll < 1 else roll
         #FOR TESTING
         def autofail():
             self.encounter_pane.rolls = [1]
@@ -701,10 +703,8 @@ class HubScreen(arcade.View):
         key = self.location_manager.move_unit(unit, kind, location)
         self.map.move_tokens(kind, key, destination, zoom_destination, location, unit)
 
-    def get_locations_within(self, distance, investigator=None, same_loc=True):
+    def get_locations_within(self, distance, start_loc, same_loc=True):
         locations = self.location_manager.locations
-        investigator = investigator if investigator != None else self.investigator
-        start_loc = investigator.location
         locs = {start_loc}
         temp = set()
         for x in range(distance):

@@ -108,6 +108,7 @@ class Map():
                 path = 'maps/expedition.png'
                 location['expedition'] = True
                 name = 'expedition'
+                manager.active_expedition = location_name
             case 'rumor':
                 path = 'maps/rumor.png'
                 location['rumor'] = True

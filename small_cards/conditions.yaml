@@ -8,6 +8,27 @@
   blessed:
     tags:
       - boon
+    '1':
+      reckoning:
+        title: Reckoning
+        action:
+          - single_roll
+        aargs:
+          - effects:
+              '12': discard
+              '3456': nada
+            skip: True
+        discard:
+          - discard
+        dargs:
+          - kind: conditions
+            name: blessed
+            skip: True
+        nada:
+          - set_buttons
+        nargs:
+          - key: finish
+        action_text: Roll 1 die. On a 1 or 2, discard this card.
   cursed:
     tags:
       - bane
@@ -19,6 +40,11 @@
       - deal
       - common
     '1':
+      reckoning:
+        action:
+          - flip_card
+        aargs:
+          - skip: True
       back:
         title: Beyond Riches
         action:

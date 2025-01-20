@@ -141,18 +141,14 @@ class Networker(threading.Thread, BanyanBase):
             'set_payment': self.set_payment,
             'clear_bodies': self.clear_bodies,
             'move_omen': self.set_omen,
-        }
-        self.rumor_actions = {
             'discard_cost': self.discard_cost,
-            'spawn': self.spawn,
             'secrets_of_the_past': self.secrets_of_the_past,
-            'spreading_sickness': self.spreading_sickness,
-            'move_omen': self.set_omen,
-            'restock_reserve': self.restock_reserve,
+            'spreading_sickness': self.spreading_sickness
         }
         self.omen_cycle = ['green', 'blue', 'red', 'blue']
         self.mythos = None
         self.reckoning_actions = []
+        self.end_of_mythos_actions = []
         self.players_died = False
         '''
         #FOR TESTING
@@ -261,8 +257,8 @@ class Networker(threading.Thread, BanyanBase):
                                 item_name = possession.split(':')[1]
                                 if kind == 'assets':
                                     self.asset_request('get', item_name, name)
-                                elif kind == 'spells':
-                                    self.spell_conditions_request('spells', name, name=item_name)
+                                elif kind in ['conditions', 'spells']:
+                                    self.spell_conditions_request(kind, name, name=item_name)
                         self.restock_reserve()
                         self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
                     '''
@@ -302,8 +298,9 @@ class Networker(threading.Thread, BanyanBase):
                             self.decks['used_artifacts'].append(payload['value'])
                         else:
                             self.decks[payload['kind']].append(payload['value'])
-                        if payload['value'] in self.investigators[topic][payload['kind']]:
-                            self.investigators[topic][payload['kind']].remove(payload['value'])
+                        true_name = payload['value'] if payload['kind'] not in ['conditions', 'spells'] else payload['value'][:-1]
+                        if true_name in self.investigators[topic][payload['kind']]:
+                            self.investigators[topic][payload['kind']].remove(true_name)
                             self.publish_payload({'message': 'possession_lost', 'value': payload['value'], 'kind': payload['kind'], 'owner': topic}, 'server_update')
                         elif payload['kind'] == 'clues' and payload.get('from_map', False):
                             self.publish_payload({'message': 'token_removed', 'value': payload['value'], 'kind': 'clue'}, 'server_update')
@@ -333,7 +330,7 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'the_world_fights_back'
+                                            name = 'tied_to_a_dark_purpose'
                                             self.is_first = False
                                         else:
                                             pass
@@ -493,6 +490,13 @@ class Networker(threading.Thread, BanyanBase):
         }, 'server_update')
 
     def end_mythos(self):
+        for actions in self.end_of_mythos_actions:
+            action = actions.get('action', None)
+            if action != None:
+                if actions.get('args', None) != None:
+                    self.action_dict[action](**actions['args'])
+                else:
+                    self.action_dict[action]()
         if not self.players_died:
             self.current_phase = 0
             self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
@@ -502,7 +506,11 @@ class Networker(threading.Thread, BanyanBase):
     def on_reckoning(self, args, recur_value=None):
         if recur_value == 'expeditions':
             args['recurring'] = len(self.expeditions)
-        self.reckoning_actions.append(args)
+        if args.get('end_of_mythos', None) != None:
+            del args['end_of_mythos']
+            self.end_of_mythos_actions.append(args)
+        else:
+            self.reckoning_actions.append(args)
 
     def lose_game(self):
         pass
@@ -538,9 +546,9 @@ class Networker(threading.Thread, BanyanBase):
                     action = actions.get('action', None)
                     if action != None:
                         if actions.get('args', None) != None:
-                            self.rumor_actions[action](**actions['args'])
+                            self.action_dict[action](**actions['args'])
                         else:
-                            self.rumor_actions[action]()
+                            self.action_dict[action]()
                     if actions.get('recurring', None) == None:
                         self.reckoning_actions.remove(actions)
                     else:
@@ -615,7 +623,7 @@ class Networker(threading.Thread, BanyanBase):
     def spell_conditions_request(self, kind, investigator, tag='', name='', owned=[]):
         item = None
         ref = SPELLS if kind == 'spells' else CONDITIONS
-        items = [card for card in self.decks[kind] if (name == '' or name in card) and (tag == '' or tag in ref[card[:-1]]['tags']) and (owned == '' or card[:-1] not in owned)]
+        items = [card for card in self.decks[kind] if (name == '' or name in card) and (tag == '' or tag in ref[card[:-1]]['tags']) and (owned == [] or card[:-1] not in owned)]
         if len(items) > 0:
             item = random.choice(items)
             #self.decks[kind].remove(item)
@@ -755,11 +763,12 @@ class Networker(threading.Thread, BanyanBase):
         self.restock_reserve([item for item in self.assets['reserve'] if item in to_remove])
         self.assets['discard'] = [item for item in self.assets['discard'] if item not in to_remove]
 
-    def secrets_of_the_past(self):
+    def secrets_of_the_past(self, is_secrets=True):
         self.expeditions.remove(self.expedition)
         del self.encounters[self.expedition]
         if len(self.expeditions) == 0:
-            pass #LOSE GAME
+            if is_secrets:
+                pass #LOSE GAME
         else:
             self.spawn('expedition')
 
@@ -791,7 +800,7 @@ class Networker(threading.Thread, BanyanBase):
             for character in self.ancient_one['mythos'][x]:
                 color = int(character)
                 card = random.choice(list(MYTHOS[color].keys()))
-                if card != 'the_world_fights_back':
+                if card != 'tied_to_a_dark_purpose':
                 #FOR TESTING
                 #if color == 0:
                 #    card = 'patrolling_the_border'
@@ -804,8 +813,8 @@ class Networker(threading.Thread, BanyanBase):
                     self.mythos_deck[x][card]['color'] = color
                     del MYTHOS[color][card]
         #FOR TESTING
-        self.mythos_deck[0]['the_world_fights_back'] = MYTHOS[1]['the_world_fights_back']
-        self.mythos_deck[0]['the_world_fights_back']['color'] = 1
+        self.mythos_deck[0]['tied_to_a_dark_purpose'] = MYTHOS[0]['tied_to_a_dark_purpose']
+        self.mythos_deck[0]['tied_to_a_dark_purpose']['color'] = 0
         #END TESTING
 
     def set_omen(self, pos=None, trigger=True, increment=1):

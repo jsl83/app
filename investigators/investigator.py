@@ -97,9 +97,6 @@ class Investigator():
         self.skill_tokens[skill] += amt
         self.skill_tokens[skill] = 2 if self.skill_tokens[skill] > 2 else -2 if self.skill_tokens[skill] < -2 else self.skill_tokens[skill]
 
-    def discard(self, card):
-        card.discard()
-
     def get_number(self, kind, tag=None):
         if kind == 'clues':
             return len(self.clues)

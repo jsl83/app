@@ -11,6 +11,7 @@ class LocationManager():
         self.all_investigators = {}
         self.all_monsters = []
         self.dead_investigators = {}
+        self.active_expedition = ''
         try:
             with open('locations/locations.yaml') as stream:
                 self.locations = yaml.safe_load(stream)

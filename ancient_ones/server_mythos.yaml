@@ -85,6 +85,8 @@
     that_which_consumes:
       difficulty: 0
       lead_only: True
+    tied_to_a_dark_purpose:
+      difficulty: 2
   -
     a_dark_power:
       difficulty: 1
@@ -145,6 +147,18 @@
       difficulty: 2
     the_world_fights_back:
       difficulty: 0
+    the_world_shakes:
+      difficulty: 1
+      actions:
+        - on_reckoning
+      args:
+        - args:
+            end_of_mythos: True
+            action: secrets_of_the_past
+            args:
+              is_secrets: False
+    tide_of_despair:
+      difficulty: 1
   -
     dimensions_collide:
       difficulty: 2

@@ -32,8 +32,8 @@ class SmallCard():
         for key in CARDS[self.kind][self.name]:
             setattr(self, key, CARDS[self.kind][self.name][key])
 
-    def discard(self):
-        self.investigator.possessions[self.kind].remove(self)
+    def discard(self, investigator):
+        pass
 
     def get_server_name(self):
         return self.name
@@ -57,10 +57,13 @@ class Spell(SmallCard):
 class Condition(SmallCard):
     def __init__(self, name, investigator):
         self.variant = int(name[-1])
+        self.variant = 1
         SmallCard.__init__(self, name[0:-1], investigator)
         self.kind = 'conditions'
-        self.card_back = CARDS['conditions'][self.name][str(self.variant)]['back']
-        self.setup()
+        self.texture = arcade.load_texture(':resources:eldritch/images/conditions/' + self.name.replace('.','') + '.png')
+        self.tags = CARDS['conditions'][self.name]['tags']
+        for key in CARDS['conditions'][self.name][str(self.variant)]:
+            setattr(self, key, CARDS['conditions'][self.name][str(self.variant)][key])
 
     def get_server_name(self):
         return self.name + str(self.variant)

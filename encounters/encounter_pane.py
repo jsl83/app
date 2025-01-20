@@ -324,7 +324,7 @@ class EncounterPane():
         self.set_buttons(step)
 
     def allow_move(self, distance, step='finish', same_loc=True, must_move=False):
-        self.allowed_locs = self.hub.get_locations_within(distance, same_loc=same_loc)
+        self.allowed_locs = self.hub.get_locations_within(distance, self.investigator.location, same_loc=same_loc)
         def action():
             self.move_action = None
             self.allowed_locs = set()
@@ -362,12 +362,15 @@ class EncounterPane():
         else:
             self.set_buttons(step)
     
-    def condition_check(self, space_type=None, item_type=None, tag=None, step='finish', fail='finish'):
+    def condition_check(self, space_type=None, item_type=None, tag=None, step='finish', fail='finish', on_location=None, radius=0):
         pass_check = True
         if space_type != None and self.hub.location_manager.locations[self.investigator.location]['kind'] != space_type:
             pass_check = False
         if item_type != None and len([item for item in self.investigator.possessions[item_type] if tag == None or tag in item.tags]) == 0:
             pass_check = False
+        if on_location != None:
+            on_location = on_location if on_location != 'expedition' else self.hub.location_manager.active_expedition
+            pass_check = self.investigator.location in self.hub.get_locations_within(radius, on_location)
         self.set_buttons(step if pass_check else fail)
 
     def damage_monsters(self, damage, step='finish', single=True, epic=True, lose_hp=False, location=None):
@@ -455,7 +458,6 @@ class EncounterPane():
         if name != None:
             card = next((item for item in self.investigator.possessions[kind] if item.name == name), None)
             if card != None:
-                card.discard()
                 self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, self.investigator.name)
                 self.hub.info_panes['possessions'].setup()
             self.set_buttons(step)
@@ -468,7 +470,6 @@ class EncounterPane():
                 options = []
                 selected = []
                 def discard_card(card):
-                    card.discard()
                     self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, self.investigator.name)
                     self.hub.info_panes['possessions'].setup()
                 if amt == 'one':
@@ -595,7 +596,7 @@ class EncounterPane():
             self.set_buttons(step)
 
     def impair_encounter(self, amt, step='finish'):
-        self.investigator.encounter_impairment = amt
+        self.investigator.encounter_impairment += amt
         self.set_buttons(step)
 
     def improve_skill(self, skill, step='finish', amt=1, option=None):
@@ -758,7 +759,7 @@ class EncounterPane():
     def request_card(self, kind, step='finish', name='', tag='', trigger=False):
         card = next((card for card in self.investigator.possessions[kind] if card.name == name), None)
         if (trigger or name in ['cursed', 'blessed']) and card != None:
-            self.small_card(card, trigger, step)
+            SmallCardPane([card], self, 'back', step)
         else:
             self.wait_step = step
             message_sent = self.hub.request_card(kind, name, tag=tag)
@@ -902,8 +903,18 @@ class EncounterPane():
         next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=confirm_test)
         self.rolls = self.hub.run_test(stat, mod, self.hub.encounter_pane, [next_button])
 
-    def small_card(self, card, trigger, step):
-        SmallCardPane(self.hub, card, self, trigger, step)
+    def small_card(self, cards=None, categories=[], single_card=True, attribute='reckoning', step='finish'):
+        if cards == None:
+            cards = []
+            for cat in categories:
+                cards += self.investigator.possessions[cat]
+        if len(cards) == 0:
+            self.clear_buttons([self.proceed_button])
+            self.proceed_button.action = self.set_buttons
+            self.proceed_button.action_args = {'key': step if step != 'finish' else 'no_effect'}
+            self.proceed_button.text = 'No Effects: Proceed'
+        else:
+            SmallCardPane(cards, self, attribute, step, single_card, default_text=self.text_button.text)
 
     def spawn_clue(self, step='finish', click=False, number=1):
         if not click:
@@ -1021,7 +1032,6 @@ class EncounterPane():
             self.set_buttons('action')
 
     def reckoning(self):
-        print(self.mythos_reckonings)
         if len(self.mythos_reckonings) > 0:
             action = self.mythos_reckonings.pop(0)
             self.text_button.text = 'Reckoning\n\n' + action[1]
@@ -1036,31 +1046,59 @@ class EncounterPane():
             self.hub.show_encounter_pane()
 
 class SmallCardPane(EncounterPane):
-    def __init__(self, hub, card, parent, encounter, step):
-        EncounterPane.__init__(self, hub)
+    def __init__(self, cards, parent, attribute, encounter_step=None, single_card=True, default_text=None):
+        EncounterPane.__init__(self, parent.hub)
         self.return_layout = arcade.gui.UILayout(x=1000)
-        for element in hub.info_manager.children[0]:
+        for element in parent.hub.info_manager.children[0]:
             self.return_layout.add(element)
         self.return_overlay = arcade.gui.UILayout(width=1000, height=658, x=0, y=142).with_background(arcade.load_texture(':resources:eldritch/images/gui/overlay.png'))
-        for element in hub.choice_layout.children:
+        for element in parent.hub.choice_layout.children:
             self.return_overlay.add(element)
-        self.encounter = card.card_back
+        self.attribute = attribute
+        self.cards = [card for card in cards if getattr(card, self.attribute, None) != None]
+        self.parent = parent
+        self.step = encounter_step
+        self.action_dict = self.action_dict | {'pick_card': self.pick_card, 'flip_card': self.flip_card}
         self.hub.clear_overlay()
         self.hub.info_manager.children = {0:[]}
         self.hub.info_manager.add(self.layout)
+        self.single_card = single_card
+        self.active_card = None
+        self.default_text = default_text
+        if len(cards) == 1:
+            self.card_selected(cards[0])
+        else:
+            self.pick_card()
+
+    def flip_card(self):
+        self.encounter = self.active_card.back
+        self.set_buttons('action')
+
+    def card_selected(self, card):
+        self.active_card = card
+        self.encounter = getattr(card, self.attribute)
         self.set_buttons('action')
         self.phase_button.text = human_readable(card.name) + ' - ' + self.encounter['title']
-        self.parent = parent
-        self.is_encounter = encounter
-        self.step = step
+        self.cards.remove(card)
+
+    def pick_card(self):
+        choices = []
+        self.text_button.text = self.default_text
+        for card in self.cards:
+            choices.append(ActionButton(scale=0.5, texture=card.kind + '/' + card.name + '.png', action=self.card_selected, action_args={'card': card}))
+        self.hub.choice_layout = create_choices('Choose Card Effect', choices=choices)
+        self.hub.show_overlay()
 
     def finish(self):
-        self.hub.info_manager.children = {0:[]}
-        self.hub.clear_overlay()
-        self.hub.info_manager.add(self.return_layout)
-        self.hub.info_manager.trigger_render()
-        if len(self.return_overlay.children) != 1:
-            self.hub.choice_layout = self.return_overlay
-            self.hub.show_overlay()
-        if self.is_encounter:
-            self.parent.set_buttons(self.step)
+        if not self.single_card and len(self.cards) > 0:
+            self.pick_card()
+        else:
+            self.hub.info_manager.children = {0:[]}
+            self.hub.clear_overlay()
+            self.hub.info_manager.add(self.return_layout)
+            self.hub.info_manager.trigger_render()
+            if len(self.return_overlay.children) != 1:
+                self.hub.choice_layout = self.return_overlay
+                self.hub.show_overlay()
+            if self.step != None:
+                self.parent.set_buttons(self.step)

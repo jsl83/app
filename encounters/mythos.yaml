@@ -390,7 +390,7 @@
       - impair_encounter
     aargs:
       - skip: True
-        amt: 6
+        amt: -6
         step: debt
     debt:
       - request_card
@@ -399,6 +399,12 @@
         name: debt
         trigger: True
         text: Gain/resolve a Debt Condition
+        step: unimpair
+    unimpair:
+      - impair_encounter
+    uargs:
+      - skip: True
+        amt: 6
     font_size: 12
     flavor: The man in the suit slides the contract across the desk. "We've spoken to the police and the customs agents, and all of the necessary payments have been made. If you'll just sign this, indicating that you understand your obligations, you can be on your way." His assistant places a pen in your hand.
     text: The Lead Investigator gains a Debt Condition. If the Lead Investigator already had a Debt Condition, they resolve the Reckoning effect on that card, treating all die rolls as l's.
@@ -735,5 +741,66 @@
         text: Discard 1 Monster on your space
     flavor: Across the globe, headlines announce terrors that threaten to engulf humanity. Individuals everywhere take action against these horrors and assist those who have already been fighting the ancient one.
     text: Choose one of the following
-  
+  the_world_shakes:
+    action:
+      - condition_check
+    aargs:
+      - on_location: expedition
+        radius: 1
+        skip: True
+        step: delay
+        fail: nada
+    delay:
+      - delayed
+    dargs:
+      - text: Lose 2 Health; become Delayed
+        step: health
+    health:
+      - hp_san
+    hargs:
+      - skip: True
+        hp: -2
+    nada:
+      - set_buttons
+    nargs:
+      - key: finish
+        text: Next
+    flavor: The scope of the tremor was so vast that newspapers in every country reported on the damage done and the tragic destruction of ancient wonders.
+    text: Each investigator on the Active Expedition space or an adjacent space loses 2 Health and becomes Delayed. Then search the Expedition Encounter deck for each card corresponding to the Active Expedition and return it to the game box. Then shuffle the Expedition Encounter deck.
+    font_size: 12
+  tide_of_despair:
+    action:
+      - hp_san
+      - discard
+    aargs:
+      - hp: -2
+        san: -2
+        text: Lose 2 Health and 2 Sanity
+      - kind: conditions
+        name: blessed
+        text: Discard a Blessed Condition
+    flavor: A cold, bitter wind howls through the trees and people everywhere cling to their fires and blankets. The chill has settled into your bones, and there's no warmth to be found.
+    text: Each investigator loses 2 Health and 2 Sanity unless they discard a Blessed Condition.
+  tied_to_a_dark_purpose:
+    action:
+      - impair_encounter
+    aargs:
+      - skip: True
+        amt: -6
+        step: items
+    items:
+      - small_card
+    iargs:
+      - skip: True
+        categories:
+          - conditions
+        step: unimpair
+        single_card: False
+    unimpair:
+      - impair_encounter
+    uargs:
+      - skip: True
+        amt: 6
+    flavor: Keep running. Never look back. You've known for a long time now that the consequences of your actions are always one step behind you. But now, it's all catching up to you.
+    text: Resolve the Reckoning effect on all Conditions, treating all die rolls as 1's.
   

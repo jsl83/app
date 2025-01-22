@@ -10,3 +10,6 @@
   wind-walker:
     toughness: ++
     epic: True
+  spinner_of_webs:
+    toughness: ++
+    epic: True

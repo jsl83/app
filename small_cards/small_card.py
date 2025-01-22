@@ -62,8 +62,8 @@ class Condition(SmallCard):
         self.kind = 'conditions'
         self.texture = arcade.load_texture(':resources:eldritch/images/conditions/' + self.name.replace('.','') + '.png')
         self.tags = CARDS['conditions'][self.name]['tags']
-        for key in CARDS['conditions'][self.name][str(self.variant)]:
-            setattr(self, key, CARDS['conditions'][self.name][str(self.variant)][key])
+        #for key in CARDS['conditions'][self.name][str(self.variant)]:
+        #    setattr(self, key, CARDS['conditions'][self.name][str(self.variant)][key])
 
     def get_server_name(self):
         return self.name + str(self.variant)

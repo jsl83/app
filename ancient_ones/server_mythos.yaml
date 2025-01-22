@@ -87,6 +87,10 @@
       lead_only: True
     tied_to_a_dark_purpose:
       difficulty: 2
+    torn_asunder:
+      difficulty: 2
+    unexpected_betrayal:
+      difficulty: 1
   -
     a_dark_power:
       difficulty: 1
@@ -102,6 +106,7 @@
         - kind: investigators
           divisor: 2
           payment: clues
+          name: all_for_nothing
     ancient_guardians:
       difficulty: 1
       actions:
@@ -158,6 +163,8 @@
             args:
               is_secrets: False
     tide_of_despair:
+      difficulty: 1
+    treacherous_magic:
       difficulty: 1
   -
     dimensions_collide:
@@ -318,7 +325,7 @@
         - spawn
       args:
         - args:
-            recurring: 1
+            recurring: 4
             name: the_wind-walker
         - piece: monsters
           name: wind-walker
@@ -326,3 +333,23 @@
         - piece: rumor
           name: the_wind-walker
           location: world:space_4
+    web_between_worlds:
+      difficulty: 2
+      actions:
+        - on_reckoning
+        - spawn
+        - spawn
+      args:
+        - args:
+            recurring: 3
+            unsolve: lose_game
+            name: web_between_worlds
+            action: web_between_worlds
+            rargs:
+              tick: 0
+        - piece: rumor
+          name: web_between_worlds
+          location: world:space_9
+        - piece: monsters
+          name: spinner_of_webs
+          location: world:space_9

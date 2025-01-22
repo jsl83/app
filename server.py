@@ -143,7 +143,8 @@ class Networker(threading.Thread, BanyanBase):
             'move_omen': self.set_omen,
             'discard_cost': self.discard_cost,
             'secrets_of_the_past': self.secrets_of_the_past,
-            'spreading_sickness': self.spreading_sickness
+            'spreading_sickness': self.spreading_sickness,
+            'web_between_worlds': self.web_between_worlds
         }
         self.omen_cycle = ['green', 'blue', 'red', 'blue']
         self.mythos = None
@@ -231,6 +232,7 @@ class Networker(threading.Thread, BanyanBase):
                             'message': 'spawn',
                             'value': 'investigators',
                             'name': payload['value'],
+                            'replace': payload['replace'],
                             'map': 'world'}, 'server_update')
                         self.selected_investigators = [name.replace(payload['replace'], payload['value']) for name in self.selected_investigators]
                         if len(self.investigators) == self.player_count:
@@ -283,7 +285,7 @@ class Networker(threading.Thread, BanyanBase):
                     '''
         elif topic in self.selected_investigators:
             if payload['message'] in ['spells', 'conditions']:
-                self.spell_conditions_request(payload['message'], topic, payload.get('tag', ''), payload.get('value', ''), payload.get('owned', ''))
+                self.spell_conditions_request(payload['message'], topic, payload.get('tag', ''), payload.get('value', ''))
             else:
                 match payload['message']:
                     case 'assets':
@@ -330,7 +332,7 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'tied_to_a_dark_purpose'
+                                            name = 'web_between_worlds'
                                             self.is_first = False
                                         else:
                                             pass
@@ -352,6 +354,7 @@ class Networker(threading.Thread, BanyanBase):
                                             self.spawn('clues', number=self.reference[1])
                                         del self.mythos_deck[x][name]
                                         break
+                            if self.yellow_card:
                                 self.mythos_reckoning()
                         if self.current_phase == 3:
                             if self.mythos.get('actions', None) != None:
@@ -383,6 +386,7 @@ class Networker(threading.Thread, BanyanBase):
                             kind = 'expeditions'
                         self.publish_payload({'message': 'encounter_choice', 'value': kind + ':' + str(encounter)}, topic + '_server')
                     case 'doom_change':
+                        print(payload)
                         self.move_doom(int(payload['value']))
                     case 'remove_gate':
                         self.discard_gates(payload['value'])
@@ -459,12 +463,18 @@ class Networker(threading.Thread, BanyanBase):
                         self.set_omen(payload.get('pos', None), payload.get('trigger', True))
                     case 'update_rumor_solve':
                         rumor = next((rumor for rumor in self.reckoning_actions if rumor['name'] == payload['name']), None)
-                        if rumor != None:
-                            rumor['solve_amt'] += payload['value']
+                        if rumor.get('solve_amt', None) != None:
+                            rumor['solve_amt'] += payload['solve_amt']
                             if rumor['solve_amt'] >= math.ceil(self.player_count / rumor['solve_threshold']):
                                 self.solve_rumor(rumor)
                             else:
                                 self.publish_payload({'message': 'update_rumor', 'name': rumor['name'], 'value': rumor['recurring'], 'solve': rumor['solve_amt']}, 'server_update')
+                        else:
+                            rumor['recurring'] += payload['value']
+                            if rumor['recurring'] <= 0:
+                                self.solve_rumor(rumor, False)
+                            else:
+                                self.publish_payload({'message': 'update_rumor', 'name': rumor['name'], 'value': rumor['recurring']}, 'server_update')
                     case 'spawn_rumor':
                         rumor = random.choice(list(MYTHOS[2].keys()))
                         for num in range(len(MYTHOS[2][rumor]['actions'])):
@@ -520,9 +530,9 @@ class Networker(threading.Thread, BanyanBase):
             self.move_doom()
         else:
             self.publish_payload({'message': 'mythos_switch'}, 'server_update')
-            self.set_payment('investigators', 'clues', divisor=2)
+            self.set_payment('investigators', 'clues', 'from_beyond', divisor=2)
 
-    def set_payment(self, kind, payment, divisor=1):
+    def set_payment(self, kind, payment, name, divisor=1):
         number = 0
         if kind == 'investigators':
             number = len(self.selected_investigators)
@@ -530,12 +540,13 @@ class Networker(threading.Thread, BanyanBase):
             number = len(self.decks['gates']['board'])
         needed = math.ceil(number / divisor)
         total = 0
-        for name in self.investigators:
+        for inv in self.investigators:
             if payment == 'clues':
-                total += len(self.investigators[name]['clues'])
+                total += len(self.investigators[inv]['clues'])
             elif payment in ['hp', 'san']:
-                total += self.investigators[name][payment]
-        self.publish_payload({'message': 'group_pay_update', 'total': total, 'needed': needed}, 'server_update')
+                total += self.investigators[inv][payment]
+        self.publish_payload({'message': 'group_pay_update', 'total': total, 'needed': needed, 'name': name}, 'server_update')
+        return needed
 
     def mythos_reckoning(self, number=1, doom=False):
         if doom and len(self.reckoning_actions) == 0:
@@ -577,12 +588,8 @@ class Networker(threading.Thread, BanyanBase):
             tick = len(self.decks['gates']['board'])
         elif count == 'growing_madness':
             lead = self.selected_investigators[self.lead_investigator]
-            owned = [card[:-1] for card in self.investigators[lead]['conditions']]
-            condition = random.choice([card for card in self.decks['conditions'] if ('madness' in CONDITIONS[card[:-1]]['tags']) and (card[:-1] not in owned)])
-            #self.decks['conditions'].remove(condition)
-            self.investigators[lead]['conditions'].append(condition)
-            self.publish_payload({'message': 'conditions', 'value': condition}, lead + '_server')
-            tick = len([card for card in owned if 'madness' in CONDITIONS[card]['tags']]) + 1
+            self.spell_conditions_request('conditions', lead, 'madness')
+            tick = len([card for card in self.investigators[lead]['conditions'] if 'madness' in CONDITIONS[card]['tags']])
         return math.ceil(tick / divisor)
 
     def solve_rumor(self, rumor, solved=True):
@@ -620,10 +627,11 @@ class Networker(threading.Thread, BanyanBase):
             chosen = self.monsters[index]
             do_damage(chosen, amt)
 
-    def spell_conditions_request(self, kind, investigator, tag='', name='', owned=[]):
+    def spell_conditions_request(self, kind, investigator, tag='', name=''):
         item = None
         ref = SPELLS if kind == 'spells' else CONDITIONS
-        items = [card for card in self.decks[kind] if (name == '' or name in card) and (tag == '' or tag in ref[card[:-1]]['tags']) and (owned == [] or card[:-1] not in owned)]
+        has_card = name != '' and next((card for card in self.investigators[investigator][kind] if name in card), None) != None
+        items = [card for card in self.decks[kind] if (name == '' or name in card) and (tag == '' or tag in ref[card[:-1]]['tags']) and not has_card]
         if len(items) > 0:
             item = random.choice(items)
             #self.decks[kind].remove(item)
@@ -685,7 +693,7 @@ class Networker(threading.Thread, BanyanBase):
                         if len(self.decks['gates']['deck']) > 0:
                             gate = random.choice(self.decks['gates']['deck'])
                             self.decks['gates']['deck'].remove(gate)
-                            gate = 'world:san_francisco'
+                            gate = 'world:buenos_aires'
                             self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
                             self.spawn('monsters', location=gate, name='avian_thrall')
@@ -775,7 +783,13 @@ class Networker(threading.Thread, BanyanBase):
     def spreading_sickness(self):
         amt = [rumor for rumor in self.reckoning_actions if rumor['name'] == 'spreading_sickness'][0]['recurring'] + 1
         encounter = {'action': ['hp_san'], 'aargs': [{'hp':-amt, 'step': 'reckoning', 'skip': True}]}
-        self.publish_payload({'message': 'player_mythos_reckoning', 'value': encounter, 'text': 'Rumor - Spreading Sickness'}, 'server_update')
+        self.publish_payload({'message': 'player_mythos_reckoning', 'value': encounter, 'text': 'spreading_sickness'}, 'server_update')
+
+    def web_between_worlds(self):
+        payment = self.set_payment('investigators', 'clues', 'web_between_worlds', 2)
+        encounter = {'action': ['group_pay_reckoning', 'update_rumor'], 'aargs': [{'kind': 'clues', 'name': 'web_between_worlds', 'first': True, 'text': 'Spend ' + str(payment) + ' Clues'},
+                                                                        {'name': 'web_between_worlds', 'kind': 'value', 'amt': -1, 'step': 'reckoning', 'text': 'Add 1 Eldritch Token'}]}
+        self.publish_payload({'message': 'player_mythos_reckoning', 'value': encounter, 'text': 'web_between_worlds'}, self.selected_investigators[self.lead_investigator] + '_server')
 
     def restock_reserve(self, removed=[], discard=False, refill=True, cycle=False):
         if cycle:
@@ -800,7 +814,7 @@ class Networker(threading.Thread, BanyanBase):
             for character in self.ancient_one['mythos'][x]:
                 color = int(character)
                 card = random.choice(list(MYTHOS[color].keys()))
-                if card != 'tied_to_a_dark_purpose':
+                if card != 'web_between_worlds':
                 #FOR TESTING
                 #if color == 0:
                 #    card = 'patrolling_the_border'
@@ -813,8 +827,8 @@ class Networker(threading.Thread, BanyanBase):
                     self.mythos_deck[x][card]['color'] = color
                     del MYTHOS[color][card]
         #FOR TESTING
-        self.mythos_deck[0]['tied_to_a_dark_purpose'] = MYTHOS[0]['tied_to_a_dark_purpose']
-        self.mythos_deck[0]['tied_to_a_dark_purpose']['color'] = 0
+        self.mythos_deck[0]['web_between_worlds'] = MYTHOS[2]['web_between_worlds']
+        self.mythos_deck[0]['web_between_worlds']['color'] = 2
         #END TESTING
 
     def set_omen(self, pos=None, trigger=True, increment=1):
@@ -839,12 +853,13 @@ class Networker(threading.Thread, BanyanBase):
             amt = -len(self.get_locations['gate_omen']())
         if all_gates:
             amt = -len(self.decks['gates']['board'])
-        self.ancient_one['doom'] += amt
-        self.ancient_one['doom'] = self.ancient_one['doom'] if self.ancient_one['doom'] >= 0 else 0
-        if self.ancient_one['doom'] == 0:
-            #AWAKEN LOGIC
-            pass
-        self.publish_payload({'message': 'doom', 'value': self.ancient_one['doom']}, 'server_update')
+        if amt > 0:
+            self.ancient_one['doom'] += amt
+            self.ancient_one['doom'] = self.ancient_one['doom'] if self.ancient_one['doom'] >= 0 else 0
+            if self.ancient_one['doom'] == 0:
+                #AWAKEN LOGIC
+                pass
+            self.publish_payload({'message': 'doom', 'value': self.ancient_one['doom']}, 'server_update')
     
     def strengthen_ao(self, amt=1):
         self.ancient_one.eldritch += amt

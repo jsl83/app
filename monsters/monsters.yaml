@@ -60,3 +60,20 @@
     dargs:
       name: the_wind-walker
       step: nothing
+  spinner_of_webs:
+    epic: True
+    count: 1
+    strength:
+      index: 3
+      mod: -2
+      str: 2
+    horror:
+      index: 4
+      mod: 0
+      san: 2
+    toughness: ++
+    text: If you fail the Will test, do not resolve the Strength test.
+    death: solve_rumor
+    dargs:
+      name: web_between_worlds
+      step: nothing

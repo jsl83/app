@@ -261,6 +261,8 @@ class Networker(threading.Thread, BanyanBase):
                                     self.asset_request('get', item_name, name)
                                 elif kind in ['conditions', 'spells']:
                                     self.spell_conditions_request(kind, name, name=item_name)
+                                elif kind == 'artifacts':
+                                    self.artifact_request(name, item_name)
                         self.restock_reserve()
                         self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
                     '''
@@ -291,7 +293,7 @@ class Networker(threading.Thread, BanyanBase):
                     case 'assets':
                         item = self.asset_request(payload['command'], payload['value'], topic, payload['tag'])                            
                     case 'artifacts':
-                        item = self.artifact_request(payload.get('value', ''), payload.get('tag', ''), topic)                            
+                        item = self.artifact_request(topic, payload.get('value', ''), payload.get('tag', ''))                            
                     case 'card_discarded':
                         if payload['kind'] == 'assets':
                             self.assets['discard'].append(payload['value'])
@@ -662,7 +664,7 @@ class Networker(threading.Thread, BanyanBase):
                     self.investigators[investigator]['assets'].append(name)
                     self.publish_payload({'message': 'card_received', 'kind': 'assets', 'value': name, 'owner': investigator}, 'server_update')
         
-    def artifact_request(self, name, tag, investigator):
+    def artifact_request(self, investigator, name='', tag=''):
         if name != '' and name not in self.decks['used_artifacts']:
             self.decks['used_artifacts'].append(name)
         else:

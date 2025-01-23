@@ -111,6 +111,11 @@ class EncounterPane():
         self.no_loc_click = False
         self.last_value = None
         self.player_index = 0
+        self.small_card_pane = None
+        self.setup_small_card()
+
+    def setup_small_card(self):
+        self.small_card_pane = SmallCardPane(self.hub)
 
     def clear_buttons(self, buttons=[]):
         self.layout.clear()
@@ -279,6 +284,7 @@ class EncounterPane():
             self.hub.show_overlay()
             self.player_wait_step = 'monster_reckoning'
             self.player_wait_args = {'step': step, 'none_step': none_step}
+            self.hub.waiting_pane = self
         else:
             self.monster_reckoning(step, none_step)
 
@@ -362,6 +368,7 @@ class EncounterPane():
     def close_gate(self, step='finish'):
         if self.gate_close:
             self.wait_step = step
+            self.hub.waiting_pane = self
             if self.rumor_not_gate != None:
                 self.hub.networker.publish_payload({'message': 'solve_rumor', 'value': self.rumor_not_gate}, self.investigator.name)
             else:
@@ -484,6 +491,7 @@ class EncounterPane():
                     def next_step(card, step):
                         discard_card(card)
                         self.wait_step = step
+                        self.hub.waiting_pane = self
                 else:
                     def submit():
                         if len(selected) == 0:
@@ -493,6 +501,7 @@ class EncounterPane():
                                 if x == len(selected) - 1:
                                     self.last_value = selected[x].get_server_name()
                                     self.wait_step = step
+                                    self.hub.waiting_pane = self
                                 discard_card(selected[x])
                     button = ActionButton(width=150, height=30, text='Discard: 0', texture='buttons/placeholder.png', action=submit)
                     def select(card, step):
@@ -517,6 +526,7 @@ class EncounterPane():
             if len(items) > 0:
                 def next_step(item, step):
                     self.wait_step = step
+                    self.hub.waiting_pane = self
                     self.hub.request_card('assets', item, 'acquire')
                     self.hub.clear_overlay()
                 choices = [ActionButton(texture=item['texture'], width=120, height=185, action=next_step, action_args={'item': item['name'], 'step': step}) for item in items]
@@ -524,6 +534,7 @@ class EncounterPane():
                 self.hub.show_overlay()
         else:
             self.wait_step = step
+            self.hub.waiting_pane = self
             self.hub.request_card('assets', name, tag=tag)
 
     def gain_clue(self, step='finish', amt=1, rolls=False):
@@ -532,6 +543,7 @@ class EncounterPane():
         for x in range(amt):
             if x == amt - 1:
                 self.wait_step = step
+                self.hub.waiting_pane = self
             self.hub.networker.publish_payload({'message': 'get_clue', 'value': amt}, self.investigator.name)
 
     def group_pay(self, kind, name, step='finish', player_request=None, is_check=False):
@@ -611,6 +623,7 @@ class EncounterPane():
             else:
                 self.player_index += 1
                 self.player_wait_step = 'group_pay_reckoning'
+                self.hub.waiting_pane = self
                 self.player_wait_args = {'kind': kind, 'name': name, 'step': step}
                 self.hub.networker.publish_payload({'message': 'group_pay_reckoning', 'kind': kind, 'name': name, 'player_request': self.investigator.name}, self.hub.all_investigators[self.player_index] + '_player')
                 self.clear_buttons([self.proceed_button])
@@ -778,7 +791,11 @@ class EncounterPane():
                 paths[investigator] = route
         if closest - 1 <= distance and encounter:
             is_wait = True
-        self.player_wait_step = 'waiting' if is_wait else None
+        if is_wait:
+            self.hub.waiting_pane = self
+            self.player_wait_step = 'waiting'
+        else:
+            self.player_wait_step = None
         def move_to_investigator(monster, distance, investigator):
             route = paths[investigator]
             distance = distance if distance < len(route) else len(route) - 1
@@ -802,6 +819,7 @@ class EncounterPane():
     def recover_investigator(self, step='finish'):
         self.hub.networker.publish_payload({'message': 'recover_body', 'body': self.recover_name}, self.investigator.name)
         self.wait_step = step
+        self.hub.waiting_pane = self
 
     def request_card(self, kind, step='finish', name='', tag='', trigger=False):
         card = next((card for card in self.investigator.possessions[kind] if card.name == name), None)
@@ -809,6 +827,7 @@ class EncounterPane():
             SmallCardPane([card], self, 'back', step)
         else:
             self.wait_step = step
+            self.hub.waiting_pane = self
             message_sent = self.hub.request_card(kind, name, tag=tag)
             if not message_sent:
                 self.wait_step = None
@@ -957,7 +976,7 @@ class EncounterPane():
             else:
                 self.set_buttons(fail)
         next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=confirm_test)
-        self.rolls = self.hub.run_test(stat, mod, self.hub.encounter_pane, [next_button])
+        self.rolls = self.hub.run_test(stat, mod, self, [next_button])
 
     def small_card(self, cards=None, categories=[], single_card=True, attribute='reckoning', step='finish'):
         if cards == None:
@@ -970,16 +989,18 @@ class EncounterPane():
             self.proceed_button.action_args = {'key': step if step != 'finish' else 'no_effect'}
             self.proceed_button.text = 'No Effects: Proceed'
         else:
-            SmallCardPane(cards, self, attribute, step, single_card, default_text=self.text_button.text)
+            self.small_card_pane.setup(cards, self, attribute, step, single_card, self.text_button.text)
 
     def spawn_clue(self, step='finish', click=False, number=1):
         if not click:
             self.wait_step = step
+            self.hub.waiting_pane = self
             self.hub.networker.publish_payload({'message': 'spawn', 'value': 'clues', 'number': number}, self.investigator.name)
         else:
             def clue_click(loc):
                 if not self.hub.location_manager.locations[loc]['clue']:
                     self.wait_step = step
+                    self.hub.waiting_pane = self
                     map_name = self.hub.map.name
                     self.hub.networker.publish_payload({'message': 'spawn', 'value': 'clues', 'number': number, 'location':map_name + ':' + loc}, self.investigator.name)
                     self.click_action = None
@@ -1010,6 +1031,7 @@ class EncounterPane():
     def solve_rumor(self, choice=False, step='finish', name=None):
         def choose_rumor(key):
             self.wait_step = step
+            self.hub.waiting_pane = self
             self.hub.networker.publish_payload({'message': 'solve_rumor', 'value': key}, self.investigator.name)
         if choice:
             choices = []
@@ -1116,12 +1138,17 @@ class EncounterPane():
             self.hub.show_encounter_pane()
 
 class SmallCardPane(EncounterPane):
-    def __init__(self, cards, parent, attribute, encounter_step=None, single_card=True, default_text=None):
-        EncounterPane.__init__(self, parent.hub)
+    def __init__(self, hub):
+        EncounterPane.__init__(self, hub)
         self.return_layout = arcade.gui.UILayout(x=1000)
+        self.cards = []
+        self.attribute = ''
+        self.return_overlay = arcade.gui.UILayout(width=1000, height=658, x=0, y=142).with_background(arcade.load_texture(':resources:eldritch/images/gui/overlay.png'))
+
+    def setup(self, cards, parent, attribute, encounter_step=None, single_card=True, default_text=None):
+        self.return_layout.clear()
         for element in parent.hub.info_manager.children[0]:
             self.return_layout.add(element)
-        self.return_overlay = arcade.gui.UILayout(width=1000, height=658, x=0, y=142).with_background(arcade.load_texture(':resources:eldritch/images/gui/overlay.png'))
         for element in parent.hub.choice_layout.children:
             self.return_overlay.add(element)
         self.attribute = attribute
@@ -1148,8 +1175,11 @@ class SmallCardPane(EncounterPane):
         self.active_card = card
         self.encounter = getattr(card, self.attribute)
         self.set_buttons('action')
-        self.phase_button.text = human_readable(card.name) + ' - ' + self.encounter['title']
+        text = '' if self.encounter.get('title', None) == None else ' - ' + self.encounter['title']
+        self.phase_button.text = human_readable(card.name) + text
         self.cards.remove(card)
+        if self.attribute == 'action':
+            card.action_used = True
 
     def pick_card(self):
         choices = []
@@ -1158,6 +1188,9 @@ class SmallCardPane(EncounterPane):
             choices.append(ActionButton(scale=0.5, texture=card.kind + '/' + card.name + '.png', action=self.card_selected, action_args={'card': card}))
         self.hub.choice_layout = create_choices('Choose Card Effect', choices=choices)
         self.hub.show_overlay()
+
+    def setup_small_card(self):
+        pass
 
     def finish(self):
         if not self.single_card and len(self.cards) > 0:
@@ -1172,3 +1205,5 @@ class SmallCardPane(EncounterPane):
                 self.hub.show_overlay()
             if self.step != None:
                 self.parent.set_buttons(self.step)
+            if self.attribute == 'action':
+                self.hub.action_taken(None)

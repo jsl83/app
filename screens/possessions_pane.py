@@ -1,11 +1,12 @@
 import arcade, arcade.gui
 from screens.action_button import ActionButton
+from encounters.encounter_pane import SmallCardPane
 from util import *
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 
 class PossessionsPane():
-    def __init__(self, investigator):
+    def __init__(self, investigator, hub):
         self.investigator = investigator
         self.layout = arcade.gui.UILayout(x=1000)
         self.overlay_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
@@ -13,6 +14,18 @@ class PossessionsPane():
         self.position = 0
         self.boundary = 0
         self.y_pos = 800
+        self.hub = hub
+        self.small_card_pane = SmallCardPane(hub)
+        self.small_card_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
+        self.texture_pane = arcade.gui.UITexturePane(self.button_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/info_pane.png'))
+        self.big_card = ActionButton(x=1015, y=400, width=250, height=385, texture='buttons/placeholder.png')
+        self.action_button = ActionButton(x=1000, y=300, width=280, height=50, text='Take Action', action=self.card_action)
+        self.flip_button = ActionButton(x=1000, y=200, width=280, height=50, text='Flip Card', action=self.flip_action)
+        self.back_button = ActionButton(x=1000, y=100, width=280, height=50, text='Back', action=self.back_action)
+        for button in [self.big_card, self.action_button, self.flip_button, self.back_button]:
+            self.small_card_layout.add(button)
+        self.active_card = None
+        self.small_card_pane.layout.add(self.big_card)
 
     def setup(self):
         self.button_layout.children = []
@@ -20,7 +33,7 @@ class PossessionsPane():
         self.overlay_layout.children = []
         possessions = self.investigator.possessions
         y_pos = self.y_pos
-        self.layout.add(arcade.gui.UITexturePane(self.button_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/info_pane.png')))
+        self.layout.add(self.texture_pane)
         self.layout.add(self.overlay_layout)
         for card_type in ['assets', 'unique_assets', 'artifacts', 'spells', 'conditions']:
             item_list = possessions[card_type]
@@ -30,7 +43,7 @@ class PossessionsPane():
                 def create_button(x, y, name, kind):
                     texture = kind + '/' + name + '.png'
                     args = {'name': name, 'kind': kind}
-                    self.button_layout.add(ActionButton(x, y, width=120, height=185, texture=texture, action_args=args))
+                    self.button_layout.add(ActionButton(x, y, width=120, height=185, texture=texture, action=self.show_card, action_args=args))
                 if len(item_list) > 1:
                     number = 0
                     for item in item_list:
@@ -44,6 +57,34 @@ class PossessionsPane():
                     y_pos -= 190
                     create_button(1080, y_pos, item_list[0].name, card_type)
         self.boundary = -y_pos + 20 if y_pos < 0 else 0
+
+    def show_card(self, name, kind):
+        card = next((card for card in self.investigator.possessions[kind] if card.name == name))
+        self.action_button.enable()
+        self.flip_button.disable()
+        self.active_card = card
+        self.layout.clear()
+        self.big_card.texture = card.texture
+        self.layout.add(self.small_card_layout)
+        self.action_button.action_args = {'card': card}
+        if card.action_used:
+            self.action_button.disable()
+        if card.back_seen:
+            self.flip_button.enable()
+
+    def card_action(self, card):
+        self.back_action()
+        self.small_card_pane.setup([card], self, 'action')
+        self.hub.info_manager.add(self.big_card)
+
+    def flip_action(self):
+        pass
+
+    def back_action(self):
+        self.layout.clear()
+        self.layout.add(self.texture_pane)
+        self.layout.add(self.button_layout)
+        self.layout.add(self.overlay_layout)
 
     def reset(self):
         for item in self.button_layout.children:
@@ -61,11 +102,12 @@ class PossessionsPane():
                 item.move(0, y)
 
     def on_show(self):
+        self.back_action()
         self.reset()
 
 class TradePane(PossessionsPane):
     def __init__(self, investigator, hub):
-        PossessionsPane.__init__(self, investigator)
+        PossessionsPane.__init__(self, investigator, hub)
         self.hub = hub
         self.y_pos = 600
         self.close_button = ActionButton(width=20, height=20, x=1250, y=770, texture='buttons/placeholder.png', text='X')

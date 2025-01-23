@@ -23,6 +23,7 @@ class SmallCard():
     def __init__(self, name, investigator):
         self.name = name
         self.action_used = False
+        self.back_seen = False
         self.texture = None
         self.investigator = investigator
         self.kind = None
@@ -60,8 +61,7 @@ class Condition(SmallCard):
         self.variant = 1
         SmallCard.__init__(self, name[0:-1], investigator)
         self.kind = 'conditions'
-        self.texture = arcade.load_texture(':resources:eldritch/images/conditions/' + self.name.replace('.','') + '.png')
-        self.tags = CARDS['conditions'][self.name]['tags']
+        self.setup()
         #for key in CARDS['conditions'][self.name][str(self.variant)]:
         #    setattr(self, key, CARDS['conditions'][self.name][str(self.variant)][key])
 

@@ -92,7 +92,7 @@ class HubScreen(arcade.View):
 
         self.info_panes = {
             'investigator': InvestigatorPane(self.investigator, self),
-            'possessions': PossessionsPane(self.investigator),
+            'possessions': PossessionsPane(self.investigator, self),
             'reserve': ReservePane(self),
             'location': LocationPane(self.location_manager, self),
             'ancient_one': AncientOnePane(self.ancient_one)
@@ -110,6 +110,7 @@ class HubScreen(arcade.View):
         self.select_ui_button(0)
         self.set_doom(self.ancient_one.doom)
         self.set_omen(0)
+        self.waiting_pane = self.encounter_pane
 
         self.undo_action = {
             'action': None,
@@ -308,10 +309,10 @@ class HubScreen(arcade.View):
         if topic == self.investigator.name + '_player':
             match payload['message']:
                 case 'action_done':
-                    if self.encounter_pane.player_wait_step != None:
-                        action = self.encounter_pane.action_dict[self.encounter_pane.player_wait_step]
-                        args = self.encounter_pane.player_wait_args
-                        self.encounter_pane.player_wait_step = None
+                    if self.waiting_pane.player_wait_step != None:
+                        action = self.waiting_pane.action_dict[self.waiting_pane.player_wait_step]
+                        args = self.waiting_pane.player_wait_args
+                        self.waiting_pane.player_wait_step = None
                         if args != None:
                             action(**args)
                         else:
@@ -400,7 +401,7 @@ class HubScreen(arcade.View):
                                     self.remaining_actions = 3
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
-                                    self.ticket_move(self.investigator.name, 'space_9', 0, 0, self.investigator.location)
+                                    #self.ticket_move(self.investigator.name, 'space_9', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     self.investigator.focus = 0
@@ -540,9 +541,9 @@ class HubScreen(arcade.View):
                     investigator = self.location_manager.all_investigators[payload['owner']]
                     for key in ['health', 'sanity', 'ship_tickets', 'rail_tickets']:
                         setattr(self.location_manager.all_investigators[payload['owner']], key, payload[key])
-            if self.encounter_pane.wait_step != None:
-                if self.encounter_pane.last_value == None or self.encounter_pane.last_value == payload['value']:
-                    self.encounter_pane.set_buttons(self.encounter_pane.wait_step)
+            if self.waiting_pane.wait_step != None:
+                if self.waiting_pane.last_value == None or self.waiting_pane.last_value == payload['value']:
+                    self.waiting_pane.set_buttons(self.waiting_pane.wait_step)
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max
@@ -611,9 +612,9 @@ class HubScreen(arcade.View):
                     option_index += 1
         #FOR TESTING
         def autofail():
-            self.encounter_pane.rolls = [1]
+            pane.rolls = [1]
         def succeed():
-            self.encounter_pane.rolls = [6,6,6,6,6]
+            pane.rolls = [6,6,6,6,6]
         options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
         options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
         #END TESTING
@@ -786,7 +787,8 @@ class HubScreen(arcade.View):
             self.undo_action['action'](**self.undo_action['args'])
 
     def action_taken(self, action):
-        self.actions_taken[action] = True
+        if action != None:
+            self.actions_taken[action] = True
         self.remaining_actions -= 1
         if self.remaining_actions == 0:
             self.undo_action = None

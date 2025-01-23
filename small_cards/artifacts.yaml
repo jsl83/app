@@ -3,6 +3,25 @@
     tags:
       - item
       - tome
+    action:
+      action:
+        - skill
+      aargs:
+        - stat: 0
+          fail: no_effect
+      pass:
+        - hp_san
+        - set_buttons
+      pargs:
+        - san: -1
+          skip: True
+          step: clues
+        - key: no_effect
+      clues:
+        - gain_clue
+      cargs:
+        - amt: 2
+          skip: True
   de_vermis_mysteriis:
     tags:
       - item

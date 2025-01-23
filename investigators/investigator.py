@@ -89,6 +89,7 @@ class Investigator():
             case 'artifacts':
                 card = Artifact(name, self)
         self.possessions[cardtype].append(card)
+        return card
 
     def calculate_skill(self, index):
         return self.skill[3 if index == 5 else index] + self.skill_tokens[3 if index == 5 else index] + self.skill_bonuses[index]

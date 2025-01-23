@@ -44,6 +44,7 @@ class ReservePane():
         self.discard_layout.add(ActionButton(x=1000, y=760, width=280, height=25, text='DISCARD'))
         self.discard_layout.add(ActionButton(x=1260, y=780, width=20, height=20, text='X', texture='buttons/placeholder.png', action=self.close_discard))
         self.empty_texture = arcade.load_texture(":resources:eldritch/images/buttons/placeholder.png")
+        self.encounter_type = ['acquire_assets']
 
     def restock(self, removed, added):
         for item in removed:
@@ -77,7 +78,7 @@ class ReservePane():
         elif not self.hub.actions_taken['shop'] and self.hub.remaining_actions > 0:
             self.is_shopping = True
             self.hub.gui_set(False)
-            self.rolls = self.hub.run_test(1, pane=self)
+            self.rolls = self.hub.run_test(1, self)
             for x in self.rolls:
                 if x >= self.hub.investigator.success:
                     self.successes += 1

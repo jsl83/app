@@ -674,6 +674,7 @@ class Networker(threading.Thread, BanyanBase):
                 self.decks['used_artifacts'].append(name)
         if name != '':
             self.publish_payload({'message': 'card_received', 'kind': 'artifacts', 'value': name, 'owner': investigator}, 'server_update')
+            self.investigators[investigator]['artifacts'].append(name)
 
     def monster_surge(self):
         for gates in self.decks['gates']['board']:

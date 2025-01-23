@@ -65,6 +65,54 @@
     tags:
       - item
       - magical
+    on_get:
+      action:
+        - adjust_triggers
+      aargs:
+        - skip: True
+          kind: gate_test
+          args:
+            name: gate_box
+            owner: artifacts
+          step: clue
+      clue:
+        - adjust_triggers
+      cargs:
+        - skip: True
+          owner_only: True
+          kind: gate_close
+          args:
+            name: gate_box
+            action:
+              - trigger_check
+            aargs:
+              - kind: encounter_type
+                match: gate
+                pass_check: clue
+                fail: finish
+                skip: True
+            clue:
+              - gain_clue
+            cargs:
+              - text: Gain 1 Clue
+            action_text: Gate Box
+    on_discard:
+      action:
+        - adjust_triggers
+      aargs:
+        - skip: True
+          kind: gate_test
+          args:
+            name: gate_box
+          step: clue
+      clue:
+        - adjust_triggers
+      cargs:
+        - skip: True
+          owner_only: True
+          kind: gate_clue
+          args:
+            name: gate_box
   glass_of_mortlan:
     tags:
       - item

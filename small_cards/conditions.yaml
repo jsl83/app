@@ -45,8 +45,10 @@
           - flip_card
         aargs:
           - skip: True
+            name: debt
+            kind: conditions
       back:
-        title: Beyond Riches
+        title: Debt - Beyond Riches
         action:
           - skill
         aargs:

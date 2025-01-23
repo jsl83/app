@@ -22,8 +22,6 @@ class PossessionsPane():
         self.action_button = ActionButton(x=1000, y=300, width=280, height=50, text='Take Action', action=self.card_action)
         self.flip_button = ActionButton(x=1000, y=200, width=280, height=50, text='Flip Card', action=self.flip_action)
         self.back_button = ActionButton(x=1000, y=100, width=280, height=50, text='Back', action=self.back_action)
-        for button in [self.big_card, self.action_button, self.flip_button, self.back_button]:
-            self.small_card_layout.add(button)
         self.active_card = None
         self.small_card_pane.layout.add(self.big_card)
 
@@ -64,6 +62,14 @@ class PossessionsPane():
         self.flip_button.disable()
         self.active_card = card
         self.layout.clear()
+        self.small_card_layout.clear()
+        buttons = [self.big_card, self.back_button]
+        if hasattr(card, 'action'):
+            buttons.append(self.action_button)
+        if hasattr(card, 'back'):
+            buttons.append(self.flip_button)
+        for button in buttons:
+            self.small_card_layout.add(button)
         self.big_card.texture = card.texture
         self.layout.add(self.small_card_layout)
         self.action_button.action_args = {'card': card}
@@ -74,8 +80,13 @@ class PossessionsPane():
 
     def card_action(self, card):
         self.back_action()
-        self.small_card_pane.setup([card], self, 'action')
+        self.small_card_pane.encounter_type = card.kind
+        self.small_card_pane.setup([card.action], self, textures=[card.texture], finish_action=self.on_finish_small)
         self.hub.info_manager.add(self.big_card)
+
+    def on_finish_small(self):
+        self.active_card.action_used = True
+        self.hub.action_taken(None)
 
     def flip_action(self):
         pass
@@ -104,6 +115,16 @@ class PossessionsPane():
     def on_show(self):
         self.back_action()
         self.reset()
+
+    def on_get(self, card, is_owner):
+        if hasattr(card, 'on_get'):
+            self.small_card_pane.is_owner = is_owner
+            self.small_card_pane.setup([card.on_get], self, textures=[card.texture])
+
+    def on_discard(self, card, is_owner):
+        if hasattr(card, 'on_discard'):
+            self.small_card_pane.is_owner = is_owner
+            self.small_card_pane.setup([card.on_discard], self, textures=[card.texture])
 
 class TradePane(PossessionsPane):
     def __init__(self, investigator, hub):

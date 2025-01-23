@@ -11,12 +11,10 @@
           fail: no_effect
       pass:
         - hp_san
-        - set_buttons
       pargs:
         - san: -1
           skip: True
           step: clues
-        - key: no_effect
       clues:
         - gain_clue
       cargs:
@@ -26,10 +24,43 @@
     tags:
       - item
       - tome
+    action:
+      action:
+        - skill
+      aargs:
+        - stat: 0
+          fail: no_effect
+      pass:
+        - hp_san
+      pargs:
+        - san: -1
+          skip: True
+          step: improve
+      improve:
+        - improve_skill
+      iargs:
+        - skill: '01234'
+          skip: True
   flute_of_the_outer_gods:
     tags:
       - item
       - magical
+    action:
+      action:
+        - hp_san
+      aargs:
+        - hp: -2
+          san: -2
+          skip: True
+          step: damage
+      damage:
+        - damage_monsters
+      dargs:
+        - damage: 99
+          single: False
+          epic: False
+          location: self
+          skip: True
   gate_box:
     tags:
       - item

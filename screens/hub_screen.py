@@ -401,11 +401,11 @@ class HubScreen(arcade.View):
                                     self.remaining_actions = 3
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
-                                    #self.ticket_move(self.investigator.name, 'space_9', 0, 0, self.investigator.location)
+                                    self.ticket_move(self.investigator.name, 'buenos_aires', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     self.investigator.focus = 0
-                                    self.info_panes['investigator'].focus_action()
+                                    #self.info_panes['investigator'].focus_action()
                                     #END TESTING
                                     #'''
                             case 'encounter':

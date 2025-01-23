@@ -389,13 +389,25 @@ class EncounterPane():
         self.set_buttons(step if pass_check else fail)
 
     def damage_monsters(self, damage, step='finish', single=True, epic=True, lose_hp=False, location=None):
-        if location == 'self':
-            location = self.investigator.location
+        def damage_all(loc):
+            triggers = []
+            for monster in self.hub.location_manager.locations[loc]['monsters']:
+                triggers += self.hub.damage_monster(monster, damage)
+            if len(triggers) > 0:
+                pass
+            else:
+                self.set_buttons(step)
+                self.click_action = None
         if len(self.hub.location_manager.get_all('monsters', True)) == 0:
             self.proceed_button.text = 'The world is peaceful'
             self.proceed_button.action = self.set_buttons
             self.proceed_button.action_args = {'key': 'finish'}
         else:
+            if location == 'self':
+                location = self.investigator.location
+                if not single:
+                    damage_all(location)
+                    return
             if self.encounter.get(step + '_text', None) != None:
                 self.text_button.text = self.encounter.get(step + '_text')
             self.layout.clear()
@@ -404,11 +416,6 @@ class EncounterPane():
             for button in [self.text_button, self.phase_button, self.proceed_button]:
                 self.layout.add(button)
             if not single:
-                def damage_all(loc, dmg):
-                    for monster in self.hub.location_manager.locations[loc]['monsters']:
-                        self.hub.damage_monster(monster, damage)
-                    self.set_buttons(step)
-                    self.click_action = None
                 self.proceed_button.action = damage_all
                 self.proceed_button.text = 'Select Location'
             def select(monster, dmg):
@@ -672,9 +679,8 @@ class EncounterPane():
                 self.hub.info_panes['investigator'].calc_skill(stat)
                 self.set_buttons(step)
             for char in str(skill):
-                button = ActionButton(width=80, height=80, texture='icons/' + skills[int(char)] + '.png', action=improve, action_args={'stat': int(char)})
                 if self.investigator.skill_tokens[int(char)] < 2:
-                    choices.append(button)
+                    choices.append(ActionButton(width=80, height=80, texture='icons/' + skills[int(char)] + '.png', action=improve, action_args={'stat': int(char)}))
             options = []
             if option != None:
                 options = [ActionButton(height=50, texture='buttons/placeholder.png', text='Skip', action=self.set_buttons, action_args={'key': option})]

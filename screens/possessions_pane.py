@@ -15,7 +15,6 @@ class PossessionsPane():
         self.boundary = 0
         self.y_pos = 800
         self.hub = hub
-        self.small_card_pane = SmallCardPane(hub)
         self.small_card_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
         self.texture_pane = arcade.gui.UITexturePane(self.button_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/info_pane.png'))
         self.big_card = ActionButton(x=1015, y=400, width=250, height=385, texture='buttons/placeholder.png')
@@ -23,7 +22,6 @@ class PossessionsPane():
         self.flip_button = ActionButton(x=1000, y=200, width=280, height=50, text='Flip Card', action=self.flip_action)
         self.back_button = ActionButton(x=1000, y=100, width=280, height=50, text='Back', action=self.back_action)
         self.active_card = None
-        self.small_card_pane.layout.add(self.big_card)
 
     def setup(self):
         self.button_layout.children = []
@@ -80,8 +78,8 @@ class PossessionsPane():
 
     def card_action(self, card):
         self.back_action()
-        self.small_card_pane.encounter_type = card.kind
-        self.small_card_pane.setup([card.action], self, textures=[card.texture], finish_action=self.on_finish_small)
+        self.hub.small_card_pane.encounter_type = [card.kind]
+        self.hub.small_card_pane.setup([card.action], self, textures=[card.texture], finish_action=self.on_finish_small)
         self.hub.info_manager.add(self.big_card)
 
     def on_finish_small(self):
@@ -118,13 +116,15 @@ class PossessionsPane():
 
     def on_get(self, card, is_owner):
         if hasattr(card, 'on_get'):
-            self.small_card_pane.is_owner = is_owner
-            self.small_card_pane.setup([card.on_get], self, textures=[card.texture])
+            self.hub.small_card_pane.is_owner = is_owner
+            self.hub.small_card_pane.setup([card.on_get], self, textures=[card.texture])
 
     def on_discard(self, card, is_owner):
         if hasattr(card, 'on_discard'):
-            self.small_card_pane.is_owner = is_owner
-            self.small_card_pane.setup([card.on_discard], self, textures=[card.texture])
+            for kind in card.on_discard.pop('triggers', []):
+                self.hub.triggers[kind] = [trigger for trigger in self.hub.triggers[kind] if trigger['name'] != card.name]
+            self.hub.small_card_pane.is_owner = is_owner
+            self.hub.small_card_pane.setup([card.on_discard], self, textures=[card.texture])
 
 class TradePane(PossessionsPane):
     def __init__(self, investigator, hub):

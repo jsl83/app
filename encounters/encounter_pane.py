@@ -112,13 +112,10 @@ class EncounterPane():
         self.no_loc_click = False
         self.last_value = None
         self.player_index = 0
-        self.small_card_pane = None
-        self.setup_small_card()
         self.encounter_type = []
         self.is_owner = True
-
-    def setup_small_card(self):
-        self.small_card_pane = SmallCardPane(self.hub)
+        self.hp_damage = 0
+        self.san_damage = 0
 
     def clear_buttons(self, buttons=[]):
         self.layout.clear()
@@ -305,7 +302,7 @@ class EncounterPane():
 
     def reroll(self, new, old):
         self.rolls.remove(old)
-        self.rolls.append(new)
+        self.rolls += new
 
     def finish(self, skip=False):
         self.is_owner = True
@@ -338,9 +335,9 @@ class EncounterPane():
             trigger = next((trigger for trigger in self.hub.triggers[kind] if trigger['name'] == args['name']), None)
             if trigger == None:
                 self.hub.triggers[kind].append(args)
-                self.set_buttons(step)
             else:
                 self.hub.triggers[kind].remove(trigger)
+        self.set_buttons(step)
 
     def allow_gate_close(self, allow=True, step='finish'):
         self.gate_close = allow
@@ -383,8 +380,8 @@ class EncounterPane():
                 index = self.encounter[key].index('close_gate')
                 self.encounter[key[0] + 'args'][index]['skip'] = True
                 self.encounter[key[0] + 'args'][index]['skip_triggers'] = True
-                self.small_card_pane.encounter_type = self.encounter_type
-                self.small_card_pane.setup(self.hub.triggers['gate_close'], self, key, False)
+                self.hub.small_card_pane.encounter_type = self.encounter_type
+                self.hub.small_card_pane.setup(self.hub.triggers['gate_close'], self, key, False)
             else:
                 if self.rumor_not_gate != None:
                     self.hub.networker.publish_payload({'message': 'solve_rumor', 'value': self.rumor_not_gate}, self.investigator.name)
@@ -1012,8 +1009,8 @@ class EncounterPane():
             self.proceed_button.action_args = {'key': step if step != 'finish' else 'no_effect'}
             self.proceed_button.text = 'No Effects: Proceed'
         else:
-            self.small_card_pane.encounter_type = self.encounter_type + categories
-            self.small_card_pane.setup([getattr(card, attribute) for card in cards], self, step, single_card, self.text_button.text, [card.kind + '/' + card.name + '.png' for card in cards])
+            self.hub.small_card_pane.encounter_type = self.encounter_type + categories
+            self.hub.small_card_pane.setup([getattr(card, attribute) for card in cards], self, step, single_card, self.text_button.text, [card.kind + '/' + card.name + '.png' for card in cards])
 
     def spawn_clue(self, step='finish', click=False, number=1):
         if not click:
@@ -1075,6 +1072,8 @@ class EncounterPane():
 
     def take_damage(self, hp, san, action, args):
         args = {} if args == None else args
+        self.hp_damage = hp
+        self.san_damage = san
         if hp == 0 and san == 0:
             action(**args)
         else:
@@ -1085,9 +1084,9 @@ class EncounterPane():
             if san < 0:
                 #choices.append(san damage triggers)
                 pass
-            def resolve_damage(hp, san):
-                self.investigator.health = self.investigator.health + hp if self.investigator.health + hp <= self.investigator.max_health else self.investigator.max_health
-                self.investigator.sanity = self.investigator.sanity + san if self.investigator.sanity + san <= self.investigator.max_sanity else self.investigator.max_sanity
+            def resolve_damage():
+                self.investigator.health = self.investigator.health + self.hp_damage if self.investigator.health + self.hp_damage <= self.investigator.max_health else self.investigator.max_health
+                self.investigator.sanity = self.investigator.sanity + self.san_damage if self.investigator.sanity + self.san_damage <= self.investigator.max_sanity else self.investigator.max_sanity
                 payload = {'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}
                 def own_death():
                     self.investigator.is_dead = True
@@ -1106,9 +1105,32 @@ class EncounterPane():
                         own_death()
                     else:
                         action(**args)
+
+            def adjust_damage(hp_change, san_change, text):
+                self.hp_damage += hp_change
+                self.san_damage += san_change
+                subtitle_button = self.hub.choice_layout.children.pop(2)
+                subtitle_button.text = 'Health: ' + str(self.hp_damage) + '   Sanity: ' + str(self.san_damage)
+                self.hub.choice_layout.children.insert(2, subtitle_button)
+                if self.hp_damage == 0 and self.san_damage == 0:
+                    action(**args)
+                else:
+                    next((button for button in self.hub.choice_layout.children if hasattr(button,'text') and button.text == text)).disable()
+                    self.hub.choice_manager.trigger_render()
+
+            options = []
+            for trigger in self.hub.triggers['hp_san_loss']:
+                hp_check = hp < 0 and trigger.get('on_hp_loss', False)
+                san_check = san < 0 and trigger.get('on_san_loss', False)
+                encounter_check = trigger.get('encounter', None) == None or trigger['encounter'] in self.encounter_type
+                if (hp_check or san_check) and encounter_check:
+                    button = ActionButton(width=100, height=100, texture='buttons/placeholder.png', text=trigger['button_text'], action=adjust_damage, action_args={'hp_change': trigger.get('hp_mod', 0), 'san_change': trigger.get('san_mod', 0), 'text': trigger['button_text']})
+                    if trigger.get('font_size', None) != None:
+                        button.style = {'font_size': trigger['font_size']}
+                    options.append(button)
             next_button = ActionButton(
-                width=100, height=30, texture='buttons/placeholder.png', text='Next', action=resolve_damage, action_args={'hp': hp, 'san': san})
-            self.hub.choice_layout = create_choices(choices = choices, options=[next_button], title='Taking Damage', subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))
+                width=100, height=30, texture='buttons/placeholder.png', text='Next', action=resolve_damage)
+            self.hub.choice_layout = create_choices(choices = choices, options=options + [next_button], title='Taking Damage', subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))
             self.hub.show_overlay()
 
     def trigger_check(self, kind, match, pass_check, fail):
@@ -1179,7 +1201,8 @@ class SmallCardPane(EncounterPane):
     def setup(self, encounters, parent, encounter_step=None, single_pick=True, default_text=None, textures=[], finish_action=None):
         self.finish_action = finish_action
         self.return_layout.clear()
-        for element in parent.hub.info_manager.children[0]:
+        ref = parent.hub.info_manager.children[0] if type(parent.hub.info_manager.children[0][0]).__name__ == 'UITexturePane' else parent.hub.info_manager.children[0][0].children
+        for element in ref:
             self.return_layout.add(element)
         for element in parent.hub.choice_layout.children:
             self.return_overlay.add(element)
@@ -1224,6 +1247,7 @@ class SmallCardPane(EncounterPane):
 
     def finish(self):
         self.encounter_type = []
+        self.is_owner = True
         if not self.single_pick and len(self.cards) > 0:
             self.pick_encounter()
         else:

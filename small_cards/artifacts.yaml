@@ -97,26 +97,41 @@
               - text: Gain 1 Clue
             action_text: Gate Box
     on_discard:
-      action:
-        - adjust_triggers
-      aargs:
-        - skip: True
-          kind: gate_test
-          args:
-            name: gate_box
-          step: clue
-      clue:
-        - adjust_triggers
-      cargs:
-        - skip: True
-          owner_only: True
-          kind: gate_clue
-          args:
-            name: gate_box
+      triggers:
+        - gate_close
+        - gate_test
   glass_of_mortlan:
     tags:
       - item
       - magical
+    on_get:
+      action:
+        - adjust_triggers
+      aargs:
+        - skip: True
+          owner_only: True
+          kind: spells_test
+          args:
+            name: glass_of_mortlan
+            double_six: True
+          step: san
+      san:
+        - adjust_triggers
+      sargs:
+        - skip: true
+          owner_only: True
+          kind: hp_san_loss
+          args:
+            name: glass_of_mortlan
+            san_mod: 1
+            encounter: spells
+            on_san_loss: True
+            button_text: Glass of Mortlan; reduce San loss by 1
+            font_size: 12
+    on_discard:
+      triggers:
+        - spells_test
+        - hp_san_loss
   grotesque_statue:
     tags:
       - item

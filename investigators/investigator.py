@@ -24,7 +24,7 @@ class Investigator():
         self.health = self.max_health
         self.sanity = self.max_sanity
         self.skill_tokens = [0,0,0,0,0]
-        self.skill_mods = [0,0,0,0,0,0]
+        self.skill_bonuses = [[]]*6
         self.possessions = {
             'assets': [],
             'unique_assets': [],

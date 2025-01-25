@@ -8,7 +8,7 @@ from screens.investigator_pane import InvestigatorPane
 from screens.possessions_pane import PossessionsPane
 from screens.reserve_pane import ReservePane
 from screens.location_pane import LocationPane
-from encounters.encounter_pane import EncounterPane
+from encounters.encounter_pane import EncounterPane, SmallCardPane
 from locations.location_manager import LocationManager
 from locations.map import Map
 from screens.action_button import ActionButton
@@ -32,7 +32,9 @@ class HubScreen(arcade.View):
             'monster_kill': [],
             'investigator_location': [],
             'gate_close': [],
-            'gate_test': []
+            'gate_test': [],
+            'spells_test': [],
+            'hp_san_loss': []
         }
         
         self.item_actions = {}
@@ -120,6 +122,7 @@ class HubScreen(arcade.View):
         }
 
         self.networker.publish_payload({'message': 'ready'}, 'login')
+        self.small_card_pane = SmallCardPane(self)
 
         '''
         #FOR TESTING
@@ -539,8 +542,8 @@ class HubScreen(arcade.View):
                     else:
                         items = self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']]
                         item = next((item for item in items if item.get_server_name() == payload['value']))
-                        self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']].remove(item)
                         self.info_panes['possessions'].on_discard(item, self.investigator.name == payload['owner'])
+                        self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']].remove(item)
                     if payload['owner'] == self.investigator.name:
                         self.info_panes['possessions'].setup()
                 case 'player_update':
@@ -570,15 +573,19 @@ class HubScreen(arcade.View):
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
         subtitle = subtitle if subtitle != '' else '' if mod == 0 else 'Mod: ' + str(mod)
         dice = self.investigator.skills[3 if skill == 5 else skill] + mod + self.investigator.skill_tokens[skill]
+        double_six = False
         for kind in pane.encounter_type:
-            for trigger in self.triggers[kind + '_test']:
+            for trigger in self.triggers.get(kind + '_test', []):
                 pass_condition = True
-                print(trigger)
                 if trigger.get('owner', None) != None and (self.investigator.location != next((inv.location for inv in self.location_manager.all_investigators.values() if trigger['name'] in [item.get_server_name() for item in inv.possessions[trigger['owner']]]))):
                         pass_condition = False
                 if trigger.get('space_type', None) != None and not self.location_manager.locations[self.investigator.location]['kind'] == trigger['space_type']:
                     pass_condition = False
-                dice = dice + (1 if pass_condition else 0)
+                if pass_condition:
+                    if trigger.get('double_six', None) != None:
+                        double_six = True
+                    else:
+                        dice = dice + (1 if pass_condition else 0)
         for x in range(dice if dice > 1 else 1):
             roll = random.randint(1, 6) + self.investigator.encounter_impairment
             roll = 1 if roll < 1 else roll
@@ -592,8 +599,7 @@ class HubScreen(arcade.View):
                     index = rolls.index(fail)
                     new_roll = random.randint(1, 6)
                     choices[index].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
-                    if pane != None:
-                        pane.reroll(new_roll, fail)
+                    pane.reroll([new_roll] + [6] if new_roll == 6 and double_six else [], fail)
                     if kind == 'focus':
                         self.investigator.focus -= 1
                         if self.investigator.focus == 0:
@@ -635,6 +641,8 @@ class HubScreen(arcade.View):
         #END TESTING
         self.choice_layout = create_choices(choices = choices, title=titles[3 if skill == 5 else skill] + ' Test', options=options, offset=(0,150), subtitle=subtitle)
         self.show_overlay()
+        if double_six:
+            rolls += [roll for roll in rolls if roll == 6]
         return rolls
     
     def single_roll(self, pane, options, title='', subtitle=''):

@@ -47,11 +47,11 @@ class ActionButton(arcade.gui.UITextureButton):
 
     def disable(self):
         self.enabled = False
-        self.style = {'font_color': arcade.color.ASH_GREY}
+        self.style['font_color'] = arcade.color.ASH_GREY
     
     def enable(self):
         self.enabled = True
-        self.style = {'font_color': arcade.color.WHITE}
+        self.style['font_color'] = arcade.color.WHITE
 
     def select(self, selected: bool = False):
         self._tex = self.texture_pressed if selected else self.original_texture

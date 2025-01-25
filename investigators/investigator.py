@@ -46,6 +46,7 @@ class Investigator():
 
         self.reroll_items = [{}, {}, {}, {}, {}, {}]
         self.skill_bonuses = [{}, {}, {}, {}, {}, {}]
+        self.max_bonus = [0,0,0,0,0,0]
 
         self.san_damage = 0
         self.hp_damage = 0
@@ -58,6 +59,9 @@ class Investigator():
         self.sanity_recover_restrictions = []
 
         self.rest_triggers = []
+
+    def calc_max_bonus(self, condition=None):
+        return max([bonus['value'] for bonus in self.skill_bonuses if not self.skill_bonuses.get('condition', False) or self.skill_bonuses.get('condition') == condition])
 
     def get_ticket(self, kind):
         rail = 0

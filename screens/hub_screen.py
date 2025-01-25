@@ -417,10 +417,10 @@ class HubScreen(arcade.View):
                                     #'''
                             case 'encounter':
                                 #FOR TESTING
-                                #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                 #END TESTING
-                                self.show_encounter_pane()
-                                self.encounter_pane.encounter_phase()
+                                #self.show_encounter_pane()
+                                #self.encounter_pane.encounter_phase()
                             case 'reckoning':
                                 self.encounter_pane.reckoning()
                                 #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -539,6 +539,7 @@ class HubScreen(arcade.View):
                 case 'possession_lost':
                     if payload['kind'] == 'clues':
                         self.location_manager.all_investigators[payload['owner']].clues.remove(payload['value'])
+                        self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
                     else:
                         items = self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']]
                         item = next((item for item in items if item.get_server_name() == payload['value']))

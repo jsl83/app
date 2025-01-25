@@ -123,8 +123,9 @@ class PossessionsPane():
         if hasattr(card, 'on_discard'):
             for kind in card.on_discard.pop('triggers', []):
                 self.hub.triggers[kind] = [trigger for trigger in self.hub.triggers[kind] if trigger['name'] != card.name]
-            self.hub.small_card_pane.is_owner = is_owner
-            self.hub.small_card_pane.setup([card.on_discard], self, textures=[card.texture])
+            if len(card.on_discard) != 0:
+                self.hub.small_card_pane.is_owner = is_owner
+                self.hub.small_card_pane.setup([card.on_discard], self, textures=[card.texture])
 
 class TradePane(PossessionsPane):
     def __init__(self, investigator, hub):

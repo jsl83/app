@@ -104,7 +104,7 @@
     action:
       - condition_check
     aargs:
-      - item_type: assets
+      - item_type: all
         tag: item
         step: discard
         fail: nada
@@ -117,7 +117,7 @@
     discard:
       - discard
     dargs:
-      - kind: assets
+      - kind: all
         tag: item
         amt: select
         step: health
@@ -125,7 +125,7 @@
     health:
       - hp_san
     hargs:
-      - kind: assets
+      - kind: all
         tag: item
         stat: health
         skip: True

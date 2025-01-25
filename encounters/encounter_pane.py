@@ -128,7 +128,10 @@ class EncounterPane():
         return MYTHOS[name]['manager_object']
 
     def discard_check(self, kind, tag='any', name=None):
-        items = self.investigator.possessions[kind]
+        if kind == 'all':
+            items = self.investigator.possessions['assets'] + self.investigator.possessions['artifacts'] + self.investigator.possessions['unique_assets']
+        else:
+            items = self.investigator.possessions[kind]
         items = [item for item in items if tag in item.tags] if tag != 'any' else [item for item in items if name == item.name] if name != None else items
         return len(items) > 0
 
@@ -395,8 +398,15 @@ class EncounterPane():
         pass_check = True
         if space_type != None and self.hub.location_manager.locations[self.investigator.location]['kind'] != space_type:
             pass_check = False
-        if item_type != None and len([item for item in self.investigator.possessions[item_type] if tag == None or tag in item.tags]) == 0:
-            pass_check = False
+        if item_type != None:
+            items = []
+            if item_type == 'all':
+                for possession_type in ['assets', 'unique_assets', 'artifacts']:
+                    items += [item for item in self.investigator.possessions[possession_type] if tag == None or tag in item.tags]
+            else:
+                items = [item for item in self.investigator.possessions[item_type] if tag == None or tag in item.tags]
+            if len(items) == 0:
+                pass_check = False
         if on_location != None:
             on_location = on_location if on_location != 'expedition' else self.hub.location_manager.active_expedition
             pass_check = self.investigator.location in self.hub.get_locations_within(radius, on_location)
@@ -498,7 +508,12 @@ class EncounterPane():
                 self.hub.info_panes['possessions'].setup()
             self.set_buttons(step)
         else:
-            items = self.investigator.possessions[kind]
+            items = []
+            if kind == 'all':
+                for possession_type in ['assets', 'unique_assets', 'artifacts']:
+                    items += self.investigator.possessions[possession_type]
+            else:
+                items = self.investigator.possessions[kind]
             items = [item for item in items if tag in item.tags] if tag != 'any' else items
             if len(items) == 0:
                 self.set_buttons(step)
@@ -506,7 +521,7 @@ class EncounterPane():
                 options = []
                 selected = []
                 def discard_card(card):
-                    self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, self.investigator.name)
+                    self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': card.kind}, self.investigator.name)
                     self.hub.info_panes['possessions'].setup()
                 if amt == 'one':
                     def next_step(card, step):
@@ -561,11 +576,14 @@ class EncounterPane():
     def gain_clue(self, step='finish', amt=1, rolls=False):
         if rolls:
             amt = len([roll for roll in self.rolls if roll >= self.investigator.success])
-        for x in range(amt):
-            if x == amt - 1:
-                self.wait_step = step
-                self.hub.waiting_pane = self
-            self.hub.networker.publish_payload({'message': 'get_clue', 'value': amt}, self.investigator.name)
+        if amt == 0:
+            self.set_buttons(step)
+        else:
+            for x in range(amt):
+                if x == amt - 1:
+                    self.wait_step = step
+                    self.hub.waiting_pane = self
+                self.hub.networker.publish_payload({'message': 'get_clue', 'value': amt}, self.investigator.name)
 
     def group_pay(self, kind, name, step='finish', player_request=None, is_check=False):
         total_payment = self.group_payments[name]['group_total']
@@ -658,6 +676,9 @@ class EncounterPane():
         if kind != None:
             if kind in ['assets', 'conditions', 'unique_assets', 'spells', 'artifacts']:
                 damage = len([item for item in self.investigator.possessions[kind] if tag == None or tag in item.tags])
+            elif kind == 'all':
+                all_items = self.investigator.possessions['assets'] + self.investigator.possessions['unique_assets'] + self.investigator.possessions['artifacts']
+                damage = len([item for item in all_items if tag == None or tag in item.tags])
             elif kind == 'omen_gates':
                 color = ['green', 'blue', 'red', 'blue'][self.hub.omen]
                 damage = len([loc for loc in self.hub.location_manager.locations.values() if loc['gate'] and loc['gate_color'] == color])
@@ -929,7 +950,10 @@ class EncounterPane():
                     if actions[x] == 'skill' or args.get('skip', None) != None:
                         buttons[x].action = lambda: None
                         buttons[x].action_args = None
-                        self.action_dict[actions[x]](**omit_args)
+                        if not omit_args.pop('owner_only', False) or self.is_owner:
+                            self.action_dict[actions[x]](**omit_args)
+                        else:
+                            self.set_buttons(args.get('step'))
                     else:
                         buttons[x].action = self.action_dict[actions[x]]
                         buttons[x].action_args = omit_args
@@ -1046,7 +1070,6 @@ class EncounterPane():
                 clue = random.choice(self.investigator.clues)
                 self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
             self.set_buttons(step)
-            self.hub.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
         return clues
 
     def solve_rumor(self, choice=False, step='finish', name=None):
@@ -1106,7 +1129,11 @@ class EncounterPane():
                     else:
                         action(**args)
 
-            def adjust_damage(hp_change, san_change, text):
+            def adjust_damage(hp_change, san_change, text, trigger_action=False, trigger_args={}):
+                if trigger_action:
+                    self.action_dict[trigger_action](**trigger_args)
+                hp_change = hp_change if type(hp_change) == int else -self.hp_damage
+                san_change = san_change if type(san_change) == int else -self.san_damage
                 self.hp_damage += hp_change
                 self.san_damage += san_change
                 subtitle_button = self.hub.choice_layout.children.pop(2)
@@ -1122,11 +1149,15 @@ class EncounterPane():
             for trigger in self.hub.triggers['hp_san_loss']:
                 hp_check = hp < 0 and trigger.get('on_hp_loss', False)
                 san_check = san < 0 and trigger.get('on_san_loss', False)
-                encounter_check = trigger.get('encounter', None) == None or trigger['encounter'] in self.encounter_type
+                encounter_check = not trigger.get('encounter', False) or trigger['encounter'] in self.encounter_type
+                trigger_action = trigger.get('action', False)
+                trigger_args = trigger.get('action_args', {'step': 'nothing'})
                 if (hp_check or san_check) and encounter_check:
-                    button = ActionButton(width=100, height=100, texture='buttons/placeholder.png', text=trigger['button_text'], action=adjust_damage, action_args={'hp_change': trigger.get('hp_mod', 0), 'san_change': trigger.get('san_mod', 0), 'text': trigger['button_text']})
+                    button = ActionButton(width=125, height=125, texture='buttons/placeholder.png', text=trigger['button_text'], action=adjust_damage, action_args={'hp_change': trigger.get('hp_mod', 0), 'san_change': trigger.get('san_mod', 0), 'text': trigger['button_text'], 'trigger_action': trigger_action, 'trigger_args': trigger_args})
                     if trigger.get('font_size', None) != None:
                         button.style = {'font_size': trigger['font_size']}
+                    if trigger_action and (trigger_action in self.req_dict and not self.req_dict[trigger_action](trigger_args)):
+                        button.disable()
                     options.append(button)
             next_button = ActionButton(
                 width=100, height=30, texture='buttons/placeholder.png', text='Next', action=resolve_damage)

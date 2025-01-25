@@ -88,7 +88,7 @@ class InvestigatorPane():
     def calc_skill(self, index):
         skill = self.investigator.skills[index]
         token = self.investigator.skill_tokens[index]
-        mod = self.investigator.skill_bonuses[index]
+        mod = self.investigator.max_bonus[index]
         text = str(skill) + '      ' + str(token) + '      ' + str(mod) + '      ' + str(skill + token + mod)
         self.skills[index].text = text
 

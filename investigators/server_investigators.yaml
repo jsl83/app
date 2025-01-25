@@ -4,6 +4,8 @@
     hp: 5
     possessions:
       - spells:mists_of_releh
+      - artifacts:grotesque_statue
+      - artifacts:de_vermis_mysteriis
   charlie_kane:
     location: "san_francisco"
     hp: 4

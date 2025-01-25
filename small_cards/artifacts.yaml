@@ -135,6 +135,30 @@
   grotesque_statue:
     tags:
       - item
+    on_get:
+      action:
+        - gain_clue
+      aargs:
+        - skip: True
+          owner_only: True
+          amt: 5
+          step: san
+      san:
+        - adjust_triggers
+      sargs:
+        - skip: true
+          owner_only: True
+          kind: hp_san_loss
+          args:
+            name: grotesque_statue
+            san_mod: all_loss
+            on_san_loss: True
+            button_text: Grotesque Statue; Spend 1 Clue to prevent all Sanity damage
+            action: spend_clue
+            font_size: 12
+    on_discard:
+      triggers:
+        - hp_san_loss
   lightning_gun:
     tags:
       - item

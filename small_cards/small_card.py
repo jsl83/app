@@ -27,6 +27,7 @@ class SmallCard():
         self.texture = None
         self.investigator = investigator
         self.kind = None
+        self.bonuses = []
 
     def setup(self):
         self.texture = arcade.load_texture(":resources:eldritch/images/" + self.kind + '/' + self.name.replace('.','') + '.png')

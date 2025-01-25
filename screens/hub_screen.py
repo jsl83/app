@@ -573,7 +573,7 @@ class HubScreen(arcade.View):
         rolls = []
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
         subtitle = subtitle if subtitle != '' else '' if mod == 0 else 'Mod: ' + str(mod)
-        dice = self.investigator.skills[3 if skill == 5 else skill] + mod + self.investigator.skill_tokens[skill]
+        dice = self.investigator.skills[skill] + mod + self.investigator.skill_tokens[skill] + self.investigator.calc_max_bonus(skill, pane.encounter_type)
         double_six = False
         for kind in pane.encounter_type:
             for trigger in self.triggers.get(kind + '_test', []):
@@ -611,9 +611,6 @@ class HubScreen(arcade.View):
                         self.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
                         if len(self.investigator.clues) == 0:
                             options[option_index].disable()
-                    elif not self.investigator.reroll_items[skill][kind].action_used:
-                        self.investigator.reroll_items[skill][kind].action_used = True
-                        options[option_index].disable()
                 else:
                     for x in options:
                         x.disable()
@@ -626,12 +623,6 @@ class HubScreen(arcade.View):
                 clue_button = ActionButton(action=reroll, action_args={'kind': 'clue', 'option_index': option_index}, texture='icons/clue.png', text='Use', text_position=(20,-2))
                 options.append(clue_button)
                 option_index += 1
-            items = self.investigator.reroll_items[skill].keys()
-            if len(items) > 0:
-                for x in items:
-                    item_button = ActionButton(action=reroll, action_args={'kind': x, 'option_index': option_index}, texture='buttons/placeholder.png', text=human_readable(x))
-                    options.append(item_button)
-                    option_index += 1
         #FOR TESTING
         def autofail():
             pane.rolls = [1]

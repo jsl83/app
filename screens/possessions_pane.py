@@ -1,6 +1,5 @@
 import arcade, arcade.gui
 from screens.action_button import ActionButton
-from encounters.encounter_pane import SmallCardPane
 from util import *
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
@@ -64,6 +63,9 @@ class PossessionsPane():
         buttons = [self.big_card, self.back_button]
         if hasattr(card, 'action'):
             buttons.append(self.action_button)
+            args = card.action.get('aargs', [{}])[0]
+            if card.action_used or (len(card.action['action']) == 1 and not self.hub.small_card_pane.req_dict[card.action['action'][0]](args)):
+                self.action_button.disable()
         if hasattr(card, 'back'):
             buttons.append(self.flip_button)
         for button in buttons:
@@ -71,8 +73,6 @@ class PossessionsPane():
         self.big_card.texture = card.texture
         self.layout.add(self.small_card_layout)
         self.action_button.action_args = {'card': card}
-        if card.action_used:
-            self.action_button.disable()
         if card.back_seen:
             self.flip_button.enable()
 
@@ -116,10 +116,25 @@ class PossessionsPane():
 
     def on_get(self, card, is_owner):
         if hasattr(card, 'on_get'):
-            self.hub.small_card_pane.is_owner = is_owner
-            self.hub.small_card_pane.setup([card.on_get], self, textures=[card.texture])
+            for bonus in card.on_get.pop('bonuses', []):
+                index = bonus.pop('index')
+                self.investigator.skill_bonuses[index].append(bonus)
+                self.investigator.max_bonus[index] = max(bonus['value'] if not bonus.get('condition', False) else 0, self.investigator.max_bonus[index])
+                card.bonuses.append(index)
+                self.hub.info_panes['investigator'].calc_skill(index)
+            if len(card.on_get) > 0:
+                self.hub.small_card_pane.is_owner = is_owner
+                self.hub.small_card_pane.setup([card.on_get], self, textures=[card.texture])
 
     def on_discard(self, card, is_owner):
+        for index in card.bonuses:
+            card_bonus = next((item for item in self.investigator.skill_bonuses[index] if item['name'] == card.name))
+            self.investigator.skill_bonuses[index].remove(card_bonus)
+            if card_bonus['value'] == self.investigator.max_bonus[index]:
+                self.investigator.max_bonus[index] = self.investigator.calc_max_bonus(index)
+                self.hub.info_panes['investigator'].calc_skill(index)
+            elif card_bonus['condition'] == 'combat':
+                self.hub.info_panes['investigator'].calc_skill(index)
         if hasattr(card, 'on_discard'):
             for kind in card.on_discard.pop('triggers', []):
                 self.hub.triggers[kind] = [trigger for trigger in self.hub.triggers[kind] if trigger['name'] != card.name]

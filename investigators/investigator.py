@@ -24,7 +24,7 @@ class Investigator():
         self.health = self.max_health
         self.sanity = self.max_sanity
         self.skill_tokens = [0,0,0,0,0]
-        self.skill_bonuses = [[]]*6
+        self.skill_bonuses = [[],[],[],[],[]]
         self.possessions = {
             'assets': [],
             'unique_assets': [],
@@ -44,9 +44,8 @@ class Investigator():
         self.active = INVESTIGATORS[name]['active']
         self.delayed = False
 
-        self.reroll_items = [{}, {}, {}, {}, {}, {}]
-        self.skill_bonuses = [{}, {}, {}, {}, {}, {}]
-        self.max_bonus = [0,0,0,0,0,0]
+        self.reroll_items = [[],[],[],[],[]]
+        self.max_bonus = [0,0,0,0,0]
 
         self.san_damage = 0
         self.hp_damage = 0
@@ -60,8 +59,8 @@ class Investigator():
 
         self.rest_triggers = []
 
-    def calc_max_bonus(self, condition=None):
-        return max([bonus['value'] for bonus in self.skill_bonuses if not self.skill_bonuses.get('condition', False) or self.skill_bonuses.get('condition') == condition])
+    def calc_max_bonus(self, index, conditions=[]):
+        return max([0] + [bonus['value'] for bonus in self.skill_bonuses[index] if not bonus.get('condition', False) or bonus.get('condition') in conditions])
 
     def get_ticket(self, kind):
         rail = 0

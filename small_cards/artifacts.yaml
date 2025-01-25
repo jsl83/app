@@ -164,6 +164,26 @@
       - item
       - magical
       - weapon
+    action:
+      action:
+        - damage_monsters
+      aargs:
+        - damage: 1
+          single: False
+          location: self
+          step: health
+          skip: True
+      health:
+        - hp_san
+      hargs:
+        - hp: -1
+          skip: True
+    on_get:
+      bonuses:
+        - index: 3
+          value: 6
+          name: lightning_gun
+          condition: combat
   mi-go_brain_case:
     tags:
       - item

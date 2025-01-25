@@ -89,7 +89,10 @@ class InvestigatorPane():
         skill = self.investigator.skills[index]
         token = self.investigator.skill_tokens[index]
         mod = self.investigator.max_bonus[index]
-        text = str(skill) + '      ' + str(token) + '      ' + str(mod) + '      ' + str(skill + token + mod)
+        if index == 3:
+            text = str(skill) + '      ' + str(token) + '     ' + str(mod) + '(' + str(self.investigator.calc_max_bonus(3, ['combat'])) + ')' + '    ' + str(skill + token + mod)
+        else:
+            text = str(skill) + '      ' + str(token) + '      ' + str(mod) + '      ' + str(skill + token + mod)
         self.skills[index].text = text
 
     def set_skills(self, index=5):

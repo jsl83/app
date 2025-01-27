@@ -18,12 +18,22 @@
     tags:
       - item
       - weapon
+    bonuses:
+      - index: 3
+        value: 2
+        name: .38_revolver
+        condition: combat
   .45_automatic:
     expansion: 0
     cost: 2
     tags:
       - item
       - weapon
+    bonuses:
+      - index: 3
+        value: 3
+        name: .45_automatic
+        condition: combat
   agency_quarantine:
     expansion: 0
     cost: 4

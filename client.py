@@ -24,7 +24,6 @@ class Networker(threading.Thread, BanyanBase):
         self.investigator = None
         BanyanBase.__init__(self, back_plane_ip_address=back_plane_ip_address,
             process_name=process_name, loop_time=.0001)
-        self.set_subscriber_topic('server_update')
         #self.set_subscriber_topic('akachi_onyele_server')
         self.start()
 
@@ -106,6 +105,7 @@ def main():
     networker = set_up_network()
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     networker.window = window
+    networker.set_subscriber_topic('server_update')
     networker.publish_payload({'message': 'get_login_state', 'value': None}, 'login')
     arcade.run()
 

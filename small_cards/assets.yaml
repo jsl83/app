@@ -5,6 +5,13 @@
     tags:
       - trinket
       - weapon
+    triggers:
+      - owner_only: True
+        kind: combat_strength_test
+        trigger:
+          name: .18_derringer
+          add: True
+          used: False
   .38_revolver:
     expansion: 0
     cost: 1

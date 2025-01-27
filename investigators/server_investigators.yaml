@@ -4,8 +4,7 @@
     hp: 5
     possessions:
       - spells:mists_of_releh
-      - artifacts:the_silver_key
-      - artifacts:pallid_mask
+      - assets:.18_derringer
   charlie_kane:
     location: "san_francisco"
     hp: 4

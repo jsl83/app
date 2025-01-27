@@ -207,13 +207,15 @@ class EncounterPane():
         else:
             def lose_san():
                 self.hub.clear_overlay()
+                self.encounter_type.remove('combat_will')
                 successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
                 dmg = successes - monster.horror['san']
                 dmg = dmg if dmg < 0 else 0
                 self.take_damage(0, dmg, self.combat_strength, {'monster': monster, 'player_request': player_request})
             next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_san)
+            self.encounter_type.append('combat_will')
             self.rolls = self.hub.run_test(monster.horror['index'],
-                                        self.hub.encounter_pane,
+                                        self,
                                         monster.horror['mod'],
                                         [next_button],
                                         'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity),
@@ -226,11 +228,13 @@ class EncounterPane():
         else:
             def lose_hp():
                 self.hub.clear_overlay()
+                self.encounter_type.remove('combat_strength')
                 successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
                 dmg = successes - monster.strength['str']
                 dmg = dmg if dmg < 0 else 0
                 self.take_damage(dmg, 0, self.resolve_combat, {'monster': monster, 'player_request': player_request})
             next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_hp)
+            self.encounter_type.append('combat_strength')
             self.rolls = self.hub.run_test(monster.strength['index'],
                                         self.hub.encounter_pane,
                                         monster.strength['mod'],                                        

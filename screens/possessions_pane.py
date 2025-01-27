@@ -36,7 +36,7 @@ class PossessionsPane():
                 y_pos -= 45
                 self.overlay_layout.add(ActionButton(x=1000, y=y_pos, width=280, height=25, text=human_readable(card_type)))
                 def create_button(x, y, name, kind):
-                    texture = kind + '/' + name + '.png'
+                    texture = kind + '/' + name.replace('.', '') + '.png'
                     args = {'name': name, 'kind': kind}
                     self.button_layout.add(ActionButton(x, y, width=120, height=185, texture=texture, action=self.show_card, action_args=args))
                 if len(item_list) > 1:

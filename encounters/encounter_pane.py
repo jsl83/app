@@ -68,6 +68,7 @@ class EncounterPane():
             'shuffle_mystery': self.shuffle_mystery,
             'single_roll': self.single_roll,
             'skill': self.skill_test,
+            'skip_combat': self.skip_combat,
             'small_card': self.small_card,
             'spawn_clue': self.spawn_clue,
             'spend_clue': self.spend_clue,
@@ -145,8 +146,8 @@ class EncounterPane():
         if len(self.monsters) > 0:
             for monster in self.monsters:
                 choices.append(ActionButton(texture='monsters/' + monster.name + '.png', action=self.combat_will, action_args={'monster': monster}, scale=0.5))
-            options = [] if ('mists_of_releh' not in self.investigator.possessions['spells'] and not self.first_fight) or combat_only else [ActionButton(
-                text='Mists of Releh', action=self.mists, width=100, height=50)]
+            print(self.hub.triggers['precombat'])
+            options = [ActionButton(width=125, height=75, texture='buttons/placeholder.png', text=trigger['text'], action=self.action_dict[trigger['action']], action_args=trigger.get('aargs', {})) for trigger in self.hub.triggers['precombat']]
             self.hub.choice_layout = create_choices('Choose Monster', choices=choices, options=options)
             self.hub.show_overlay()
         elif not combat_only and len(monsters) == 0:
@@ -293,15 +294,6 @@ class EncounterPane():
             self.hub.waiting_pane = self
         else:
             self.monster_reckoning(step, none_step)
-
-    def mists(self):
-        self.monsters = []
-        self.first_fight = False
-        self.hub.clear_overlay()
-        self.layout.clear()
-        self.layout.add(self.text_button)
-        self.layout.add(self.phase_button)
-        self.choose_encounter()
 
     def reroll(self, new, old):
         self.rolls.remove(old)
@@ -1025,6 +1017,13 @@ class EncounterPane():
         next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=confirm_test)
         self.rolls = self.hub.run_test(stat, self, mod, [next_button])
 
+    def skip_combat(self):
+        self.monsters = []
+        self.first_fight = False
+        self.hub.clear_overlay()
+        self.clear_buttons()
+        self.choose_encounter()
+
     def small_card(self, cards=None, categories=[], single_card=True, attribute='reckoning', step='finish'):
         if cards == None:
             cards = []
@@ -1156,7 +1155,7 @@ class EncounterPane():
                 trigger_action = trigger.get('action', False)
                 trigger_args = trigger.get('action_args', {'step': 'nothing'})
                 if (hp_check or san_check) and encounter_check:
-                    button = ActionButton(width=125, height=125, texture='buttons/placeholder.png', text=trigger['button_text'], action=adjust_damage, action_args={'hp_change': trigger.get('hp_mod', 0), 'san_change': trigger.get('san_mod', 0), 'text': trigger['button_text'], 'trigger_action': trigger_action, 'trigger_args': trigger_args})
+                    button = ActionButton(width=125, height=125, texture='buttons/placeholder.png', text=human_readable(trigger['name']), action=adjust_damage, action_args={'hp_change': trigger.get('hp_mod', 0), 'san_change': trigger.get('san_mod', 0), 'text': human_readable(trigger['name']), 'trigger_action': trigger_action, 'trigger_args': trigger_args})
                     if trigger.get('font_size', None) != None:
                         button.style = {'font_size': trigger['font_size']}
                     if trigger_action and (trigger_action in self.req_dict and not self.req_dict[trigger_action](trigger_args)):

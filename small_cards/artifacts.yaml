@@ -97,7 +97,6 @@
         trigger:
           name: glass_of_mortlan
           double_six: True
-        step: san
       - owner_only: True
         kind: hp_san_loss
         trigger:
@@ -105,7 +104,6 @@
           san_mod: 1
           encounter: spells
           on_san_loss: True
-          button_text: Glass of Mortlan; reduce San loss by 1
           font_size: 12
   grotesque_statue:
     tags:
@@ -117,7 +115,6 @@
           name: grotesque_statue
           san_mod: all_loss
           on_san_loss: True
-          button_text: Grotesque Statue; Spend 1 Clue to prevent all Sanity damage
           action: spend_clue
           font_size: 12
     on_get:
@@ -171,14 +168,49 @@
     tags:
       - item
       - tome
+    action:
+      action:
+        - skill
+      aargs:
+        - stat: 0
+          fail: no_effect
+      pass:
+        - hp_san
+      pargs:
+        - san: -1
+          skip: True
+          step: spells
+      spells:
+        - request_card
+      sargs:
+        - kind: spells
+          skip: True
+          step: two
+      two:
+        - request_card
+      targs:
+        - skip: True
+          kind: spells
   pallid_mask:
     tags:
       - item
       - magical
+    triggers:
+      - owner_only: True
+        kind: precombat
+        trigger:
+          name: pallid_mask
+          action: skip_combat
   ruby_of_r'lyeh:
     tags:
       - item
       - magical
+    triggers:
+      - owner_only: True
+        kind: turn_end
+        trigger:
+          name: ruby_of_r'lyeh
+          used: False
   sword_of_saint_gerome:
     tags:
       - item

@@ -34,7 +34,9 @@ class HubScreen(arcade.View):
             'gate_close': [],
             'gate_test': [],
             'spells_test': [],
-            'hp_san_loss': []
+            'hp_san_loss': [],
+            'precombat': [],
+            'turn_end': []
         }
         
         self.item_actions = {}
@@ -284,10 +286,7 @@ class HubScreen(arcade.View):
         self.map = self.maps[key]
 
     def switch_info_pane(self, key):
-        if key == 'location':
-            for kind in self.triggers.values():
-                print([trigger['name'] for trigger in kind])
-        elif self.info_pane != self.info_panes[key] and self.gui_enabled:
+        if self.info_pane != self.info_panes[key] and self.gui_enabled:
             self.info_manager.children = {0:[]}
             self.info_pane = self.info_panes[key]
             self.info_manager.add(self.info_pane.layout)
@@ -405,6 +404,9 @@ class HubScreen(arcade.View):
                                     self.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
                                 else:
                                     self.remaining_actions = 2
+                                    for items in self.investigator.possessions.values():
+                                        for item in items:
+                                            item.action_used = False
                                     #'''
                                     #FOR TESTING
                                     self.remaining_actions = 3
@@ -420,10 +422,10 @@ class HubScreen(arcade.View):
                                     #'''
                             case 'encounter':
                                 #FOR TESTING
-                                self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                 #END TESTING
-                                #self.show_encounter_pane()
-                                #self.encounter_pane.encounter_phase()
+                                self.show_encounter_pane()
+                                self.encounter_pane.encounter_phase()
                             case 'reckoning':
                                 self.encounter_pane.reckoning()
                                 #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -805,16 +807,32 @@ class HubScreen(arcade.View):
         if self.undo_action != None:
             self.undo_action['action'](**self.undo_action['args'])
 
+    def end_turn(self):
+        self.clear_overlay()
+        self.undo_action = None
+        self.my_turn = False
+        self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+        for action in self.actions_taken:
+            self.actions_taken[action] = False
+
     def action_taken(self, action, action_point=1):
+        def ruby():
+            self.clear_overlay()
+            self.remaining_actions += 1
+            next((trigger for trigger in self.triggers['turn_end'] if trigger['name'] == 'ruby_of_r\'lyeh'))['used'] = True
+            self.encounter_pane.take_damage(0, -1, self.clear_overlay, {})
+        trigger_dict = {'ruby_of_r\'lyeh': ruby}
         if action != None:
             self.actions_taken[action] = True
         self.remaining_actions -= action_point
         if self.remaining_actions == 0:
-            self.undo_action = None
-            self.my_turn = False
-            self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-            for action in self.actions_taken:
-                self.actions_taken[action] = False
+            if len([trigger for trigger in self.triggers['turn_end'] if not trigger['used']]) > 0:
+                choices = [ActionButton(width=100, height=50, text=human_readable(trigger['name']), action=trigger_dict[trigger['name']], texture='buttons/placeholder.png') for trigger in self.triggers['turn_end']]
+                choices.append(ActionButton(width=100, height=50, text='End Turn', action=self.end_turn, texture='buttons/placeholder.png'))
+                self.choice_layout = create_choices('End of Turn Actions', choices=choices)
+                self.show_overlay()
+            else:
+                self.end_turn()
 
     def damage_monster(self, monster, damage, is_ambush=False):
         choices = []

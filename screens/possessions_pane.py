@@ -108,7 +108,7 @@ class PossessionsPane():
             y = self.boundary - self.position
         self.position += y
         if y != 0:
-            for item in self.button_layout.children + self.overlay_layout:
+            for item in self.button_layout.children + self.overlay_layout.children:
                 item.move(0, y)
 
     def on_show(self):

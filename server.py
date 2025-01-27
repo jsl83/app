@@ -633,7 +633,7 @@ class Networker(threading.Thread, BanyanBase):
         item = None
         ref = SPELLS if kind == 'spells' else CONDITIONS
         has_card = name != '' and next((card for card in self.investigators[investigator][kind] if name in card), None) != None
-        items = [card for card in self.decks[kind] if (name == '' or name in card) and (tag == '' or tag in ref[card[:-1]]['tags']) and not has_card]
+        items = [card for card in self.decks[kind] if (name == '' or name in card) and (tag == '' or tag in ref[card[:-1]]['tags']) and not has_card and card[:-1] not in self.investigators[investigator][kind]]
         if len(items) > 0:
             item = random.choice(items)
             #self.decks[kind].remove(item)

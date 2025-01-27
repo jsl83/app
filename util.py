@@ -37,7 +37,7 @@ def create_choices(title='', subtitle='', choices=[], size=(1000,658), pos=(0,14
             button.move(start_x, start_y + ((choice_height - button.height) / 2))
             start_x += button.width + 20
 
-        start_y -= 40
+        start_y -= (40 + choice_height / 2)
 
     return choice_gui
 

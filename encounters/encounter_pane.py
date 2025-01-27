@@ -146,8 +146,7 @@ class EncounterPane():
         if len(self.monsters) > 0:
             for monster in self.monsters:
                 choices.append(ActionButton(texture='monsters/' + monster.name + '.png', action=self.combat_will, action_args={'monster': monster}, scale=0.5))
-            print(self.hub.triggers['precombat'])
-            options = [ActionButton(width=125, height=75, texture='buttons/placeholder.png', text=trigger['text'], action=self.action_dict[trigger['action']], action_args=trigger.get('aargs', {})) for trigger in self.hub.triggers['precombat']]
+            options = [ActionButton(width=125, height=75, texture='buttons/placeholder.png', text=human_readable(trigger['name']), action=self.action_dict[trigger['action']], action_args=trigger.get('aargs', {})) for trigger in self.hub.triggers['precombat']]
             self.hub.choice_layout = create_choices('Choose Monster', choices=choices, options=options)
             self.hub.show_overlay()
         elif not combat_only and len(monsters) == 0:
@@ -1054,7 +1053,7 @@ class EncounterPane():
                     self.set_buttons(step)
             self.click_action = clue_click
 
-    def spend_clue(self, step='finish', clues=1, condition=None, is_check=False):
+    def spend_clue(self, step='finish', clues=1, condition=None, is_check=False, not_spend=False):
         if condition != None:
             if condition == 'half':
                 clues = math.ceil(self.hub.location_manager.player_count / 2)
@@ -1067,6 +1066,13 @@ class EncounterPane():
                 for map in self.hub.maps.values():
                     rumor_count += len(map.layouts['rumor'].children)
                 clues = min(rumor_count, len(self.investigator.clues))
+        if not not_spend:
+            for triggers in [trigger for trigger in self.hub.triggers['spend_clue'] if not trigger['used']]:
+                clues -= 1
+                if not is_check:
+                    triggers['used'] = True
+                if clues == 0:
+                    break
         if not is_check:
             for x in range(clues):
                 clue = random.choice(self.investigator.clues)

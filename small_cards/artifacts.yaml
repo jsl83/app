@@ -261,3 +261,16 @@
     tags:
       - item
       - magical
+    triggers:
+      - owner_only: True
+        kind: spend_clue
+        trigger:
+          name: the_silver_key
+          action: reduce
+          used: False
+      - owner_only: True
+        kind: gate_test
+        trigger:
+          name: the_silver_key
+          reroll: True
+          used: False

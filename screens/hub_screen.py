@@ -36,7 +36,8 @@ class HubScreen(arcade.View):
             'spells_test': [],
             'hp_san_loss': [],
             'precombat': [],
-            'turn_end': []
+            'turn_end': [],
+            'spend_clue': []
         }
         
         self.item_actions = {}
@@ -407,15 +408,16 @@ class HubScreen(arcade.View):
                                     for items in self.investigator.possessions.values():
                                         for item in items:
                                             item.action_used = False
-                                    for triggers in self.triggers['turn_end']:
-                                        triggers['used'] = False
+                                    for kind in ['turn_end', 'spells_test', 'gate_test', 'spend_clue']:
+                                        for triggers in self.triggers[kind]:
+                                            triggers['used'] = False
                                     #'''
                                     #FOR TESTING
                                     self.remaining_actions = 3
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
-                                    #if self.investigator.name == 'akachi_onyele':
-                                        #self.ticket_move(self.investigator.name, 'buenos_aires', 0, 0, self.investigator.location)
+                                    if self.investigator.name == 'akachi_onyele':
+                                        self.ticket_move(self.investigator.name, 'buenos_aires', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     self.investigator.focus = 0
@@ -584,7 +586,7 @@ class HubScreen(arcade.View):
         dice = self.investigator.skills[skill] + mod + self.investigator.skill_tokens[skill] + self.investigator.calc_max_bonus(skill, pane.encounter_type)
         double_six = False
         for kind in pane.encounter_type:
-            for trigger in self.triggers.get(kind + '_test', []):
+            for trigger in [add for add in self.triggers.get(kind + '_test', []) if not add.get('reroll', False)]:
                 pass_condition = True
                 if trigger.get('owner', None) != None and (self.investigator.location != next((inv.location for inv in self.location_manager.all_investigators.values() if trigger['name'] in [item.get_server_name() for item in inv.possessions[trigger['owner']]]))):
                         pass_condition = False
@@ -603,22 +605,26 @@ class HubScreen(arcade.View):
         fail = next((roll for roll in rolls if roll < self.investigator.success), None)
         if fail != None:
             def reroll(kind, option_index):
-                fail = next((roll for roll in rolls if roll < self.investigator.success), None)
+                fail = next((roll for roll in rolls if roll < self.investigator.success), rolls[0])
                 if fail != None:
                     index = rolls.index(fail)
                     new_roll = random.randint(1, 6)
                     choices[index].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
-                    pane.reroll([new_roll] + [6] if new_roll == 6 and double_six else [], fail)
+                    pane.reroll([new_roll] + ([6] if new_roll == 6 and double_six else []), fail)
                     if kind == 'focus':
                         self.investigator.focus -= 1
                         if self.investigator.focus == 0:
                             options[option_index].disable()
-                    elif kind == 'clue' and len(self.investigator.clues) > 0:
-                        clue = random.choice(self.investigator.clues)
-                        self.investigator.clues.remove(clue)
-                        self.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
-                        if len(self.investigator.clues) == 0:
+                        self.info_panes['investigator'].focus_button.text = 'x ' + str(self.investigator.focus)
+                    elif kind == 'clue':
+                        self.encounter_pane.spend_clue('nothing')
+                        if self.encounter_pane.spend_clue(is_check=True) > len(self.investigator.clues):
                             options[option_index].disable()
+                    else:
+                        if kind.get('single_use', False):
+                            kind['used'] = True
+                        options[option_index].disable()
+                    self.choice_manager.trigger_render()
                 else:
                     for x in options:
                         x.disable()
@@ -627,10 +633,14 @@ class HubScreen(arcade.View):
                 focus_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': option_index}, texture='icons/focus.png', text='Use', text_position=(20,-2))
                 options.append(focus_button)
                 option_index += 1
-            if len(self.investigator.clues) > 0 and allow_clues:
+            if self.encounter_pane.spend_clue(is_check=True) <= len(self.investigator.clues) and allow_clues:
                 clue_button = ActionButton(action=reroll, action_args={'kind': 'clue', 'option_index': option_index}, texture='icons/clue.png', text='Use', text_position=(20,-2))
                 options.append(clue_button)
                 option_index += 1
+            for kind in pane.encounter_type:
+                for trigger in [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('reroll', False) and not reroll['used']]:
+                    options.append(ActionButton(action=reroll, action_args={'kind': trigger, 'option_index': option_index}, texture='buttons/placeholder.png', text=human_readable(trigger['name'])))
+                    option_index += 1
         #FOR TESTING
         def autofail():
             pane.rolls = [1]
@@ -639,7 +649,7 @@ class HubScreen(arcade.View):
         options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
         options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
         #END TESTING
-        self.choice_layout = create_choices(choices = choices, title=titles[3 if skill == 5 else skill] + ' Test', options=options, offset=(0,150), subtitle=subtitle)
+        self.choice_layout = create_choices(choices = choices, title=titles[skill] + ' Test', options=options, offset=(0,150), subtitle=subtitle)
         self.show_overlay()
         if double_six:
             rolls += [roll for roll in rolls if roll == 6]

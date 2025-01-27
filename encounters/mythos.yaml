@@ -706,6 +706,7 @@
     aargs:
       - condition: the_storm
         text: Spend Clues
+        not_spend: True
     flavor: The wind suddenly picks up, causing a shiver despite the clear, blue sky. Looking to the horizon, you see steely-gray clouds approaching.
     text: Each investigator discards Clues equal to the number of Rumor Mythos cards in play. If there are no Rumor Mythos cards in play, draw and resolve 1 Rumor Mythos card from the game box.
     font_size: 14

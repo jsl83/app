@@ -46,6 +46,7 @@
       - item
       - magical
     action:
+      check_key: damage
       action:
         - hp_san
       aargs:
@@ -127,6 +128,7 @@
       - magical
       - weapon
     action:
+      check_key: action
       action:
         - damage_monsters
       aargs:
@@ -211,15 +213,50 @@
         trigger:
           name: ruby_of_r'lyeh
           used: False
-  sword_of_saint_gerome:
+  sword_of_saint_jerome:
     tags:
       - item
       - magical
       - weapon
+    bonuses:
+      - index: 3
+        value: 5
+        name: sword_of_saint_jerome
+        condition: combat
+      - index: 4
+        value: 2
+        name: sword_of_saint_jerome
+        condition: combat
+    triggers:
+      - kind: monster_kill
+        owner_only: True
+        trigger:
+          name: sword_of_saint_jerome
+          recover_san: 1
   t'tka_halot:
     tags:
       - item
       - tome
+    action:
+      check_key: damage
+      action:
+        - skill
+      aargs:
+        - stat: 0
+          step: health
+          fail: no_effect
+      health:
+        - hp_san
+      hargs:
+        - san: -1
+          skip: True
+          step: damage
+      damage:
+        - damage_monsters
+      dargs:
+        - damage: 3
+          location: self
+          skip: True
   the_silver_key:
     tags:
       - item

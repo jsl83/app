@@ -1234,7 +1234,11 @@ class SmallCardPane(EncounterPane):
             'flip_card': self.flip_card,
             'trade': self.trade
         }
+        small_card_req_dict = {
+            'trade': lambda args: self.hub.location_manager.player_count > 1
+        }
         self.action_dict = self.action_dict | small_card_dict
+        self.req_dict = self.req_dict | small_card_req_dict
 
     def setup(self, encounters, parent, encounter_step=None, single_pick=True, default_text=None, textures=[], finish_action=None):
         self.finish_action = finish_action

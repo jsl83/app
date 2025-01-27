@@ -63,9 +63,9 @@ class PossessionsPane():
         buttons = [self.big_card, self.back_button]
         if hasattr(card, 'action'):
             buttons.append(self.action_button)
-            args = card.action.get('aargs', [{}])[0]
-            needs_check = self.hub.small_card_pane.req_dict.get(card.action['action'][0], False)
-            if self.hub.remaining_actions == 0 or card.action_used or (needs_check and (len(card.action['action']) == 1 and not self.hub.small_card_pane.req_dict[card.action['action'][0]](args))):
+            key = card.action.get('check_key', False)
+            passes_check = not key or self.hub.small_card_pane.req_dict[card.action[key][0]](card.action[key[0] + 'args'][0])
+            if self.hub.remaining_actions == 0 or card.action_used or not passes_check:
                 self.action_button.disable()
         if hasattr(card, 'back'):
             buttons.append(self.flip_button)

@@ -407,13 +407,15 @@ class HubScreen(arcade.View):
                                     for items in self.investigator.possessions.values():
                                         for item in items:
                                             item.action_used = False
+                                    for triggers in self.triggers['turn_end']:
+                                        triggers['used'] = False
                                     #'''
                                     #FOR TESTING
                                     self.remaining_actions = 3
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
-                                    if self.investigator.name == 'akachi_onyele':
-                                        self.ticket_move(self.investigator.name, 'buenos_aires', 0, 0, self.investigator.location)
+                                    #if self.investigator.name == 'akachi_onyele':
+                                        #self.ticket_move(self.investigator.name, 'buenos_aires', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     self.investigator.focus = 0
@@ -853,6 +855,8 @@ class HubScreen(arcade.View):
                             self.encounter_pane.spend_clue('nothing')
                             result_action()
                         choices.append(ActionButton(texture='buttons/placeholder.png', text='Spend 1 Clue ' + trigger['clue_text'], action=clue_spend, style={'font_size': 10}))
+                    elif trigger.get('recover_san', False):
+                        self.investigator.sanity = min(self.investigator.max_sanity, self.investigator.sanity + trigger['recover_san'])
                     else:
                         result_action()
             if hasattr(monster, 'death_trigger'):

@@ -4,7 +4,7 @@
     hp: 5
     possessions:
       - spells:mists_of_releh
-      - artifacts:ruby_of_r'lyeh
+      - artifacts:t'tka_halot
   charlie_kane:
     location: "san_francisco"
     hp: 4

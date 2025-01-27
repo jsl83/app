@@ -113,9 +113,9 @@ class EncounterPane():
         self.last_value = None
         self.player_index = 0
         self.encounter_type = []
-        self.is_owner = True
         self.hp_damage = 0
         self.san_damage = 0
+        self.current_key = ''
 
     def clear_buttons(self, buttons=[]):
         self.layout.clear()
@@ -308,7 +308,6 @@ class EncounterPane():
         self.rolls += new
 
     def finish(self, skip=False):
-        self.is_owner = True
         self.encounter_type = []
         self.layout.clear()
         for button in [self.phase_button, self.text_button, self.proceed_button, self.option_button, self.last_button]:
@@ -333,13 +332,8 @@ class EncounterPane():
             self.hub.my_turn = False
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
 
-    def adjust_triggers(self, kind, args, owner_only=False, step='finish'):
-        if not owner_only or self.is_owner:
-            trigger = next((trigger for trigger in self.hub.triggers[kind] if trigger['name'] == args['name']), None)
-            if trigger == None:
-                self.hub.triggers[kind].append(args)
-            else:
-                self.hub.triggers[kind].remove(trigger)
+    def adjust_triggers(self, kind, args, step='finish'):
+        self.hub.triggers[kind].append(args)
         self.set_buttons(step)
 
     def allow_gate_close(self, allow=True, step='finish'):
@@ -362,15 +356,22 @@ class EncounterPane():
         self.ambush_steps = (step, fail)
         self.combat_will(self.hub.location_manager.create_ambush_monster(name))
 
-    def choose_investigator(self, action, step='finish'):
+    def choose_investigator(self, action, no_self=False, step='finish'):
         choices = []
+        subtitle = ''
         if action == 'delay':
             def button_action(name):
                 self.hub.networker.publish_payload({'message': 'become_delayed'}, name + '_server')
                 self.set_buttons(step)
             subtitle = 'to become Delayed'
-        for names in self.hub.location_manager.all_investigators:
+        elif action == 'same_action':
+            def button_action(name):
+                self.hub.clear_overlay()
+                self.encounter[self.current_key[0] + 'args'][0]['investigator'] = name
+                self.set_buttons(self.current_key)
+        for names in [name for name in list(self.hub.location_manager.all_investigators.keys()) if not no_self or name != self.investigator.name]:
             choices.append(ActionButton(texture='investigators/' + names + '_portrait.png', action=button_action, action_args={'name': names}, scale=0.4))
+        self.hub.clear_overlay()
         self.hub.choice_layout = create_choices('Choose Investigator', subtitle, choices)
         self.hub.show_overlay()
 
@@ -736,12 +737,16 @@ class EncounterPane():
                 monster.heal(amt)
         self.set_buttons(step)
 
-    def move_investigator(self, investigator=None, location=None, step='finish'):
+    def move_investigator(self, investigator=None, location=None, step='finish', swap=None):
         investigator = self.investigator.name if investigator == None else investigator
+        old_loc = self.hub.location_manager.all_investigators[investigator].location
+        location = location if swap == None else self.hub.location_manager.all_investigators[swap].location
         if location == None:
             pass
         else:
             self.hub.networker.publish_payload({'message': 'move_investigator', 'value': investigator, 'destination': location}, self.investigator.name)
+            if swap != None:
+                self.hub.networker.publish_payload({'message': 'move_investigator', 'value': swap, 'destination': old_loc}, swap)
         self.set_buttons(step)
 
     def move_monster(self, step='finish', encounter=True, move_to='self', optional=False):
@@ -909,8 +914,9 @@ class EncounterPane():
     def set_buttons(self, key):
         self.wait_step = None
         self.last_value = None
+        self.current_key = key
         if key == 'nothing':
-            pass
+            return
         elif key == 'finish':
             self.finish()
         elif key == 'reckoning':
@@ -943,17 +949,14 @@ class EncounterPane():
                     buttons[x].text = args.get('text', '')
                     buttons[x].enable()
                     omit_args = {}
-                    for keys in [key for key in args.keys() if key not in ['text', 'check', 'skip']]:
+                    for keys in [key for key in args.keys() if key not in ['text', 'check', 'skip', 'owner_only', 'on_trade']]:
                         omit_args[keys] = args[keys]
                     if actions[x] in self.req_dict and not self.req_dict[actions[x]](omit_args) and len(actions) > 0:
                         buttons[x].disable()
                     if actions[x] == 'skill' or args.get('skip', None) != None:
                         buttons[x].action = lambda: None
                         buttons[x].action_args = None
-                        if not omit_args.pop('owner_only', False) or self.is_owner:
-                            self.action_dict[actions[x]](**omit_args)
-                        else:
-                            self.set_buttons(args.get('step'))
+                        self.action_dict[actions[x]](**omit_args)
                     else:
                         buttons[x].action = self.action_dict[actions[x]]
                         buttons[x].action_args = omit_args
@@ -1228,19 +1231,23 @@ class SmallCardPane(EncounterPane):
         self.return_layout = arcade.gui.UILayout(x=1000)
         self.cards = []
         self.return_overlay = arcade.gui.UILayout(width=1000, height=658, x=0, y=142).with_background(arcade.load_texture(':resources:eldritch/images/gui/overlay.png'))
+        small_card_dict = {
+            'flip_card': self.flip_card,
+            'trade': self.trade
+        }
+        self.action_dict = self.action_dict | small_card_dict
 
     def setup(self, encounters, parent, encounter_step=None, single_pick=True, default_text=None, textures=[], finish_action=None):
         self.finish_action = finish_action
         self.return_layout.clear()
+        self.encounters = encounters
+        self.parent = parent
+        self.step = encounter_step
         ref = parent.hub.info_manager.children[0] if type(parent.hub.info_manager.children[0][0]).__name__ == 'UITexturePane' else parent.hub.info_manager.children[0][0].children
         for element in ref:
             self.return_layout.add(element)
         for element in parent.hub.choice_layout.children:
             self.return_overlay.add(element)
-        self.encounters = encounters
-        self.parent = parent
-        self.step = encounter_step
-        self.action_dict = self.action_dict | {'flip_card': self.flip_card}
         self.hub.clear_overlay()
         self.hub.info_manager.children = {0:[]}
         self.hub.info_manager.add(self.layout)
@@ -1257,6 +1264,26 @@ class SmallCardPane(EncounterPane):
             investigator = self.investigator.name
         self.encounter = getattr(next((card for card in self.hub.location_manager.all_investigators[investigator]['possessions'][kind] if card.name == name)), 'back')
         self.set_buttons('action')
+
+    def trade(self, investigator=None, swap=False, step='finish'):
+        if investigator == None:
+            self.choose_investigator('same_action', True)
+        else:
+            pane = self.hub.info_panes['location'].possession_screen
+            def finish_trade():
+                if swap:
+                    self.encounter[step[0] + 'args'][0]['swap'] = investigator
+                pane.close_button.action = self.hub.info_panes['location'].on_show
+                self.hub.info_manager.children = {0:[]}
+                self.hub.info_manager.children[0].append(self.layout)
+                self.hub.info_manager.children[0].append(self.hub.info_panes['possessions'].big_card)
+                self.set_buttons(step)
+            pane.investigator = self.hub.location_manager.all_investigators[investigator]
+            pane.setup(True)
+            pane.action_point = 0
+            pane.start_trade()
+            pane.close_button.action = finish_trade
+            self.hub.info_manager.children[0].append(pane.layout)
 
     def encounter_selected(self, encounter):
         self.encounter = encounter
@@ -1278,7 +1305,6 @@ class SmallCardPane(EncounterPane):
 
     def finish(self):
         self.encounter_type = []
-        self.is_owner = True
         if not self.single_pick and len(self.cards) > 0:
             self.pick_encounter()
         else:

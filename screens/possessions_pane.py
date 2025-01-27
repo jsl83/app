@@ -64,7 +64,8 @@ class PossessionsPane():
         if hasattr(card, 'action'):
             buttons.append(self.action_button)
             args = card.action.get('aargs', [{}])[0]
-            if card.action_used or (len(card.action['action']) == 1 and not self.hub.small_card_pane.req_dict[card.action['action'][0]](args)):
+            needs_check = self.hub.small_card_pane.req_dict.get(card.action['action'][0], False)
+            if self.hub.remaining_actions == 0 or card.action_used or (needs_check and (len(card.action['action']) == 1 and not self.hub.small_card_pane.req_dict[card.action['action'][0]](args))):
                 self.action_button.disable()
         if hasattr(card, 'back'):
             buttons.append(self.flip_button)
@@ -114,33 +115,31 @@ class PossessionsPane():
         self.back_action()
         self.reset()
 
-    def on_get(self, card, is_owner):
-        if hasattr(card, 'on_get'):
-            for bonus in card.on_get.pop('bonuses', []):
-                index = bonus.pop('index')
+    def on_get(self, card, is_owner, is_trade=False):
+        if is_owner:
+            for bonus in getattr(card, 'bonuses', []):
+                index = bonus['index']
                 self.investigator.skill_bonuses[index].append(bonus)
                 self.investigator.max_bonus[index] = max(bonus['value'] if not bonus.get('condition', False) else 0, self.investigator.max_bonus[index])
-                card.bonuses.append(index)
                 self.hub.info_panes['investigator'].calc_skill(index)
-            if len(card.on_get) > 0:
-                self.hub.small_card_pane.is_owner = is_owner
-                self.hub.small_card_pane.setup([card.on_get], self, textures=[card.texture])
+        for triggers in getattr(card, 'triggers', []):
+            if not triggers.get('owner_only', False) or is_owner:
+                self.hub.triggers[triggers['kind']].append(triggers['trigger'])
+        if getattr(card, 'on_get', False) and not is_trade and is_owner:
+            for action in card.on_get:
+                self.hub.encounter_pane.action_dict[action['action']](step='nothing', **action['aargs'])
 
-    def on_discard(self, card, is_owner):
-        for index in card.bonuses:
-            card_bonus = next((item for item in self.investigator.skill_bonuses[index] if item['name'] == card.name))
-            self.investigator.skill_bonuses[index].remove(card_bonus)
-            if card_bonus['value'] == self.investigator.max_bonus[index]:
+    def on_discard(self, card, investigator):
+        is_owner = investigator == self.investigator
+        if is_owner:
+            for bonus in getattr(card, 'bonuses', []):
+                index = bonus['index']
+                self.investigator.skill_bonuses[index] = [bonuses for bonuses in self.investigator.skill_bonuses[index] if bonuses['name'] != card.name]
                 self.investigator.max_bonus[index] = self.investigator.calc_max_bonus(index)
                 self.hub.info_panes['investigator'].calc_skill(index)
-            elif card_bonus['condition'] == 'combat':
-                self.hub.info_panes['investigator'].calc_skill(index)
-        if hasattr(card, 'on_discard'):
-            for kind in card.on_discard.pop('triggers', []):
-                self.hub.triggers[kind] = [trigger for trigger in self.hub.triggers[kind] if trigger['name'] != card.name]
-            if len(card.on_discard) != 0:
-                self.hub.small_card_pane.is_owner = is_owner
-                self.hub.small_card_pane.setup([card.on_discard], self, textures=[card.texture])
+        for trigger in getattr(card, 'triggers', []):
+            if (not trigger.get('owner_only', False) or is_owner):
+                self.hub.triggers[trigger['kind']] = [hub_trigger for hub_trigger in self.hub.triggers[trigger['kind']] if hub_trigger['name'] != card.name]
 
 class TradePane(PossessionsPane):
     def __init__(self, investigator, hub):
@@ -155,6 +154,7 @@ class TradePane(PossessionsPane):
         self.take = {'rail': [], 'ship': [], 'clues': [], 'assets': [], 'unique_assets': [], 'artifacts': [], 'spells': [], 'conditions': []}
         self.is_taking = True
         self.trade_with = ''
+        self.action_point = 1
     
     def setup(self, trade):
         reference = self.give if self.investigator == self.hub.investigator else self.take
@@ -222,6 +222,7 @@ class TradePane(PossessionsPane):
         self.trade_button.text = 'Next' if self.is_taking else 'Finish'
         self.text_button.text = 'Select items to ' + ('take' if self.is_taking else 'give')
         self.is_taking = not self.is_taking
+        self.close_button.disable()
         for buttons in self.button_layout.children:
             buttons.enable()
 
@@ -238,8 +239,10 @@ class TradePane(PossessionsPane):
         self.hub.networker.publish_payload(payload, 'server_update')
         self.give = {'rail': [], 'ship': [], 'clues': [], 'assets': [], 'unique_assets': [], 'artifacts': [], 'spells': [], 'conditions': []}
         self.take = {'rail': [], 'ship': [], 'clues': [], 'assets': [], 'unique_assets': [], 'artifacts': [], 'spells': [], 'conditions': []}
-        self.hub.action_taken('trade')
+        self.hub.action_taken('trade', self.action_point)
+        self.action_point = 1
         self.close_button.action()
+        self.close_button.enable()
 
     def swap_items(self, take, give, taker, giver):
         giver = self.hub.location_manager.all_investigators[giver]
@@ -252,10 +255,14 @@ class TradePane(PossessionsPane):
             for item in give[kind]:
                 card = next((card for card in giver.possessions[kind] if card.name == item))
                 giver.possessions[kind].remove(card)
+                self.on_discard(card, giver)
                 taker.possessions[kind].append(card)
+                self.on_get(card, taker == self.hub.investigator, True)
             for item in take[kind]:
                 card = next((card for card in taker.possessions[kind] if card.name == item))
                 giver.possessions[kind].append(card)
+                self.on_get(card, giver == self.hub.investigator, True)
                 taker.possessions[kind].remove(card)
+                self.on_discard(card, taker)
         self.hub.info_panes['possessions'].setup()
         self.hub.info_panes['investigator'].set_ticket_counts()

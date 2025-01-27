@@ -284,7 +284,10 @@ class HubScreen(arcade.View):
         self.map = self.maps[key]
 
     def switch_info_pane(self, key):
-        if self.info_pane != self.info_panes[key] and self.gui_enabled:
+        if key == 'location':
+            for kind in self.triggers.values():
+                print([trigger['name'] for trigger in kind])
+        elif self.info_pane != self.info_panes[key] and self.gui_enabled:
             self.info_manager.children = {0:[]}
             self.info_pane = self.info_panes[key]
             self.info_manager.add(self.info_pane.layout)
@@ -529,6 +532,7 @@ class HubScreen(arcade.View):
                     for kind in ['assets', 'unique_assets', 'artifacts', 'spells']:
                         for item in dead.possessions[kind]:
                             recover.possessions[kind].append(item)
+                            self.info_pane['possessions'].on_get(item)
                     del self.location_manager.dead_investigators[payload['value']]
                     self.hub.info_panes['possessions'].setup()
                     self.hub.info_panes['investigator'].set_ticket_counts()
@@ -543,7 +547,7 @@ class HubScreen(arcade.View):
                     else:
                         items = self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']]
                         item = next((item for item in items if item.get_server_name() == payload['value']))
-                        self.info_panes['possessions'].on_discard(item, self.investigator.name == payload['owner'])
+                        self.info_panes['possessions'].on_discard(item, self.investigator.name)
                         self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']].remove(item)
                     if payload['owner'] == self.investigator.name:
                         self.info_panes['possessions'].setup()
@@ -801,10 +805,10 @@ class HubScreen(arcade.View):
         if self.undo_action != None:
             self.undo_action['action'](**self.undo_action['args'])
 
-    def action_taken(self, action):
+    def action_taken(self, action, action_point=1):
         if action != None:
             self.actions_taken[action] = True
-        self.remaining_actions -= 1
+        self.remaining_actions -= action_point
         if self.remaining_actions == 0:
             self.undo_action = None
             self.my_turn = False

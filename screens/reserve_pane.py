@@ -60,7 +60,7 @@ class ReservePane():
             card = get_asset(item)
             option.name = item
             option.texture = card['texture']
-            option.action_args = {'name': option.name, 'cost': card['cost']}
+            option.action_args = {'card': card}
             option.enable()
             self.reserve.append(card)
         if len(self.reserve) == 0:
@@ -71,10 +71,14 @@ class ReservePane():
     def acquire_assets(self):
         if self.is_shopping:
             self.hub.action_taken('shop')
-            for item in (self.selected):
-                self.hub.request_card('assets', item, 'acquire')
+            services = [item for item in self.selected if 'service' in item['tags']]
+            for item in self.selected:
+                self.hub.request_card('assets', item['name'], 'acquire')
                 self.reserve = [item for item in self.reserve if item['name'] != item]
             self.reset()
+            if len(services) > 0:
+                self.hub.small_card_pane.setup(services, parent=self, single_pick=False)
+            self.acquire_button.disable()
         elif not self.hub.actions_taken['shop'] and self.hub.remaining_actions > 0:
             self.is_shopping = True
             self.hub.gui_set(False)
@@ -83,21 +87,21 @@ class ReservePane():
                 if x >= self.hub.investigator.success:
                     self.successes += 1
             self.acquire_button.text = 'Acquire (Remaining cost ' + str(self.successes) + ')'
-            self.acquire_button.disable()
             self.discard_button.text = 'Cycle Card'
             self.discard_button.disable()
             self.layout.add(self.debt_button)
 
-    def select_item(self, name, cost):
+    def select_item(self, card):
+        cost = card['cost']
         if self.is_shopping:
-            if name in self.selected:
-                self.selected.remove(name)
+            if card in self.selected:
+                self.selected.remove(card)
                 self.successes += cost
                 if not self.acquire_button.enabled and self.successes >= 0 and len(self.selected) > 0:
                     self.acquire_button.enable()
             else:
                 self.acquire_button.enable()
-                self.selected.append(name)
+                self.selected.append(card)
                 self.successes -= cost
                 if self.acquire_button.enabled and self.successes < 0:
                     self.acquire_button.disable()
@@ -111,7 +115,7 @@ class ReservePane():
 
     def discard_action(self):
         if self.is_shopping:
-            self.hub.request_card('assets', self.selected[0], 'restock')
+            self.hub.request_card('assets', self.selected[0]['name'], 'restock')
             self.reset()
             self.hub.action_taken('shop')
         else:

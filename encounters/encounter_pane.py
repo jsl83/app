@@ -110,7 +110,7 @@ class EncounterPane():
         self.monster_reckonings = []
         self.monster_reckoning_loaded = False
         self.monster_death_triggers = []
-        self.no_loc_click = False
+        self.no_loc_click = None
         self.last_value = None
         self.player_index = 0
         self.encounter_type = []
@@ -322,7 +322,7 @@ class EncounterPane():
         self.investigator.encounter_impairment = 0
         self.mythos_reckonings = []
         self.monster_reckonings = []
-        self.no_loc_click = False
+        self.no_loc_click = None
         if not skip:
             self.hub.my_turn = False
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -438,7 +438,7 @@ class EncounterPane():
             if not single:
                 self.proceed_button.action = damage_all
                 self.proceed_button.text = 'Select Location'
-            def select(monster, dmg):
+            def select(monster):
                 self.hub.damage_monster(monster, damage)
                 if lose_hp:
                     self.hub.clear_overlay()
@@ -452,23 +452,25 @@ class EncounterPane():
                 options = []
                 monsters = [monster for monster in self.hub.location_manager.locations[loc]['monsters'] if epic or not monster.epic]
                 if len(monsters) > 0:
-                    self.proceed_button.action_args = {'loc': loc, 'dmg': damage}
+                    self.proceed_button.action_args = {'loc': loc}
                     if not single:
                         self.proceed_button.enable()
+                        self.proceed_button.text = 'Confirm: ' + human_readable(loc)
                     for monster in monsters:
                         choices.append(ActionButton(
-                            width=100, height=100, texture='monsters/' + monster.name + '.png', action=select if single else lambda: None, action_args={'monster': monster, 'dmg': damage} if single else None))
+                            width=100, height=100, texture='monsters/' + monster.name + '.png', action=select if single else lambda *args: None, action_args={'monster': monster}))
                         options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
                     self.hub.clear_overlay()
-                    self.hub.choice_layout = create_choices(title='Select Monster(s)', subtitle=('Damage: ' + str(damage)) if damage != 99 else 'Discard Monster', choices=choices, options=options)
+                    self.hub.choice_layout = create_choices(title='Select ' + ('' if single else 'all ') + 'Monster(s)', subtitle=('Damage: ' + str(damage)) if damage != 99 else 'Discard Monster', choices=choices, options=options)
                     self.hub.show_overlay()
+                    self.clear_buttons([self.proceed_button, self.option_button])
             if location != None:
                 damage_loc(location)
             else:
                 self.click_action = damage_loc
+                self.proceed_button.disable()
                 self.option_button.text = 'Close Monster Selection'
                 self.option_button.action = self.hub.clear_overlay
-                self.layout.add(self.option_button)
 
     def delay(self, step='finish'):
         self.investigator.delayed = True
@@ -883,7 +885,7 @@ class EncounterPane():
 
     def select_location(self, mythos='', step='finish'):
         self.clear_buttons()
-        self.no_loc_click = True
+        self.no_loc_click = self.clear_buttons
         if mythos == 'that_which_consumes' and len([gate for gate in self.hub.location_manager.locations.values() if gate['gate']]) == 0:
             self.set_buttons(step)
             return
@@ -1239,6 +1241,7 @@ class SmallCardPane(EncounterPane):
         EncounterPane.__init__(self, hub)
         self.return_layout = arcade.gui.UILayout(x=1000)
         self.cards = []
+        self.small_card_pic = ActionButton(x=1015, y=400, width=250, height=385, texture='buttons/placeholder.png')
         self.return_overlay = arcade.gui.UILayout(width=1000, height=658, x=0, y=142).with_background(arcade.load_texture(':resources:eldritch/images/gui/overlay.png'))
         small_card_dict = {
             'flip_card': self.flip_card,

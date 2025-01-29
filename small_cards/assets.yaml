@@ -39,29 +39,89 @@
     cost: 4
     tags:
       - service
+    action:
+      - damage_monsters
+    aargs:
+      - damage: 4
+        single: False
+        text: Select Location
+        skip: True
+    action_text: Choose a space. Each Monster on the chosen space loses 4 Health.
+    title: Agency Quarentine
   arcane_manuscripts:
     expansion: 0
     cost: 1
     tags:
       - item
       - tome
+    bonuses:
+      - index: 0
+        value: 1
+        name: arcane_manuscripts
+        condition: spells
   arcane_scholar:
     expansion: 0
     cost: 2
     tags:
       - ally
+    bonuses:
+      - index: 0
+        value: 1
+        name: arcane_scholar
+    triggers:
+      - owner_only: True
+        kind: lore_test
+        trigger:
+          name: arcane_scholar
+          reroll: True
+          used: False
   arcane_tome:
     expansion: 0
     cost: 3
     tags:
       - item
       - tome
+    bonuses:
+      - index: 0
+        value: 2
+        condition: spells
+        name: arcane_tome
+    triggers:
+      - owner_only: True
+        kind: rest_actions
+        trigger:
+          name: arcane_tome
+          action:
+            - skill
+          aargs:
+            - stat: 0
+              fail: nothing
+          pass:
+            - request_card
+          pargs:
+            - kind: spells
+              skip: True
+          action_text: Test Lore. If you pass, gain 1 Spell.
+          title: Arcane Tome
   axe:
     expansion: 0
     cost: 2
     tags:
       - item
       - weapon
+    bonuses:
+      - index: 3
+        value: 2
+        name: axe
+        condition: combat
+    triggers:
+      - owner_only: True
+        kind: combat_strength_test
+        trigger:
+          name: axe
+          reroll: all
+          
+          used: False
   bandages:
     expansion: 0
     cost: 1

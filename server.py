@@ -807,6 +807,7 @@ class Networker(threading.Thread, BanyanBase):
         if refill:
             for i in range(0, min(4 - len(self.assets['reserve']), len(self.assets['deck']))):
                 item = random.choice(self.assets['deck'])
+                item = 'agency_quarantine'
                 #self.assets['deck'].remove(item)
                 self.assets['reserve'].append(item)
                 items += item + ':'

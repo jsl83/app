@@ -39,7 +39,13 @@ class HubScreen(arcade.View):
             'turn_end': [],
             'spend_clue': [],
             'combat_strength_test': [],
-            'combat_will_test': []
+            'combat_will_test': [],
+            'lore_test': [],
+            'influence_test': [],
+            'observation_test': [],
+            'strength_test': [],
+            'will_test': [],
+            'rest_actions': []
         }
         
         self.item_actions = {}
@@ -208,9 +214,11 @@ class HubScreen(arcade.View):
                     self.move_unit(self.investigator.name, self.original_investigator_location)
         elif x < 1000 and y > 142 and self.click_time <= 10 and (self.gui_enabled or self.encounter_pane.click_action != None):
             location = self.location_manager.get_closest_location((x,y), self.zoom, self.map.get_location())
+            no_loc_click = next((pane.no_loc_click for pane in [self.encounter_pane, self.small_card_pane] if pane.no_loc_click != None), False)
             if location != None:
-                if self.encounter_pane.click_action != None:
-                    self.encounter_pane.click_action(location[2])
+                click_action = next((pane.click_action for pane in [self.encounter_pane, self.small_card_pane] if pane.click_action != None), False)
+                if click_action:
+                    click_action(location[2])
                 else:
                     if self.zoom == 2:
                         self.slow_move = ((500 - location[0]) / 10, (471 - location[1]) / 10)
@@ -218,8 +226,8 @@ class HubScreen(arcade.View):
                     self.switch_info_pane('location')
                     self.select_ui_button(3)
                     self.info_manager.trigger_render()
-            elif self.encounter_pane.no_loc_click:
-                self.encounter_pane.clear_buttons()
+            elif no_loc_click:
+                no_loc_click()
             buttons = list(self.ui_manager.get_widgets_at((x,y)))
             if len(buttons) > 0 and type(buttons[0]) == ActionButton:
                 buttons[0].action()
@@ -388,6 +396,7 @@ class HubScreen(arcade.View):
                                                     action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
                     self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
                     self.show_overlay()
+                    self.gui_set(False)
                     #FOR TESTING
                     #self.networker.publish_payload({'message': 'lead_selected', 'value': 'akachi_onyele'}, self.investigator.name)
                     #END TESTING
@@ -395,6 +404,7 @@ class HubScreen(arcade.View):
                     self.lead_investigator = payload['value']
                     if not payload.get('dead_trigger', None) != None:
                         self.clear_overlay()
+                    self.gui_set(True)
                 case 'player_turn':
                     self.my_turn = True
                     if payload['value'] in ['action', 'encounter', 'reckoning'] and self.investigator.is_dead:
@@ -587,18 +597,21 @@ class HubScreen(arcade.View):
         subtitle = subtitle if subtitle != '' else '' if mod == 0 else 'Mod: ' + str(mod)
         dice = self.investigator.skills[skill] + mod + self.investigator.skill_tokens[skill] + self.investigator.calc_max_bonus(skill, pane.encounter_type)
         double_six = False
+        triggers = []
         for kind in pane.encounter_type:
-            for trigger in [add for add in self.triggers.get(kind + '_test', []) if not add.get('reroll', False) and not add.get('add', False)]:
-                pass_condition = True
-                if trigger.get('owner', None) != None and (self.investigator.location != next((inv.location for inv in self.location_manager.all_investigators.values() if trigger['name'] in [item.get_server_name() for item in inv.possessions[trigger['owner']]]))):
-                        pass_condition = False
-                if trigger.get('space_type', None) != None and not self.location_manager.locations[self.investigator.location]['kind'] == trigger['space_type']:
+            triggers += [add for add in self.triggers.get(kind + '_test', []) if not add.get('reroll', False) and not add.get('add', False)]
+        triggers += self.triggers[titles[skill].lower() + '_test']
+        for trigger in triggers:
+            pass_condition = True
+            if trigger.get('owner', None) != None and (self.investigator.location != next((inv.location for inv in self.location_manager.all_investigators.values() if trigger['name'] in [item.get_server_name() for item in inv.possessions[trigger['owner']]]))):
                     pass_condition = False
-                if pass_condition:
-                    if trigger.get('double_six', None) != None:
-                        double_six = True
-                    else:
-                        dice = dice + (1 if pass_condition else 0)
+            if trigger.get('space_type', None) != None and not self.location_manager.locations[self.investigator.location]['kind'] == trigger['space_type']:
+                pass_condition = False
+            if pass_condition:
+                if trigger.get('double_six', None) != None:
+                    double_six = True
+                else:
+                    dice = dice + (1 if pass_condition else 0)
         for x in range(dice if dice > 1 else 1):
             roll = random.randint(1, 6) + self.investigator.encounter_impairment
             roll = 1 if roll < 1 else roll

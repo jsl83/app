@@ -11,7 +11,6 @@
         trigger:
           name: .18_derringer
           mod_die: add_to
-          used: False
           action:
             action:
               - mod_die
@@ -86,7 +85,6 @@
         trigger:
           name: arcane_scholar
           mod_die: reroll
-          used: False
           action:
             action:
               - mod_die
@@ -143,7 +141,6 @@
         trigger:
           name: axe
           mod_die: all
-          used: False
           action:
             action:
               - hp_san
@@ -207,7 +204,6 @@
         trigger:
           name: bull_whip
           mod_die: reroll
-          used: False
           action:
             action:
               - mod_die
@@ -225,11 +221,52 @@
     tags:
       - item
       - weapon
+    triggers:
+      - owner_only: True
+        kind: precombat
+        trigger:
+          name: carbine_rifle
+          single_use: True
+          action:
+            action:
+              - temp_bonus
+              - set_buttons
+            aargs:
+              - stat: 3
+                value: 5
+                name: carbine_rifle
+                condition: combat
+                text: Use
+              - key: no_use
+                text: Back
+            action_text: Once per round, you may gain +5 Strength during a Combat Encounter.
   cat_burglar:
     expansion: 0
     cost: 1
     tags:
       - ally
+    action:
+      action:
+        - single_roll
+      aargs:
+        - effects:
+            '1': discard
+            '234': nada
+            '56': gain
+          skip: True
+      discard:
+        - discard
+      dargs:
+        - kind: assets
+          name: cat_burglar
+          skip: True
+      gain:
+        - gain_asset
+      gargs:
+        - tag: trinket,item
+          reserve: True
+          skip: True
+      action_text: Roll 1 die. On a 5 or 6, gain 1 Item or Trinket Asset from the reserve. On a 1, discard this card.
   charter_flight:
     expansion: 0
     cost: 1

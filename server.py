@@ -644,6 +644,7 @@ class Networker(threading.Thread, BanyanBase):
         match command:
             case 'acquire':
                 self.restock_reserve([name])
+                self.publish_payload({'message': 'card_received', 'kind': 'assets', 'value': name, 'owner': investigator}, 'server_update')
                 return name
             case 'restock':
                 self.restock_reserve([name], True)
@@ -807,7 +808,6 @@ class Networker(threading.Thread, BanyanBase):
         if refill:
             for i in range(0, min(4 - len(self.assets['reserve']), len(self.assets['deck']))):
                 item = random.choice(self.assets['deck'])
-                item = 'agency_quarantine'
                 #self.assets['deck'].remove(item)
                 self.assets['reserve'].append(item)
                 items += item + ':'

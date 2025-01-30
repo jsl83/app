@@ -151,9 +151,21 @@ class EncounterPane():
         self.phase_button.text = 'Combat Phase'
         choices = []
         if len(self.monsters) > 0:
+            small_card = SmallCardPane(self.hub)
+            def finish_action(name):
+                used_trigger = next((utrig for utrig in self.hub.triggers['precombat'] if human_readable(utrig['name']) == name))
+                if small_card.item_used:
+                    button = next((button for button in self.choice_layout.children if getattr(button, 'name', '') == name))
+                    button.disable()
+                    used_trigger['used'] = True
+                else:
+                    small_card.encounters.append(used_trigger['action'])
             for monster in self.monsters:
                 choices.append(ActionButton(texture='monsters/' + monster.name + '.png', action=self.combat_will, action_args={'monster': monster}, scale=0.5))
-            options = [ActionButton(width=125, height=75, texture='buttons/placeholder.png', text=human_readable(trigger['name']), action=self.action_dict[trigger['action']], action_args=trigger.get('aargs', {})) for trigger in self.hub.triggers['precombat']]
+            options = []
+            for trigger in [trig for trig in self.hub.triggers['precombat'] if (not trig['used'] or not trig.get('single_use', False))]:
+                trigger['action']['title'] = human_readable(trigger['name'])
+                options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=human_readable(trigger['name']), action=small_card.setup, action_args={'encounters':[trigger['action']], 'parent': self, 'finish_action': finish_action}, name=human_readable(trigger['name'])))
             self.choice_layout = create_choices('Choose Monster', choices=choices, options=options)
             self.layout.add(self.choice_layout)
         elif not combat_only and len(self.monsters) == 0:
@@ -580,14 +592,16 @@ class EncounterPane():
     def gain_asset(self, tag='any', reserve=False, step='finish', name=''):
         if reserve:
             items = self.hub.info_panes['reserve'].reserve
-            items = items if tag == 'any' else [item for item in items if tag in item['tags']]
-            if len(items) > 0:
+            pickable = []
+            for tags in tag.split(','):
+                pickable += items if tag == 'any' else [item for item in items if tags in item['tags']]
+            if len(pickable) > 0:
                 def next_step(item, step):
                     self.wait_step = step
                     self.hub.waiting_pane = self
                     self.hub.request_card('assets', item, 'acquire')
                     self.clear_overlay()
-                choices = [ActionButton(texture=item['texture'], width=120, height=185, action=next_step, action_args={'item': item['name'], 'step': step}) for item in items]
+                choices = [ActionButton(texture=item['texture'], width=120, height=185, action=next_step, action_args={'item': item['name'], 'step': step}) for item in pickable]
                 self.choice_layout = create_choices(choices = choices, title='Choose Asset')
                 self.layout.add(self.choice_layout)
         else:
@@ -1041,9 +1055,9 @@ class EncounterPane():
         options = [ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=trigger_effects)]
         #FOR TESTING
         def autofail():
-            self.encounter_pane.rolls = [1]
+            self.rolls = [1]
         def succeed():
-            self.encounter_pane.rolls = [6]
+            self.rolls = [6]
         options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
         options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
         #END TESTING
@@ -1283,7 +1297,8 @@ class SmallCardPane(EncounterPane):
             'flip_card': self.flip_card,
             'trade': self.trade,
             'adjust_damage': self.adjust_damage,
-            'mod_die': self.mod_die
+            'mod_die': self.mod_die,
+            'temp_bonus': self.temp_bonus
         }
         small_card_req_dict = {
             'trade': lambda args: self.hub.location_manager.player_count > 1
@@ -1327,8 +1342,9 @@ class SmallCardPane(EncounterPane):
         self.encounter_name = trigger_name
         self.set_buttons(step)
 
-    def add_to_die(self, step='finish'):
-        pass
+    def temp_bonus(self, stat, value, name, condition, step='finish'):
+        self.investigator.skill_bonuses[stat].append({'temp': True, 'value': value, 'name': name, 'condition': condition})
+        self.set_buttons(step)
 
     def trade(self, investigator=None, swap=False, step='finish'):
         if investigator == None:

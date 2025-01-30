@@ -126,6 +126,7 @@ class PossessionsPane():
                 self.hub.info_panes['investigator'].calc_skill(index)
         for triggers in getattr(card, 'triggers', []):
             if not triggers.get('owner_only', False) or is_owner:
+                triggers['trigger']['used'] = False
                 self.hub.triggers[triggers['kind']].append(triggers['trigger'])
         if getattr(card, 'on_get', False) and not is_trade and is_owner:
             for action in card.on_get:

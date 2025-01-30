@@ -420,7 +420,7 @@ class HubScreen(arcade.View):
                                     for items in self.investigator.possessions.values():
                                         for item in items:
                                             item.action_used = False
-                                    for kind in ['turn_end', 'spells_test', 'gate_test', 'spend_clue', 'combat_strength_test', 'combat_will_test']:
+                                    for kind in ['precombat', 'turn_end', 'spells_test', 'gate_test', 'spend_clue', 'combat_strength_test', 'combat_will_test']:
                                         for triggers in self.triggers[kind]:
                                             triggers['used'] = False
                                     #'''
@@ -596,6 +596,7 @@ class HubScreen(arcade.View):
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
         subtitle = subtitle if subtitle != '' else '' if mod == 0 else 'Mod: ' + str(mod)
         dice = self.investigator.skills[skill] + mod + self.investigator.skill_tokens[skill] + self.investigator.calc_max_bonus(skill, pane.encounter_type)
+        self.investigator.skill_bonuses[skill] = [bonus for bonus in self.investigator.skill_bonuses[skill] if not (bonus.get('temp', False) and (bonus.get('condition', 'dummy') in pane.encounter_type))]
         double_six = False
         triggers = []
         for kind in pane.encounter_type:
@@ -684,7 +685,7 @@ class HubScreen(arcade.View):
                 reroll_triggers += [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('mod_die', False) and (not reroll['used'] or not reroll.get('single_use', False))]
             if len(reroll_triggers) > 0:
                 for trigger in reroll_triggers:
-                    trigger_button = ActionButton(action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action}, texture='buttons/placeholder.png', text=human_readable(trigger['name']), name=trigger['name'])
+                    trigger_button = ActionButton(width=100, height=50, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action}, texture='buttons/placeholder.png', text=human_readable(trigger['name']), name=trigger['name'])
                     if trigger.get('used', False) and trigger.get('single_use', False):
                         trigger_button.disable()
                     options.append(trigger_button)

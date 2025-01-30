@@ -78,6 +78,9 @@ class ReservePane():
             self.reset()
             if len(services) > 0:
                 self.hub.gui_set(False)
+                for service in services:
+                    service['title'] = human_readable(service['name'])
+                    self.hub.networker.publish_payload({'message': 'card_discarded', 'value': service['name'], 'kind': 'assets'}, self.hub.investigator.name)
                 def finish(name):
                     self.hub.action_taken('shop')
                     self.hub.gui_set()

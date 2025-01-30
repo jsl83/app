@@ -92,9 +92,7 @@ class EncounterPane():
         self.layout.add(self.text_button)
         self.layout.add(self.proceed_button)
         self.layout.add(self.phase_button)
-        self.move_action = None
         self.click_action = None
-        self.allowed_locs = {}
         self.wait_step = None
         self.player_wait_step = None
         self.player_wait_args = None
@@ -360,16 +358,31 @@ class EncounterPane():
         self.set_buttons(step)
 
     def allow_move(self, distance, step='finish', same_loc=True, must_move=False):
-        self.allowed_locs = self.hub.get_locations_within(distance, self.investigator.location, same_loc=same_loc)
-        def action():
-            self.move_action = None
-            self.allowed_locs = set()
+        allowed_locs = self.hub.get_locations_within(distance, self.investigator.location, same_loc=same_loc)
+        def move(unit, location):
+            self.hub.move_unit(unit, location)
             self.set_buttons(step)
-        self.move_action = action
-        if not must_move:
-            self.proceed_button.text = 'Stay still'
-            self.proceed_button.action = self.set_buttons
-            self.proceed_button.action_args = {'key': step}
+        self.proceed_button.action = move
+        self.proceed_button.action_args = {'unit': self.investigator.name, 'location': ''}
+        self.option_button.text = 'Stay still'
+        self.option_button.action = self.set_buttons
+        self.option_button.action_args = {'key': step}
+        self.hub.click_pane = self
+        def no_click():
+            self.proceed_button.text = 'Select location'
+            self.proceed_button.disable()
+            self.clear_buttons([self.proceed_button] + ([] if must_move else [self.option_button]))
+        def loc_select(loc):
+            if loc in allowed_locs:
+                self.proceed_button.text = 'Move to ' + human_readable(loc)
+                self.proceed_button.action_args['location'] = loc
+                self.proceed_button.enable()
+                self.clear_buttons([self.proceed_button])
+            else:
+                no_click()
+        self.click_action = loc_select
+        no_click()
+        self.no_loc_click = no_click
 
     def ambush(self, name=None, step='finish', fail='finish'):
         self.ambush_steps = (step, fail)
@@ -387,6 +400,7 @@ class EncounterPane():
             def button_action(name):
                 self.clear_overlay()
                 self.encounter[self.current_key[0] + 'args'][0]['investigator'] = name
+                self.encounter[self.current_key[0] + 'args'][0]['skip'] = True
                 self.set_buttons(self.current_key)
         for names in [name for name in list(self.hub.location_manager.all_investigators.keys()) if not no_self or name != self.investigator.name]:
             choices.append(ActionButton(texture='investigators/' + names + '_portrait.png', action=button_action, action_args={'name': names}, scale=0.4))
@@ -1346,9 +1360,10 @@ class SmallCardPane(EncounterPane):
         self.investigator.skill_bonuses[stat].append({'temp': True, 'value': value, 'name': name, 'condition': condition})
         self.set_buttons(step)
 
-    def trade(self, investigator=None, swap=False, step='finish'):
+    def trade(self, investigator=None, give_only=False, tag=None, swap=False, step='finish'):
         if investigator == None:
             self.choose_investigator('same_action', True)
+            self.clear_buttons()
         else:
             pane = self.hub.info_panes['location'].possession_screen
             def finish_trade():
@@ -1360,11 +1375,12 @@ class SmallCardPane(EncounterPane):
                 self.hub.info_manager.children[0].append(self.hub.info_panes['possessions'].big_card)
                 self.set_buttons(step)
             pane.investigator = self.hub.location_manager.all_investigators[investigator]
-            pane.setup(True)
+            pane.setup(True, give_only, tag)
             pane.action_point = 0
-            pane.start_trade()
+            pane.start_trade(tag)
             pane.close_button.action = finish_trade
             self.hub.info_manager.children[0].append(pane.layout)
+            self.hub.info_manager.trigger_render()
 
     def encounter_selected(self, encounter):
         self.encounter = encounter

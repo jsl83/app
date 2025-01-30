@@ -22,7 +22,7 @@ class PossessionsPane():
         self.back_button = ActionButton(x=1000, y=100, width=280, height=50, text='Back', action=self.back_action)
         self.active_card = None
 
-    def setup(self):
+    def setup(self, tags=None):
         self.button_layout.children = []
         self.layout.children = []
         self.overlay_layout.children = []
@@ -31,7 +31,7 @@ class PossessionsPane():
         self.layout.add(self.texture_pane)
         self.layout.add(self.overlay_layout)
         for card_type in ['assets', 'unique_assets', 'artifacts', 'spells', 'conditions']:
-            item_list = possessions[card_type]
+            item_list = [card for card in possessions[card_type] if tags == None or tags in card.tags]
             if len(item_list) > 0:
                 y_pos -= 45
                 self.overlay_layout.add(ActionButton(x=1000, y=y_pos, width=280, height=25, text=human_readable(card_type)))
@@ -159,69 +159,73 @@ class TradePane(PossessionsPane):
         self.trade_with = ''
         self.action_point = 1
     
-    def setup(self, trade):
-        reference = self.give if self.investigator == self.hub.investigator else self.take
-        self.y_pos = 675
-        self.trade_button.disable()
-        if trade:
-            self.trade_button.enable()
-        tickets = []
-        ticket_number = self.investigator.rail_tickets + self.investigator.ship_tickets
-        if ticket_number > 0:
-            self.y_pos -= 50
-        clues = self.investigator.clues
-        if len(clues) > 0:
-            self.y_pos -= 50
-        super().setup()
-        if ticket_number > 0:
-            x_pos = 1070 + (140 - (26 * (ticket_number - 1)) - ticket_number * 57) / 2
-            y_pos = 612
-            self.y_pos -= 50
-            for kind in ['rail_tickets', 'ship_tickets']:
-                for x in range(getattr(self.investigator, kind, 0)):
-                    tickets.append(kind[0:4])
-            for x in range(ticket_number):
-                self.button_layout.add(ActionButton(scale=0.75, texture='icons/' + tickets[x] + '.png', x=x_pos, y=y_pos, action_args={'kind': tickets[x], 'name': str(x)}))
-                x_pos += 26
-        if len(clues) > 0:
-            x_pos = 1070 + (140 - (10 * (len(clues) - 1)) - len(clues) * 36) / 2
-            y_pos = 607 if ticket_number == 0 else 557
-            for clue in clues:
-                self.button_layout.add(ActionButton(texture='icons/clue.png', x=x_pos, y=y_pos, action_args={'kind': 'clues', 'name': clue}))
-        def select(name, kind, button):
-            if name in reference[kind]:
-                reference[kind].remove(name)
-                button = next((button for button in self.overlay_layout.children if button.name == name))
-                self.overlay_layout.children.remove(button)
-            else:
-                reference[kind].append(name)
-                texture = 'gui/selected.png' if kind not in ['rail', 'ship'] else 'gui/ticket_select.png'
-                height = button.height if kind not in ['rail', 'ship'] else button.height + 6
-                width = button.width if kind not in ['rail', 'ship'] else button.width + 3
-                button = ActionButton(x=button.x, y=button.y, width=width, height=height, texture=texture, name=name)
-                if kind in ['rail','ship']:
-                    button.move(-3, -3)
-                self.overlay_layout.add(button)
-            self.hub.info_manager.trigger_render()
-        for buttons in self.button_layout.children:
-            buttons.action = select
-            buttons.action_args['button'] = buttons
-            buttons.disable()
-        for buttons in [self.close_button, self.portrait, self.trade_button, self.text_button]:
-            self.layout.add(buttons)
-        self.text_button.text = human_readable(self.investigator.name) + "'s Possessions"
-        self.text_button.style = {'font_size': 14}
-        self.portrait.texture = arcade.load_texture(IMAGE_PATH_ROOT + 'investigators/' + self.investigator.name + '_portrait.png')
+    def setup(self, trade, give_only=False, tags=None):
+        if give_only:
+            self.is_taking = False
+        else:
+            reference = self.give if self.investigator == self.hub.investigator else self.take
+            self.y_pos = 675
+            self.trade_button.disable()
+            if trade:
+                self.trade_button.enable()
+            tickets = []
+            ticket_number = self.investigator.rail_tickets + self.investigator.ship_tickets
+            if ticket_number > 0:
+                self.y_pos -= 50
+            clues = self.investigator.clues
+            if len(clues) > 0:
+                self.y_pos -= 50
+            super().setup(tags)
+            if ticket_number > 0 and tags == None:
+                x_pos = 1070 + (140 - (26 * (ticket_number - 1)) - ticket_number * 57) / 2
+                y_pos = 612
+                self.y_pos -= 50
+                for kind in ['rail_tickets', 'ship_tickets']:
+                    for x in range(getattr(self.investigator, kind, 0)):
+                        tickets.append(kind[0:4])
+                for x in range(ticket_number):
+                    self.button_layout.add(ActionButton(scale=0.75, texture='icons/' + tickets[x] + '.png', x=x_pos, y=y_pos, action_args={'kind': tickets[x], 'name': str(x)}))
+                    x_pos += 26
+            if len(clues) > 0 and tags == None:
+                x_pos = 1070 + (140 - (10 * (len(clues) - 1)) - len(clues) * 36) / 2
+                y_pos = 607 if ticket_number == 0 else 557
+                for clue in clues:
+                    self.button_layout.add(ActionButton(texture='icons/clue.png', x=x_pos, y=y_pos, action_args={'kind': 'clues', 'name': clue}))
+            def select(name, kind, button):
+                if name in reference[kind]:
+                    reference[kind].remove(name)
+                    button = next((button for button in self.overlay_layout.children if button.name == name))
+                    self.overlay_layout.children.remove(button)
+                else:
+                    reference[kind].append(name)
+                    texture = 'gui/selected.png' if kind not in ['rail', 'ship'] else 'gui/ticket_select.png'
+                    height = button.height if kind not in ['rail', 'ship'] else button.height + 6
+                    width = button.width if kind not in ['rail', 'ship'] else button.width + 3
+                    button = ActionButton(x=button.x, y=button.y, width=width, height=height, texture=texture, name=name)
+                    if kind in ['rail','ship']:
+                        button.move(-3, -3)
+                    self.overlay_layout.add(button)
+                self.hub.info_manager.trigger_render()
+            for buttons in self.button_layout.children:
+                buttons.action = select
+                buttons.action_args['button'] = buttons
+                buttons.disable()
+            for buttons in [self.close_button, self.portrait, self.trade_button, self.text_button]:
+                self.layout.add(buttons)
+            self.text_button.text = human_readable(self.investigator.name) + "'s Possessions"
+            self.text_button.style = {'font_size': 14}
+            self.portrait.texture = arcade.load_texture(IMAGE_PATH_ROOT + 'investigators/' + self.investigator.name + '_portrait.png')
 
-    def start_trade(self):
+    def start_trade(self, tags=None):
         self.hub.gui_set(False)
         if not self.is_taking:
             self.trade_button.action = self.finish_trade
             self.trade_with = self.investigator.name
             self.investigator = self.hub.investigator
-            self.setup(True)
+            self.setup(True, tags=tags)
         else:
             self.layout.remove(self.close_button)
+        print(self.is_taking)
         self.trade_button.text = 'Next' if self.is_taking else 'Finish'
         self.text_button.text = 'Select items to ' + ('take' if self.is_taking else 'give')
         self.is_taking = not self.is_taking

@@ -189,30 +189,22 @@ class HubScreen(arcade.View):
         if self.holding == 'investigator' and self.click_time >= 10:
             map_loc = self.map.get_location()
             location = self.location_manager.get_closest_location((x,y), self.zoom, map_loc, 50)
-            if self.encounter_pane.move_action != None:
-                if location[2] in self.encounter_pane.allowed_locs:
-                    self.move_unit(self.investigator.name, location[2])
-                    self.original_investigator_location = location[2]
-                    self.encounter_pane.move_action()
+            if location == None:
+                self.move_unit(self.investigator.name, self.original_investigator_location)
+            elif location[2] in self.in_movement_range().keys():
+                tickets = self.in_movement_range()[location[2]]
+                if len(tickets) > 1:
+                    choices = []
+                    for combo in tickets:
+                        choices.append(ActionButton(texture='buttons/placeholder.png', action=self.ticket_move, text='Rail: ' + str(combo[0]) + '\nShip: ' + str(combo[1]),
+                                                    width=200, height=100, action_args={'name': self.investigator.name, 'location': location[2], 'overlay': True,
+                                                    'rail': combo[0], 'ship': combo[1], 'original': self.original_investigator_location}))
+                    self.choice_layout = (create_choices(choices=choices, title='Choose Tickets'))
+                    self.show_overlay()
                 else:
-                    self.move_unit(self.investigator.name, self.original_investigator_location)
+                    self.ticket_move(self.investigator.name, location[2], tickets[0][0], tickets[0][1], self.original_investigator_location)
             else:
-                if location == None:
-                    self.move_unit(self.investigator.name, self.original_investigator_location)
-                elif location[2] in self.in_movement_range().keys():
-                    tickets = self.in_movement_range()[location[2]]
-                    if len(tickets) > 1:
-                        choices = []
-                        for combo in tickets:
-                            choices.append(ActionButton(texture='buttons/placeholder.png', action=self.ticket_move, text='Rail: ' + str(combo[0]) + '\nShip: ' + str(combo[1]),
-                                                        width=200, height=100, action_args={'name': self.investigator.name, 'location': location[2], 'overlay': True,
-                                                        'rail': combo[0], 'ship': combo[1], 'original': self.original_investigator_location}))
-                        self.choice_layout = (create_choices(choices=choices, title='Choose Tickets'))
-                        self.show_overlay()
-                    else:
-                        self.ticket_move(self.investigator.name, location[2], tickets[0][0], tickets[0][1], self.original_investigator_location)
-                else:
-                    self.move_unit(self.investigator.name, self.original_investigator_location)
+                self.move_unit(self.investigator.name, self.original_investigator_location)
         elif x < 1000 and y > 142 and self.click_time <= 10 and (self.gui_enabled or self.click_pane.click_action != None):
             location = self.location_manager.get_closest_location((x,y), self.zoom, self.map.get_location())
             if location != None:
@@ -257,7 +249,7 @@ class HubScreen(arcade.View):
             self.holding = 'map'
             self.initial_click = (x, y)
             self.click_time = 0
-            if (self.remaining_actions > 0 and not self.actions_taken['move']) or self.encounter_pane.move_action != None:
+            if self.remaining_actions > 0 and not self.actions_taken['move']:
                 location = self.location_manager.get_closest_location((x, y), self.zoom, self.map.get_location(), 40)
                 if location != None:
                     key = location[2]
@@ -438,10 +430,10 @@ class HubScreen(arcade.View):
                                     #'''
                             case 'encounter':
                                 #FOR TESTING
-                                #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                 #END TESTING
-                                self.show_encounter_pane()
-                                self.encounter_pane.encounter_phase()
+                                #self.show_encounter_pane()
+                                #self.encounter_pane.encounter_phase()
                             case 'reckoning':
                                 self.encounter_pane.reckoning()
                                 #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -792,7 +784,7 @@ class HubScreen(arcade.View):
                 for route in locations[loc]['routes'].keys():
                     temp.add(route)
             locs.update(temp)
-            temp = {}
+            temp = set()
         if not same_loc:
             locs.remove(start_loc)
         return locs

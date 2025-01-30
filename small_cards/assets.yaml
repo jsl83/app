@@ -57,7 +57,6 @@
         text: Select Location
         skip: True
     action_text: Choose a space. Each Monster on the chosen space loses 4 Health.
-    title: Agency Quarentine
   arcane_manuscripts:
     expansion: 0
     cost: 1
@@ -272,12 +271,28 @@
     cost: 1
     tags:
       - service
+    action:
+      - allow_move
+    aargs:
+      - skip: True
+        distance: 2
+    action_text: When you gain this card, immediately move up to 2 spaces. Then discard this card.
   delivery_service:
     expansion: 0
     cost: 1
     tags:
       - service
       - teamwork
+    action:
+      - trade
+      - set_buttons
+    aargs:
+      - give_only: True
+        tag: item
+        text: Give Items
+      - text: Skip
+        key: finish
+    action_text: When you gain this card, immediately give any number of Item possessions to another Investigator on any space. Then discard this card.
   double-barreled_shotgun:
     expansion: 0
     cost: 4

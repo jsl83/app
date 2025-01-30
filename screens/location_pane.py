@@ -161,7 +161,7 @@ class LocationPane():
                 unit = unit_obj.name
                 column = i % 4
                 texture = 'monsters/' + unit + '.png' if kind == 'monsters' else 'investigators/' + unit + '_portrait.png'
-                button = ActionButton(texture=texture, action=self.show_monster if kind == 'monsters' else self.trade, action_args={'unit':unit_obj}, scale=0.25 if kind == 'monsters' else 0.2)
+                button = ActionButton(texture=texture, action=self.show_monster if kind == 'monsters' else self.trade, action_args={'unit_obj':unit_obj}, scale=0.25 if kind == 'monsters' else 0.2)
                 layout.add(button)
                 if unit in dead:
                     dead_button = ActionButton(texture='investigators/dead.png', scale=0.2)
@@ -175,7 +175,8 @@ class LocationPane():
                     offset = (280 - (row_num * 49 + (row_num - 1) * 12)) / 2 if row_num < 4 else 24
                 i += 1
 
-    def trade(self, unit):
+    def trade(self, unit_obj):
+        unit = unit_obj.name
         if unit != self.hub.investigator.name:
             investigator = self.hub.location_manager.all_investigators.get(unit, self.hub.location_manager.dead_investigators.get(unit))
             trade = (investigator.location == self.hub.investigator.location

@@ -57,6 +57,7 @@ class HubScreen(arcade.View):
         self.initial_click = (0,0)
         self.zoom = 1
         self.click_time = 0
+        self.click_pane = None
         self.holding = None
         self.slow_move = (0, 0)
         self.slow_move_count = 0
@@ -212,11 +213,10 @@ class HubScreen(arcade.View):
                         self.ticket_move(self.investigator.name, location[2], tickets[0][0], tickets[0][1], self.original_investigator_location)
                 else:
                     self.move_unit(self.investigator.name, self.original_investigator_location)
-        elif x < 1000 and y > 142 and self.click_time <= 10 and (self.gui_enabled or self.encounter_pane.click_action != None):
+        elif x < 1000 and y > 142 and self.click_time <= 10 and (self.gui_enabled or self.click_pane.click_action != None):
             location = self.location_manager.get_closest_location((x,y), self.zoom, self.map.get_location())
-            no_loc_click = next((pane.no_loc_click for pane in [self.encounter_pane, self.small_card_pane] if pane.no_loc_click != None), False)
             if location != None:
-                click_action = next((pane.click_action for pane in [self.encounter_pane, self.small_card_pane] if pane.click_action != None), False)
+                click_action = getattr(self.click_pane, 'click_action', False)
                 if click_action:
                     click_action(location[2])
                 else:
@@ -226,8 +226,8 @@ class HubScreen(arcade.View):
                     self.switch_info_pane('location')
                     self.select_ui_button(3)
                     self.info_manager.trigger_render()
-            elif no_loc_click:
-                no_loc_click()
+            elif getattr(self.click_pane, 'no_loc_click', False):
+                self.click_pane.no_loc_click()
             buttons = list(self.ui_manager.get_widgets_at((x,y)))
             if len(buttons) > 0 and type(buttons[0]) == ActionButton:
                 buttons[0].action()
@@ -425,7 +425,7 @@ class HubScreen(arcade.View):
                                             triggers['used'] = False
                                     #'''
                                     #FOR TESTING
-                                    self.remaining_actions = 3
+                                    self.remaining_actions = 2
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
                                     if self.investigator.name == 'akachi_onyele':
@@ -672,27 +672,9 @@ class HubScreen(arcade.View):
         options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
         options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
         #END TESTING
-        self.choice_layout = create_choices(choices = choices, title=titles[skill] + ' Test', options=options, offset=(0,150), subtitle=subtitle)
-        self.show_overlay()
         if double_six:
             rolls += [roll for roll in rolls if roll == 6]
-        return rolls
-    
-    def single_roll(self, pane, options, title='', subtitle=''):
-        roll = random.randint(1, 6) + self.investigator.encounter_impairment
-        roll = 1 if roll < 1 else roll
-        #FOR TESTING
-        def autofail():
-            self.encounter_pane.rolls = [1]
-        def succeed():
-            self.encounter_pane.rolls = [6]
-        options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
-        options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
-        #END TESTING
-        self.choice_layout = create_choices(options=options,
-            choices=[arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png'))])
-        self.show_overlay()
-        return [roll]
+        return rolls, create_choices(choices = choices, title=titles[skill] + ' Test', options=options, offset=(0,150), subtitle=subtitle)
     
     def gui_set(self, able=True):
         self.gui_enabled = able

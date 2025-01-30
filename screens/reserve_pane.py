@@ -8,6 +8,7 @@ IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 class ReservePane():
     def __init__(self, hub):
         self.layout = arcade.gui.UILayout(x=1000)
+        self.choice_layout = arcade.gui.UILayout()
         self.button_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
         self.button_pane = arcade.gui.UITexturePane(self.button_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/info_pane.png'))
         self.discard_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
@@ -70,19 +71,25 @@ class ReservePane():
 
     def acquire_assets(self):
         if self.is_shopping:
-            self.hub.action_taken('shop')
             services = [item for item in self.selected if 'service' in item['tags']]
             for item in self.selected:
                 self.hub.request_card('assets', item['name'], 'acquire')
                 self.reserve = [item for item in self.reserve if item['name'] != item]
             self.reset()
             if len(services) > 0:
-                self.hub.small_card_pane.setup(services, parent=self, single_pick=False)
+                self.hub.gui_set(False)
+                def finish():
+                    self.hub.action_taken('shop')
+                    self.hub.gui_set()
+                self.hub.small_card_pane.setup(services, parent=self, single_pick=False, finish_action=finish)
+            else:
+                self.hub.action_taken('shop')
             self.acquire_button.disable()
         elif not self.hub.actions_taken['shop'] and self.hub.remaining_actions > 0:
             self.is_shopping = True
             self.hub.gui_set(False)
-            self.rolls = self.hub.run_test(1, self)
+            self.rolls, self.choice_layout = self.hub.run_test(1, self)
+            self.layout.add(self.choice_layout)
             for x in self.rolls:
                 if x >= self.hub.investigator.success:
                     self.successes += 1
@@ -139,8 +146,7 @@ class ReservePane():
         self.acquire_button.text = 'Acquire Assets'
         self.acquire_button.disable()
         self.discard_button.text = 'View Discard'
-        if self.debt_button in self.layout.children:
-            self.layout.children.remove(self.debt_button)
+        self.layout.children = [elem for elem in self.layout.children if elem not in [self.debt_button, self.choice_layout]]
         self.layout.trigger_render()
         self.hub.clear_overlay()
         self.reset_discard()

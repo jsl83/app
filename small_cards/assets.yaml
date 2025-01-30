@@ -119,9 +119,15 @@
         kind: combat_strength_test
         trigger:
           name: axe
-          reroll: all
-          
+          reroll: True
+          reroll_all: True
           used: False
+          action:
+            action:
+              - hp_san
+            aargs:
+              - san: -2
+                skip: True
   bandages:
     expansion: 0
     cost: 1

@@ -57,7 +57,6 @@ class HubScreen(arcade.View):
         self.initial_click = (0,0)
         self.zoom = 1
         self.click_time = 0
-        self.click_pane = None
         self.holding = None
         self.slow_move = (0, 0)
         self.slow_move_count = 0
@@ -105,6 +104,7 @@ class HubScreen(arcade.View):
 
         self.investigator = self.location_manager.all_investigators[investigator]
         self.encounter_pane = EncounterPane(self)
+        self.click_pane = self.encounter_pane
 
         self.info_panes = {
             'investigator': InvestigatorPane(self.investigator, self),
@@ -618,11 +618,8 @@ class HubScreen(arcade.View):
             rolls.append(roll)
             choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
         def reroll(kind, option_index):
-            fail = next((roll for roll in rolls if roll < self.investigator.success), min(rolls))
-            index = rolls.index(fail)
-            new_roll = random.randint(1, 6)
-            choices[index].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
-            pane.reroll([new_roll] + ([6] if new_roll == 6 and double_six else []), fail)
+            reroll_all = False
+            lowest = min(rolls)
             if kind == 'focus':
                 self.investigator.focus -= 1
                 if self.investigator.focus == 0:
@@ -635,7 +632,26 @@ class HubScreen(arcade.View):
             else:
                 if kind.get('single_use', False):
                     kind['used'] = True
+                if kind.get('action', False):
+                    small_card = SmallCardPane(self)
+                    def finish_action():
+                        if 'combat_strength' or 'combat_will' in pane.encounter_type:
+                            subtitle_button = next((button for button in pane.choice_layout.children if getattr(button, 'identifier', '') == 'overlay_subtitle'))
+                            subtitle_button.text = 'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity)
+                    small_card.setup([kind['action']], pane, finish_action=finish_action)
+                reroll_all = kind.get('reroll_all', False)
                 options[option_index].disable()
+            for x in range(dice):
+                sixes = []
+                if (rolls[x] == lowest and not reroll_all) or (reroll_all and rolls[x] < self.investigator.success):
+                    new_roll = random.randint(1, 6)
+                    rolls[x] = new_roll
+                    if new_roll == 6 and double_six:
+                        sixes.append(6)
+                    choices[x].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
+                    if not reroll_all:
+                        break
+                pane.rolls = rolls + sixes
             self.choice_manager.trigger_render()
         def add_to(kind, option_index):
             fails = [roll for roll in rolls if roll < self.investigator.success]

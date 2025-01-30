@@ -125,14 +125,27 @@
           action:
             action:
               - hp_san
+              - set_buttons
             aargs:
               - san: -2
-                skip: True
+                text: Reroll
+              - key: no_use
+                text: Back
+            action_text: You may spend 2 Sanity to reroll any number of dice when resolving a Strength test during a Combat Encounter.
+            title: Axe
   bandages:
     expansion: 0
     cost: 1
     tags:
       - item
+    triggers:
+      - kind: hp_san_loss
+        trigger:
+          name: bandages
+          owner: assets
+          action:
+            action:
+              - adjust_damage
   bull_whip:
     expansion: 0
     cost: 1

@@ -20,6 +20,7 @@
       cargs:
         - amt: 2
           skip: True
+      action_text: Test Lore. If you pass, you may spend 1 Sanity to gain 2 Clues.
   de_vermis_mysteriis:
     tags:
       - item
@@ -41,6 +42,7 @@
       iargs:
         - skill: '01234'
           skip: True
+      action_text: Test Lore. If you pass, you may spend 1 Sanity to improve 1 skill of your choice.
   flute_of_the_outer_gods:
     tags:
       - item
@@ -62,6 +64,7 @@
           epic: False
           location: self
           skip: True
+      action_text: Spend 2 Health and 2 Sanity to defeat all Monsters on your space.
   gate_box:
     tags:
       - item
@@ -102,10 +105,19 @@
         kind: hp_san_loss
         trigger:
           name: glass_of_mortlan
-          san_mod: 1
           encounter: spells
           on_san_loss: True
           font_size: 12
+          action:
+            action:
+              - adjust_damage
+              - set_buttons
+            aargs:
+              - san_change: 1
+                text: Use
+              - key: no_use
+                text: Back
+            action_text: You may prevent the loss of 1 Sanity when resolving your Spell effects.
   grotesque_statue:
     tags:
       - item
@@ -114,10 +126,24 @@
         kind: hp_san_loss
         trigger:
           name: grotesque_statue
-          san_mod: all_loss
           on_san_loss: True
-          action: spend_clue
           font_size: 12
+          single_use: True
+          action:
+            action:
+              - spend_clue
+              - set_buttons
+            aargs:
+              - text: Use
+                step: reduce
+              - key: no_use
+                text: Back
+            reduce:
+              - adjust_damage
+            rargs:
+              - san_change: all
+                skip: True
+            action_text: Once per round, you may spend 1 Clue to prevent all Sanity loss from a single effect.
     on_get:
       - action: gain_clue
         aargs:
@@ -142,6 +168,7 @@
       hargs:
         - hp: -1
           skip: True
+      action_text: You and each Monster on your space lose 1 Health.
     bonuses:
       - index: 3
         value: 6
@@ -166,6 +193,7 @@
         - text: Swap locations
         - text: Stay still
           key: finish
+    action_text: You and another investigator may trade possessions. In addition, they may move to your space; if they do, move to their previous space.
   necronomicon:
     tags:
       - item
@@ -193,6 +221,7 @@
       targs:
         - skip: True
           kind: spells
+      action_text: Test Lore. If you pass, you may spend 1 Sanity to gain 2 Spells.
   pallid_mask:
     tags:
       - item
@@ -257,6 +286,7 @@
         - damage: 3
           location: self
           skip: True
+      action_text: Test Lore. If you pass, you may spend 1 Sanity to choose 1 Monster on your space to lose 3 Health.
   the_silver_key:
     tags:
       - item

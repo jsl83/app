@@ -80,11 +80,11 @@ class PossessionsPane():
     def card_action(self, card):
         self.back_action()
         self.hub.small_card_pane.encounter_type = [card.kind]
+        card.action['title'] = human_readable(card.name)
         self.hub.small_card_pane.setup([card.action], self, textures=[card.texture], finish_action=self.on_finish_small)
-        self.hub.info_manager.add(self.big_card)
         self.hub.gui_set(False)
 
-    def on_finish_small(self):
+    def on_finish_small(self, name):
         self.active_card.action_used = True
         self.hub.action_taken(None)
         self.hub.gui_set(True)

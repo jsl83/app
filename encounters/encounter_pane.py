@@ -1079,7 +1079,7 @@ class EncounterPane():
             self.proceed_button.action_args = {'key': step if step != 'finish' else 'no_effect'}
             self.proceed_button.text = 'No Effects: Proceed'
         else:
-            def finish_action():
+            def finish_action(name):
                 self.set_buttons(step)
             self.hub.small_card_pane.encounter_type = self.encounter_type + categories
             self.hub.small_card_pane.setup([getattr(card, attribute) for card in cards], self, single_card, self.text_button.text, [card.kind + '/' + card.name + '.png' for card in cards], finish_action)
@@ -1185,39 +1185,29 @@ class EncounterPane():
                         own_death()
                     else:
                         action(**args)
-
-            def adjust_damage(hp_change, san_change, text, trigger_action=False, trigger_args={}):
-                if trigger_action:
-                    self.action_dict[trigger_action](**trigger_args)
-                hp_change = hp_change if type(hp_change) == int else -self.hp_damage
-                san_change = san_change if type(san_change) == int else -self.san_damage
-                self.hp_damage += hp_change
-                self.san_damage += san_change
-                subtitle_button = self.choice_layout.children.pop(2)
-                subtitle_button.text = 'Health: ' + str(self.hp_damage) + '   Sanity: ' + str(self.san_damage)
-                self.choice_layout.children.insert(2, subtitle_button)
-                if self.hp_damage == 0 and self.san_damage == 0:
-                    action(**args)
-                else:
-                    next((button for button in self.choice_layout.children if hasattr(button,'text') and button.text == text)).disable()
-                    self.hub.choice_manager.trigger_render()
-
             options = []
             for trigger in self.hub.triggers['hp_san_loss']:
                 hp_check = hp < 0 and trigger.get('on_hp_loss', False)
                 san_check = san < 0 and trigger.get('on_san_loss', False)
-                encounter_check = not trigger.get('encounter', False) or trigger['encounter'] in self.encounter_type
-                trigger_action = trigger.get('action', False)
-                trigger_args = trigger.get('action_args', {'step': 'nothing'})
-                if (hp_check or san_check) and encounter_check:
-                    button = ActionButton(width=125, height=125, texture='buttons/placeholder.png', text=human_readable(trigger['name']), action=adjust_damage, action_args={'hp_change': trigger.get('hp_mod', 0), 'san_change': trigger.get('san_mod', 0), 'text': human_readable(trigger['name']), 'trigger_action': trigger_action, 'trigger_args': trigger_args})
+                small_card = SmallCardPane(self.hub)
+                if (hp_check or san_check) and self.hub.trigger_check(trigger, self.encounter_type):
+                    trigger['action']['title'] = human_readable(trigger['name'])
+                    def finish_action(name):
+                        used_trigger = next((trig for trig in self.hub.triggers['hp_san_loss'] if human_readable(trig['name']) == name))
+                        if small_card.item_used:
+                            action_button = next((button for button in self.choice_layout.children if getattr(button, 'text', '') == name))
+                            action_button.disable()
+                            used_trigger['used'] = True
+                        else:
+                            small_card.encounters.append(used_trigger['action'])
+                    button = ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=human_readable(trigger['name']), action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': self, 'finish_action': finish_action})
                     if trigger.get('font_size', None) != None:
                         button.style = {'font_size': trigger['font_size']}
-                    if trigger_action and (trigger_action in self.req_dict and not self.req_dict[trigger_action](trigger_args)):
+                    if trigger.get('used', False) and trigger.get('single_use', False):
                         button.disable()
                     options.append(button)
             next_button = ActionButton(
-                width=100, height=30, texture='buttons/placeholder.png', text='Next', action=resolve_damage)
+                width=100, height=50, texture='buttons/placeholder.png', text='Next', action=resolve_damage)
             self.choice_layout = create_choices(choices = choices, options=options + [next_button], title='Taking Damage', subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))
             self.layout.add(self.choice_layout)
 
@@ -1282,28 +1272,26 @@ class EncounterPane():
 class SmallCardPane(EncounterPane):
     def __init__(self, hub):
         EncounterPane.__init__(self, hub)
-        self.return_layout = arcade.gui.UILayout(x=1000)
         self.cards = []
         self.small_card_pic = ActionButton(x=1015, y=400, width=250, height=385, texture='buttons/placeholder.png')
-        self.return_overlay = arcade.gui.UILayout(width=1000, height=658, x=0, y=142).with_background(arcade.load_texture(':resources:eldritch/images/gui/overlay.png'))
         small_card_dict = {
             'flip_card': self.flip_card,
-            'trade': self.trade
+            'trade': self.trade,
+            'adjust_damage': self.adjust_damage
         }
         small_card_req_dict = {
             'trade': lambda args: self.hub.location_manager.player_count > 1
         }
         self.action_dict = self.action_dict | small_card_dict
         self.req_dict = self.req_dict | small_card_req_dict
+        self.item_used = True
+        self.encounter_name = ''
 
     def setup(self, encounters, parent, single_pick=True, default_text=None, textures=[], finish_action=None):
+        self.item_used = True
         self.finish_action = finish_action
-        self.return_layout.clear()
         self.encounters = encounters
         self.parent = parent
-        if getattr(parent, 'layout', False):
-            for element in parent.layout.children:
-                self.return_layout.add(element)
         self.clear_overlay()
         self.hub.info_manager.children = {0:[]}
         self.hub.info_manager.add(self.layout)
@@ -1320,6 +1308,14 @@ class SmallCardPane(EncounterPane):
             investigator = self.investigator.name
         self.encounter = getattr(next((card for card in self.hub.location_manager.all_investigators[investigator]['possessions'][kind] if card.name == name)), 'back')
         self.set_buttons('action')
+
+    def adjust_damage(self, hp_change=0, san_change=0, step='finish'):
+        hp_change = hp_change if type(hp_change) == int else -self.parent.hp_damage
+        san_change = san_change if type(san_change) == int else -self.parent.san_damage
+        self.parent.hp_damage += hp_change
+        self.parent.san_damage += san_change
+        self.parent.choice_layout.children[2].text = 'Health: ' + str(self.hp_damage) + '   Sanity: ' + str(self.san_damage)
+        self.set_buttons(step)
 
     def trade(self, investigator=None, swap=False, step='finish'):
         if investigator == None:
@@ -1345,6 +1341,7 @@ class SmallCardPane(EncounterPane):
         self.encounter = encounter
         self.set_buttons('action')
         self.phase_button.text = self.encounter.get('title', '')
+        self.encounter_name = self.encounter.get('title', '')
         self.encounters.remove(encounter)
 
     def pick_encounters(self):
@@ -1355,9 +1352,12 @@ class SmallCardPane(EncounterPane):
         self.choice_layout = create_choices('Choose Card Effect', choices=choices)
         self.layout.add(self.choice_layout)
 
-    def setup_small_card(self):
-        #Overwrite parent - keep!
-        pass
+    def set_buttons(self, key):
+        if key == 'no_use':
+            self.item_used = False
+            self.finish()
+        else:
+            super().set_buttons(key)
 
     def finish(self):
         self.encounter_type = []
@@ -1366,7 +1366,7 @@ class SmallCardPane(EncounterPane):
         else:
             self.hub.info_manager.children = {0:[]}
             self.clear_overlay()
-            self.hub.info_manager.add(self.return_layout)
+            self.hub.info_manager.add(self.parent.layout)
             self.hub.info_manager.trigger_render()
             if self.finish_action != None:
-                self.finish_action()
+                self.finish_action(self.phase_button.text)

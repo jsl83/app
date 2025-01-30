@@ -425,7 +425,7 @@ class HubScreen(arcade.View):
                                             triggers['used'] = False
                                     #'''
                                     #FOR TESTING
-                                    self.remaining_actions = 2
+                                    self.remaining_actions = 3
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
                                     if self.investigator.name == 'akachi_onyele':
@@ -438,10 +438,10 @@ class HubScreen(arcade.View):
                                     #'''
                             case 'encounter':
                                 #FOR TESTING
-                                #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                 #END TESTING
-                                self.show_encounter_pane()
-                                self.encounter_pane.encounter_phase()
+                                #self.show_encounter_pane()
+                                #self.encounter_pane.encounter_phase()
                             case 'reckoning':
                                 self.encounter_pane.reckoning()
                                 #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -602,16 +602,11 @@ class HubScreen(arcade.View):
             triggers += [add for add in self.triggers.get(kind + '_test', []) if not add.get('reroll', False) and not add.get('add', False)]
         triggers += self.triggers[titles[skill].lower() + '_test']
         for trigger in triggers:
-            pass_condition = True
-            if trigger.get('owner', None) != None and (self.investigator.location != next((inv.location for inv in self.location_manager.all_investigators.values() if trigger['name'] in [item.get_server_name() for item in inv.possessions[trigger['owner']]]))):
-                    pass_condition = False
-            if trigger.get('space_type', None) != None and not self.location_manager.locations[self.investigator.location]['kind'] == trigger['space_type']:
-                pass_condition = False
-            if pass_condition:
+            if self.trigger_check(trigger, pane.encounter_type):
                 if trigger.get('double_six', None) != None:
                     double_six = True
                 else:
-                    dice = dice + (1 if pass_condition else 0)
+                    dice += 1
         for x in range(dice if dice > 1 else 1):
             roll = random.randint(1, 6) + self.investigator.encounter_impairment
             roll = 1 if roll < 1 else roll
@@ -630,14 +625,17 @@ class HubScreen(arcade.View):
                 if self.encounter_pane.spend_clue(is_check=True) > len(self.investigator.clues):
                     options[option_index].disable()
             else:
-                if kind.get('single_use', False):
-                    kind['used'] = True
+                kind['used'] = True
                 if kind.get('action', False):
                     small_card = SmallCardPane(self)
-                    def finish_action():
+                    def finish_action(name):
                         if 'combat_strength' or 'combat_will' in pane.encounter_type:
                             subtitle_button = next((button for button in pane.choice_layout.children if getattr(button, 'identifier', '') == 'overlay_subtitle'))
                             subtitle_button.text = 'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity)
+                        if not small_card.item_used:
+                            options[option_index].enable()
+                            if kind.get('used', False):
+                                kind['used'] = False
                     small_card.setup([kind['action']], pane, finish_action=finish_action)
                 reroll_all = kind.get('reroll_all', False)
                 options[option_index].disable()
@@ -678,7 +676,10 @@ class HubScreen(arcade.View):
             for kind in pane.encounter_type:
                 for trigger in [reroll for reroll in self.triggers.get(kind + '_test', []) if (reroll.get('reroll', False) or reroll.get('add', False)) and not reroll['used']]:
                     action = reroll if trigger.get('reroll', False) else add_to
-                    options.append(ActionButton(action=action, action_args={'kind': trigger, 'option_index': option_index}, texture='buttons/placeholder.png', text=human_readable(trigger['name'])))
+                    trigger_button = ActionButton(action=action, action_args={'kind': trigger, 'option_index': option_index}, texture='buttons/placeholder.png', text=human_readable(trigger['name']))
+                    if reroll.get('used', False) and reroll.get('single_use', False):
+                        trigger_button.disable()
+                    options.append(trigger_button)
                     option_index += 1
         #FOR TESTING
         def autofail():
@@ -691,6 +692,16 @@ class HubScreen(arcade.View):
         if double_six:
             rolls += [roll for roll in rolls if roll == 6]
         return rolls, create_choices(choices = choices, title=titles[skill] + ' Test', options=options, offset=(0,150), subtitle=subtitle)
+    
+    def trigger_check(self, trigger, encounter_types):
+        pass_condition = True
+        if trigger.get('owner', False) and (self.investigator.location != next((inv.location for inv in self.location_manager.all_investigators.values() if trigger['name'] in [item.get_server_name() for item in inv.possessions[trigger['owner']]]))):
+            pass_condition = False
+        if trigger.get('space_type', False) and not self.location_manager.locations[self.investigator.location]['kind'] == trigger['space_type']:
+            pass_condition = False
+        if trigger.get('encounter', False) and trigger['encounter'] not in encounter_types:
+            pass_condition = False
+        return pass_condition
     
     def gui_set(self, able=True):
         self.gui_enabled = able

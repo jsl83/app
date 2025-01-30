@@ -126,7 +126,7 @@ class InvestigatorPane():
         if len(self.hub.triggers['rest_actions']) > 0:
             does_something = True
             self.hub.info_pane = None
-            def show():
+            def show(name):
                 self.hub.switch_info_pane('investigator')
                 self.hub.info_manager.trigger_render()
             self.hub.small_card_pane.setup(self.hub.triggers['rest_actions'], self, single_pick=False, finish_action=show)

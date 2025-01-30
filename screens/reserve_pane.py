@@ -78,7 +78,7 @@ class ReservePane():
             self.reset()
             if len(services) > 0:
                 self.hub.gui_set(False)
-                def finish():
+                def finish(name):
                     self.hub.action_taken('shop')
                     self.hub.gui_set()
                 self.hub.small_card_pane.setup(services, parent=self, single_pick=False, finish_action=finish)

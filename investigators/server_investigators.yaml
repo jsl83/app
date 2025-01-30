@@ -4,12 +4,13 @@
     hp: 5
     possessions:
       - spells:mists_of_releh
-      - assets:arcane_tome
+      - assets:bandages
   charlie_kane:
     location: "san_francisco"
     hp: 4
     possessions:
       - assets:personal_assistant
+      - artifacts:lightning_gun
   diana_stanley:
     expansion: 0
     location: space_7

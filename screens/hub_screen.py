@@ -428,8 +428,8 @@ class HubScreen(arcade.View):
                                     self.remaining_actions = 3
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
-                                    if self.investigator.name == 'akachi_onyele':
-                                        self.ticket_move(self.investigator.name, 'buenos_aires', 0, 0, self.investigator.location)
+                                    #if self.investigator.name == 'akachi_onyele':
+                                    self.ticket_move(self.investigator.name, 'buenos_aires', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     self.investigator.focus = 0
@@ -438,10 +438,10 @@ class HubScreen(arcade.View):
                                     #'''
                             case 'encounter':
                                 #FOR TESTING
-                                self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                 #END TESTING
-                                #self.show_encounter_pane()
-                                #self.encounter_pane.encounter_phase()
+                                self.show_encounter_pane()
+                                self.encounter_pane.encounter_phase()
                             case 'reckoning':
                                 self.encounter_pane.reckoning()
                                 #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -605,82 +605,89 @@ class HubScreen(arcade.View):
             if self.trigger_check(trigger, pane.encounter_type):
                 if trigger.get('double_six', None) != None:
                     double_six = True
-                else:
+                elif trigger.get('additional_die', False):
                     dice += 1
         for x in range(dice if dice > 1 else 1):
             roll = random.randint(1, 6) + self.investigator.encounter_impairment
             roll = 1 if roll < 1 else roll
             rolls.append(roll)
             choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
-        def reroll(kind, option_index):
-            reroll_all = False
-            lowest = min(rolls)
-            if kind == 'focus':
-                self.investigator.focus -= 1
-                if self.investigator.focus == 0:
-                    options[option_index].disable()
-                self.info_panes['investigator'].focus_button.text = 'x ' + str(self.investigator.focus)
-            elif kind == 'clue':
-                self.encounter_pane.spend_clue('nothing')
-                if self.encounter_pane.spend_clue(is_check=True) > len(self.investigator.clues):
-                    options[option_index].disable()
-            else:
-                kind['used'] = True
-                if kind.get('action', False):
-                    small_card = SmallCardPane(self)
-                    def finish_action(name):
-                        if 'combat_strength' or 'combat_will' in pane.encounter_type:
-                            subtitle_button = next((button for button in pane.choice_layout.children if getattr(button, 'identifier', '') == 'overlay_subtitle'))
-                            subtitle_button.text = 'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity)
-                        if not small_card.item_used:
-                            options[option_index].enable()
-                            if kind.get('used', False):
-                                kind['used'] = False
-                    small_card.setup([kind['action']], pane, finish_action=finish_action)
-                reroll_all = kind.get('reroll_all', False)
-                options[option_index].disable()
-            for x in range(dice):
-                sixes = []
-                if (rolls[x] == lowest and not reroll_all) or (reroll_all and rolls[x] < self.investigator.success):
-                    new_roll = random.randint(1, 6)
-                    rolls[x] = new_roll
-                    if new_roll == 6 and double_six:
-                        sixes.append(6)
-                    choices[x].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
-                    if not reroll_all:
-                        break
-                pane.rolls = rolls + sixes
-            self.choice_manager.trigger_render()
-        def add_to(kind, option_index):
-            fails = [roll for roll in rolls if roll < self.investigator.success]
-            die = max(fails) if len(fails) > 0 else min(rolls)
-            if double_six and self.investigator.success - die > 1 and 5 in rolls:
-                die = 5
-            index = rolls.index(die)
-            new_roll = die + 1
-            choices[index].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
-            pane.reroll([new_roll] + ([6] if new_roll == 6 and double_six else []), die)
-            kind['used'] = True
-            options[option_index].disable()
-            self.choice_manager.trigger_render()
         if not (len(set(rolls)) == 1 and 6 in rolls):
-            option_index = len(options)
+            small_card = SmallCardPane(self)
+            small_card.dice_number = dice
+            small_card.double_six = double_six
+            reroll_triggers = []
+            def finish_action(name):
+                lowest = min(rolls)
+                roll_button = next((button for button in pane.choice_layout.children if getattr(button, 'name', '') == name.split(':')[1]))
+                is_reroll = False
+                reroll_all = False
+                if name == 'focus:focus':
+                    self.investigator.focus -= 1
+                    self.info_panes['investigator'].focus_button.text = 'x ' + str(self.investigator.focus)
+                    is_reroll = True
+                    if self.investigator.focus == 0:
+                        roll_button.disable()
+                        roll_button.style['font_color'] = arcade.color.ASH_GREY
+                        roll_button.trigger_render()
+                elif name == 'clue:clue':
+                    self.encounter_pane.spend_clue('nothing')
+                    is_reroll = True
+                    if self.encounter_pane.spend_clue(is_check=True) > len(self.investigator.clues):
+                        roll_button.disable()
+                        roll_button.style['font_color'] = arcade.color.ASH_GREY
+                        roll_button.trigger_render()
+                else:
+                    roll_trigger = next((trig for trig in self.triggers[small_card.encounter_name.split(':')[0]] if trig['name'] == small_card.encounter_name.split(':')[1]))
+                    if small_card.item_used:
+                        roll_button.disable()
+                        roll_trigger['used'] = True
+                        is_reroll = roll_trigger['mod_die'] != 'add_to'
+                        reroll_all = roll_trigger['mod_die'] == 'all'
+                    else:
+                        small_card.encounters.append(roll_trigger['action'])
+                if 'combat_strength' in pane.encounter_type or 'combat_will' in pane.encounter_type:
+                    subtitle_button = next((button for button in pane.choice_layout.children if getattr(button, 'identifier', '') == 'overlay_subtitle'))
+                    subtitle_button.text = 'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity)
+                if small_card.item_used:
+                    if is_reroll:
+                        for x in range(dice):
+                            sixes = []
+                            if (rolls[x] == lowest and not reroll_all) or (reroll_all and rolls[x] < self.investigator.success):
+                                new_roll = random.randint(1, 6)
+                                rolls[x] = new_roll
+                                pane.rolls[x] = new_roll
+                                if new_roll == 6 and double_six:
+                                    sixes.append(6)
+                                choices[x].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
+                                if not reroll_all:
+                                    break
+                            pane.rolls += sixes
+                    else:
+                        fails = [roll for roll in rolls if roll < self.investigator.success]
+                        die = max(fails) if len(fails) > 0 else min(rolls)
+                        if double_six and self.investigator.success - die > 1 and 5 in rolls:
+                            die = 5
+                        index = rolls.index(die)
+                        new_roll = die + 1
+                        choices[index].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
+                        rolls[index] = new_roll
+                        pane.rolls[index] = new_roll
+                        if new_roll == 6 and double_six:
+                            pane.rolls.append(6)
+            small_card.finish_action = finish_action
             if self.investigator.focus > 0:
-                focus_button = ActionButton(action=reroll, action_args={'kind': 'focus', 'option_index': option_index}, texture='icons/focus.png', text='Use', text_position=(20,-2))
-                options.append(focus_button)
-                option_index += 1
+                options.append(ActionButton(action=finish_action, action_args={'name': 'focus:focus'}, texture='icons/focus.png', text='Use', text_position=(20,-2), name='focus'))
             if self.encounter_pane.spend_clue(is_check=True) <= len(self.investigator.clues) and allow_clues:
-                clue_button = ActionButton(action=reroll, action_args={'kind': 'clue', 'option_index': option_index}, texture='icons/clue.png', text='Use', text_position=(20,-2))
-                options.append(clue_button)
-                option_index += 1
+                options.append(ActionButton(action=finish_action, action_args={'name':'clue:clue'}, texture='icons/clue.png', text='Use', text_position=(20,-2), name='clue'))
             for kind in pane.encounter_type:
-                for trigger in [reroll for reroll in self.triggers.get(kind + '_test', []) if (reroll.get('reroll', False) or reroll.get('add', False)) and not reroll['used']]:
-                    action = reroll if trigger.get('reroll', False) else add_to
-                    trigger_button = ActionButton(action=action, action_args={'kind': trigger, 'option_index': option_index}, texture='buttons/placeholder.png', text=human_readable(trigger['name']))
-                    if reroll.get('used', False) and reroll.get('single_use', False):
+                reroll_triggers += [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('mod_die', False) and (not reroll['used'] or not reroll.get('single_use', False))]
+            if len(reroll_triggers) > 0:
+                for trigger in reroll_triggers:
+                    trigger_button = ActionButton(action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action}, texture='buttons/placeholder.png', text=human_readable(trigger['name']), name=trigger['name'])
+                    if trigger.get('used', False) and trigger.get('single_use', False):
                         trigger_button.disable()
                     options.append(trigger_button)
-                    option_index += 1
         #FOR TESTING
         def autofail():
             pane.rolls = [1]

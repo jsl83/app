@@ -10,8 +10,19 @@
         kind: combat_strength_test
         trigger:
           name: .18_derringer
-          add: True
+          mod_die: add_to
           used: False
+          action:
+            action:
+              - mod_die
+              - set_buttons
+            aargs:
+              - trigger_name: combat_strength_test:.18_derringer
+                text: Use
+              - text: Back
+                key: no_use
+            action_text: You may add 1 to the result of 1 die when resolving a Strength test during Combat Encounters.
+            title: .18 Derringer
   .38_revolver:
     expansion: 0
     cost: 1
@@ -71,10 +82,22 @@
     triggers:
       - owner_only: True
         kind: lore_test
+        mod_die: reroll
         trigger:
           name: arcane_scholar
-          reroll: True
+          mod_die: reroll
           used: False
+          action:
+            action:
+              - mod_die
+              - set_buttons
+            aargs:
+              - trigger_name: lore_test:the_silver_key
+                text: Use
+              - text: Back
+                key: no_use
+            action_text: You may reroll 1 die when resolving a Lore test.
+            title: Arcane Scholar
   arcane_tome:
     expansion: 0
     cost: 3
@@ -119,8 +142,7 @@
         kind: combat_strength_test
         trigger:
           name: axe
-          reroll: True
-          reroll_all: True
+          mod_die: all
           used: False
           action:
             action:
@@ -128,9 +150,15 @@
               - set_buttons
             aargs:
               - san: -2
-                text: Reroll
+                text: Use
+                step: mod
               - key: no_use
                 text: Back
+            mod:
+              - mod_die
+            margs:
+              - trigger_name: combat_strength_test:axe
+                skip: True
             action_text: You may spend 2 Sanity to reroll any number of dice when resolving a Strength test during a Combat Encounter.
             title: Axe
   bandages:
@@ -143,15 +171,54 @@
         trigger:
           name: bandages
           owner: assets
+          on_hp_loss: True
           action:
             action:
               - adjust_damage
+              - set_buttons
+            aargs:
+              - hp_change: 2
+                text: Use
+                step: discard
+              - key: no_use
+                text: Back
+            discard:
+              - discard
+            dargs:
+              - kind: assets
+                name: bandages
+                get_owner: True
+                skip: True
+            action_text: You may discard this card to prevent an investigator on your space from losing up to 2 Health.
   bull_whip:
     expansion: 0
     cost: 1
     tags:
       - item
       - weapon
+    bonuses:
+      - index: 3
+        value: 1
+        name: bull_whip
+        condition: combat
+    triggers:
+      - owner_only: True
+        kind: combat_strength_test
+        trigger:
+          name: bull_whip
+          mod_die: reroll
+          used: False
+          action:
+            action:
+              - mod_die
+              - set_buttons
+            aargs:
+              - trigger_name: combat_strength_test:bull_whip
+                text: Use
+              - text: Back
+                key: no_use
+            action_text: You may reroll 1 die when resolving a Strength test during a Combat Encounter.
+            title: bull_whip
   carbine_rifle:
     expansion: 0
     cost: 3

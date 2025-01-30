@@ -164,7 +164,6 @@ class EncounterPane():
     def choose_encounter(self):
         choices = []
         self.phase_button.text = 'Encounter Phase'
-        self.text_button.text = 'Choose Encounter'
         for encounter in self.encounters:
             request = False
             args = {}
@@ -184,8 +183,10 @@ class EncounterPane():
             choices.append(button)
         self.choice_layout = create_choices('Choose Encounter', choices=choices)
         self.layout.add(self.choice_layout)
+        self.layout.add(self.phase_button)
 
     def start_encounter(self, value, loc=None):
+        print(value, loc)
         self.clear_overlay()
         choice = value.split(':')
         if loc == None:
@@ -518,20 +519,23 @@ class EncounterPane():
         self.hub.location_manager.expeditions_enabled = enabled
         self.set_buttons(step)
 
-    def discard(self, kind, step='finish', tag='any', amt='one', name=None):
+    def discard(self, kind, step='finish', tag='any', amt='one', name=None, get_owner=False):
+        investigator = self.investigator
+        if get_owner:
+            investigator = next((inv for inv in self.hub.location_manager.all_investigators.values() if name in [pos.name for pos in inv.possessions[kind]]))
         if name != None:
-            card = next((item for item in self.investigator.possessions[kind] if item.name == name), None)
+            card = next((item for item in investigator.possessions[kind] if item.name == name), None)
             if card != None:
-                self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, self.investigator.name)
+                self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, investigator.name)
                 self.hub.info_panes['possessions'].setup()
             self.set_buttons(step)
         else:
             items = []
             if kind == 'all':
                 for possession_type in ['assets', 'unique_assets', 'artifacts']:
-                    items += self.investigator.possessions[possession_type]
+                    items += investigator.possessions[possession_type]
             else:
-                items = self.investigator.possessions[kind]
+                items = investigator.possessions[kind]
             items = [item for item in items if tag in item.tags] if tag != 'any' else items
             if len(items) == 0:
                 self.set_buttons(step)
@@ -539,7 +543,7 @@ class EncounterPane():
                 options = []
                 selected = []
                 def discard_card(card):
-                    self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': card.kind}, self.investigator.name)
+                    self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': card.kind}, investigator.name)
                     self.hub.info_panes['possessions'].setup()
                 if amt == 'one':
                     def next_step(card, step):
@@ -1184,6 +1188,7 @@ class EncounterPane():
                     if self.investigator.health <= 0 or self.investigator.sanity <= 0:
                         own_death()
                     else:
+                        self.clear_overlay()
                         action(**args)
             options = []
             for trigger in self.hub.triggers['hp_san_loss']:
@@ -1277,7 +1282,8 @@ class SmallCardPane(EncounterPane):
         small_card_dict = {
             'flip_card': self.flip_card,
             'trade': self.trade,
-            'adjust_damage': self.adjust_damage
+            'adjust_damage': self.adjust_damage,
+            'mod_die': self.mod_die
         }
         small_card_req_dict = {
             'trade': lambda args: self.hub.location_manager.player_count > 1
@@ -1316,6 +1322,13 @@ class SmallCardPane(EncounterPane):
         self.parent.san_damage += san_change
         self.parent.choice_layout.children[2].text = 'Health: ' + str(self.hp_damage) + '   Sanity: ' + str(self.san_damage)
         self.set_buttons(step)
+
+    def mod_die(self, trigger_name, step='finish'):
+        self.encounter_name = trigger_name
+        self.set_buttons(step)
+
+    def add_to_die(self, step='finish'):
+        pass
 
     def trade(self, investigator=None, swap=False, step='finish'):
         if investigator == None:
@@ -1369,4 +1382,4 @@ class SmallCardPane(EncounterPane):
             self.hub.info_manager.add(self.parent.layout)
             self.hub.info_manager.trigger_render()
             if self.finish_action != None:
-                self.finish_action(self.phase_button.text)
+                self.finish_action(self.encounter_name)

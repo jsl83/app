@@ -74,6 +74,7 @@
         trigger:
           name: gate_box
           owner: artifacts
+          additional_die: True
       - owner_only: True
         kind: gate_close
         trigger:
@@ -302,5 +303,16 @@
         kind: gate_test
         trigger:
           name: the_silver_key
-          reroll: True
+          mod_die: reroll
           used: False
+          action:
+            action:
+              - mod_die
+              - set_buttons
+            aargs:
+              - trigger_name: gate_test:the_silver_key
+                text: Use
+              - text: Back
+                key: no_use
+            action_text: You may reroll 1 die when resolving a test during an Other World Encounter.
+            title: The Silver Key

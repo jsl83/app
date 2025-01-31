@@ -13,8 +13,9 @@ with open('investigators/investigators.yaml') as stream:
 
 class Investigator():
 
-    def __init__(self, name):
+    def __init__(self, name, hub):
         self.name = name
+        self.hub = hub
         self.label = human_readable(name)
         self.subtitle = INVESTIGATORS[name]['subtitle']
         # lore, diplomacy, observation, strength, will
@@ -114,9 +115,9 @@ class Investigator():
     def rest(self):
         if not ((self.health == self.max_health and self.sanity == self.max_sanity and len(self.rest_triggers) == 0) or len(self.recover_restrictions) != 0):
             if len(self.sanity_recover_restrictions) == 0:
-                self.sanity += 1
+                self.sanity += (1 + len([trigger for trigger in self.hub.triggers['rest_san_bonus'] if self.hub.trigger_check(trigger, [])]))
             if len(self.health_recover_restrictions) == 0:
-                self.health += 1
+                self.health += (1 + len([trigger for trigger in self.hub.triggers['rest_hp_bonus'] if self.hub.trigger_check(trigger, [])]))
             return True
         else:
             return False

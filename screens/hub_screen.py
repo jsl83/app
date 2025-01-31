@@ -48,7 +48,10 @@ class HubScreen(arcade.View):
             'rest_actions': [],
             'acquire_assets_test': [],
             'combat_damage_reduction': [],
-            'combat_san_reduction': []
+            'combat_san_reduction': [],
+            'rest_san_bonus': [],
+            'rest_hp_bonus': [],
+            'all_test': []
         }
         
         self.item_actions = {}
@@ -99,7 +102,7 @@ class HubScreen(arcade.View):
         }
 
         self.map = self.maps['world']
-        self.location_manager = LocationManager(len(all_investigators))
+        self.location_manager = LocationManager(len(all_investigators), self)
         self.all_investigators = all_investigators
         for name in all_investigators:
             self.location_manager.spawn_investigator(name)
@@ -415,9 +418,9 @@ class HubScreen(arcade.View):
                                     for items in self.investigator.possessions.values():
                                         for item in items:
                                             item.action_used = False
-                                    for kind in ['precombat', 'turn_end', 'spells_test', 'gate_test', 'spend_clue', 'combat_strength_test', 'combat_will_test']:
-                                        for triggers in self.triggers[kind]:
-                                            triggers['used'] = False
+                                    for triggers in self.triggers.values():
+                                        for trigger in triggers:
+                                            trigger['used'] = False
                                     #'''
                                     #FOR TESTING
                                     self.remaining_actions = 3
@@ -594,7 +597,7 @@ class HubScreen(arcade.View):
         triggers = []
         for kind in pane.encounter_type:
             triggers += [add for add in self.triggers.get(kind + '_test', []) if not add.get('reroll', False) and not add.get('add', False)]
-        triggers += self.triggers[titles[skill].lower() + '_test']
+        triggers += self.triggers[titles[skill].lower() + '_test'] 
         for trigger in triggers:
             if self.trigger_check(trigger, pane.encounter_type + [titles[skill].lower() + '_test']):
                 if trigger.get('double_six', None) != None:
@@ -674,7 +677,7 @@ class HubScreen(arcade.View):
                 options.append(ActionButton(action=finish_action, action_args={'name': 'focus:focus'}, texture='icons/focus.png', text='Use', text_position=(20,-2), name='focus'))
             if self.encounter_pane.spend_clue(is_check=True) <= len(self.investigator.clues) and allow_clues:
                 options.append(ActionButton(action=finish_action, action_args={'name':'clue:clue'}, texture='icons/clue.png', text='Use', text_position=(20,-2), name='clue'))
-            for kind in pane.encounter_type + [titles[skill].lower()]:
+            for kind in pane.encounter_type + [titles[skill].lower()] + ['all']:
                 reroll_triggers += [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('mod_die', False) and (not reroll['used'] or not reroll.get('single_use', False))]
             if len(reroll_triggers) > 0:
                 for trigger in reroll_triggers:
@@ -701,6 +704,10 @@ class HubScreen(arcade.View):
         if trigger.get('space_type', False) and not self.location_manager.locations[self.investigator.location]['kind'] == trigger['space_type']:
             pass_condition = False
         if trigger.get('encounter', False) and trigger['encounter'] not in encounter_types:
+            pass_condition = False
+        if trigger.get('location', False) and trigger['location'] != self.investigator.location:
+            pass_condition = False
+        if trigger.get('spend_clue', False) and self.encounter_pane.spend_clue(is_check=True) > len(self.investigator.clues):
             pass_condition = False
         return pass_condition
     
@@ -884,25 +891,22 @@ class HubScreen(arcade.View):
         choices = []
         if damage != 99 and monster.damage + damage >= monster.toughness:
             for trigger in self.triggers['monster_kill']:
-                passes = True
-                if trigger.get('location', None) != None and self.investigator.location != trigger.get('location'):
-                    passes = False
-                if trigger.get('spend_clue', False) and len(self.investigator.clues) == 0:
-                    passes = False
                 def result_action():
                     match trigger['result']:
                         case 'rumor_add':
                             self.networker.publish_payload({'message': 'update_rumor_solve', 'solve_amt': monster.toughness, 'name': trigger['name']}, self.investigator.name)
-                if passes:
-                    if trigger.get('spend_clue', False):
-                        def clue_spend():
-                            self.encounter_pane.spend_clue('nothing')
-                            result_action()
-                        choices.append(ActionButton(texture='buttons/placeholder.png', text='Spend 1 Clue ' + trigger['clue_text'], action=clue_spend, style={'font_size': 10}))
-                    elif trigger.get('recover_san', False):
+                if self.trigger_check(trigger, []):
+                    if trigger.get('custom_action', False):
+                        match trigger['custom_action']:
+                            case 'return_of_the_ancient_ones':
+                                def custom_action():
+                                    self.encounter_pane.spend_clue('nothing')
+                                    result_action()
+                        choices.append(ActionButton(texture='buttons/placeholder.png', text='Spend 1 Clue ' + trigger['clue_text'], action=custom_action, style={'font_size': 10}))
+                    if trigger.get('recover_san', False):
                         self.investigator.sanity = min(self.investigator.max_sanity, self.investigator.sanity + trigger['recover_san'])
-                    else:
-                        result_action()
+                    if trigger.get('receive_clue', False):
+                        self.encounter_pane.gain_clue('nothing')
             if hasattr(monster, 'death_trigger'):
                 pass
         if not is_ambush:

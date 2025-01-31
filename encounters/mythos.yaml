@@ -534,6 +534,7 @@
           clue_text: to progress Rumor
           result: rumor_add
           name: return_of_the_ancient_ones
+          custom_action: return_of_the_ancient_ones
         step: end
     end:
       - end_mythos

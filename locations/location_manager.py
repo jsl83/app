@@ -5,7 +5,8 @@ from monsters.monster import Monster
 from investigators.investigator import Investigator
 
 class LocationManager():
-    def __init__(self, number):
+    def __init__(self, number, hub):
+        self.hub = hub
         self.player_count = number
         self.locations = {}
         self.all_investigators = {}
@@ -55,7 +56,7 @@ class LocationManager():
         return monster
 
     def spawn_investigator(self, name):
-        investigator = Investigator(name)
+        investigator = Investigator(name, self.hub)
         self.all_investigators[name] = investigator
         return investigator
 

@@ -197,7 +197,7 @@ class EncounterPane():
 
     def start_encounter(self, value, loc=None):
         print(value, loc)
-        self.clear_overlay()
+        #self.clear_overlay()
         choice = value.split(':')
         if loc == None:
             location = self.investigator.location
@@ -212,6 +212,7 @@ class EncounterPane():
             self.set_buttons('test')
         else:
             self.set_buttons('pass')
+        print('here')
 
     def combat_will(self, monster, player_request=None):
         self.layout.clear()
@@ -388,7 +389,7 @@ class EncounterPane():
         self.ambush_steps = (step, fail)
         self.combat_will(self.hub.location_manager.create_ambush_monster(name))
 
-    def choose_investigator(self, action, no_self=False, step='finish'):
+    def choose_investigator(self, action, no_self=False, on_location=False, step='finish'):
         choices = []
         subtitle = ''
         if action == 'delay':
@@ -402,7 +403,7 @@ class EncounterPane():
                 self.encounter[self.current_key[0] + 'args'][0]['investigator'] = name
                 self.encounter[self.current_key[0] + 'args'][0]['skip'] = True
                 self.set_buttons(self.current_key)
-        for names in [name for name in list(self.hub.location_manager.all_investigators.keys()) if not no_self or name != self.investigator.name]:
+        for names in [inv.name for inv in list(self.hub.location_manager.all_investigators.values()) if (not no_self or inv != self.investigator.name) and (not on_location or inv.location == self.investigator.location)]:
             choices.append(ActionButton(texture='investigators/' + names + '_portrait.png', action=button_action, action_args={'name': names}, scale=0.4))
         self.clear_overlay()
         self.choice_layout = create_choices('Choose Investigator', subtitle, choices)
@@ -918,17 +919,24 @@ class EncounterPane():
         self.wait_step = step
         self.hub.waiting_pane = self
 
-    def request_card(self, kind, step='finish', name='', tag='', trigger=False):
-        card = next((card for card in self.investigator.possessions[kind] if card.name == name), None)
-        if (trigger or name in ['cursed', 'blessed']) and card != None:
-            SmallCardPane([card], self, 'back', step)
+    def request_card(self, kind, step='finish', name='', tag='', trigger=False, investigator=None):
+        if investigator in ['select', 'on_location']:
+            self.choose_investigator('same_action', on_location=investigator == 'on_location')
         else:
-            self.wait_step = step
-            self.hub.waiting_pane = self
-            message_sent = self.hub.request_card(kind, name, tag=tag)
-            if not message_sent:
-                self.wait_step = None
-                self.set_buttons(step)
+            if investigator == None:
+                requestor = self.investigator
+            else:
+                requestor = next((inv for inv in self.hub.location_manager.all_investigators.values() if inv.name == investigator))
+            card = next((card for card in requestor.possessions[kind] if card.name == name), None)
+            if (trigger or name in ['cursed', 'blessed']) and card != None:
+                self.small_card([card])
+            else:
+                self.wait_step = step
+                self.hub.waiting_pane = self
+                message_sent = self.hub.request_card(kind, name, tag=tag, investigator=requestor)
+                if not message_sent:
+                    self.wait_step = None
+                    self.set_buttons(step)
 
     def resting_enabled(self, enabled, origin, step='finish'):
         if enabled and origin in self.investigator.recover_restrictions:
@@ -1030,7 +1038,7 @@ class EncounterPane():
                     self.layout.add(button)
                 if len(self.choice_layout.children) > 0:
                     self.layout.add(self.choice_layout)
-            self.hub.info_manager.trigger_render()
+            #self.hub.info_manager.trigger_render()
 
     def set_doom(self, increment=1, step='finish'):
         print(increment)

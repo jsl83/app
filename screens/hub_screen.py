@@ -560,10 +560,8 @@ class HubScreen(arcade.View):
                     else:
                         items = self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']]
                         item = next((item for item in items if item.get_server_name() == payload['value']))
-                        self.info_panes['possessions'].on_discard(item, self.investigator.name)
                         self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']].remove(item)
-                    if payload['owner'] == self.investigator.name:
-                        self.info_panes['possessions'].setup()
+                        self.info_panes['possessions'].on_discard(item, payload['owner'] == self.investigator.name)
                 case 'player_update':
                     investigator = self.location_manager.all_investigators[payload['owner']]
                     for key in ['health', 'sanity', 'ship_tickets', 'rail_tickets']:
@@ -598,7 +596,7 @@ class HubScreen(arcade.View):
             triggers += [add for add in self.triggers.get(kind + '_test', []) if not add.get('reroll', False) and not add.get('add', False)]
         triggers += self.triggers[titles[skill].lower() + '_test']
         for trigger in triggers:
-            if self.trigger_check(trigger, pane.encounter_type):
+            if self.trigger_check(trigger, pane.encounter_type + [titles[skill].lower() + '_test']):
                 if trigger.get('double_six', None) != None:
                     double_six = True
                 elif trigger.get('additional_die', False):
@@ -676,7 +674,7 @@ class HubScreen(arcade.View):
                 options.append(ActionButton(action=finish_action, action_args={'name': 'focus:focus'}, texture='icons/focus.png', text='Use', text_position=(20,-2), name='focus'))
             if self.encounter_pane.spend_clue(is_check=True) <= len(self.investigator.clues) and allow_clues:
                 options.append(ActionButton(action=finish_action, action_args={'name':'clue:clue'}, texture='icons/clue.png', text='Use', text_position=(20,-2), name='clue'))
-            for kind in pane.encounter_type:
+            for kind in pane.encounter_type + [titles[skill].lower()]:
                 reroll_triggers += [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('mod_die', False) and (not reroll['used'] or not reroll.get('single_use', False))]
             if len(reroll_triggers) > 0:
                 for trigger in reroll_triggers:
@@ -724,11 +722,12 @@ class HubScreen(arcade.View):
             button.select(False)
         buttons[index].select(True)
     
-    def request_card(self, kind, name='', command='get', tag=''):
+    def request_card(self, kind, name='', command='get', tag='', investigator=None):
+        requestor = self.investigator if investigator == None else investigator
         if kind == 'spells' or kind == 'conditions':
-            if next((item for item in self.investigator.possessions[kind] if item.name == name), None) != None:
+            if next((item for item in requestor.possessions[kind] if item.name == name), None) != None:
                 return False
-        self.networker.publish_payload({'message': kind, 'value': name, 'tag': tag, 'command': command}, self.investigator.name)
+        self.networker.publish_payload({'message': kind, 'value': name, 'tag': tag, 'command': command}, requestor.name)
         return True
 
     def discard_card(self, kind, name):

@@ -355,17 +355,90 @@
     cost: 2
     tags:
       - ally
+    bonuses:
+      - index: 3
+        value: 1
+    triggers:
+      - owner_only: True
+        kind: strength_test
+        trigger:
+          mod_die: reroll
+          action:
+            action:
+              - mod_die
+              - set_buttons
+            aargs:
+              - trigger_name: strength_test:hired_muscle
+                text: Use
+              - text: Back
+                key: no_use
+            action_text: You may reroll 1 die when resolving a Strength test.
+            title: hired_muscle
   holy_cross:
     expansion: 0
     cost: 2
     tags:
       - item
+    bonuses:
+      - index: 4
+        value: 2
+        condition: combat
   holy_water:
     expansion: 0
     cost: 2
     tags:
       - item
       - magical
+    triggers:
+      - owner_only: True
+        kind: precombat
+        trigger:
+          single_use: True
+          action:
+            action:
+              - temp_bonus
+              - set_buttons
+            aargs:
+              - stat: 3
+                value: 5
+                name: holy_water
+                condition: combat
+                text: Use
+                step: bonus
+              - key: no_use
+                text: Back
+            bonus:
+              - temp_bonus
+            bargs:
+              - stat: 4
+                value: 5
+                name: holy_water
+                condition: combat
+                step: discard
+                skip: True
+            discard:
+              - discard
+            dargs:
+              - kind: assets
+                name: holy_water
+                skip: True
+            action_text: You may discard this card to gain +5 Will and Strength during a Combat Encounter.
+    action:
+      action:
+        - request_card
+      aargs:
+        - kind: conditions
+          name: blessed
+          investigator: on_location
+          skip: True
+          step: discard
+      discard:
+        - discard
+      dargs:
+        - kind: assets
+          name: holy_water
+          skip: True
+      action_text: Discard this card to choose an Investigator on your space to gain a Blessed Condition.
   kerosene:
     expansion: 0
     cost: 1

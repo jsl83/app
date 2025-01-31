@@ -134,14 +134,15 @@ class PossessionsPane():
             for action in card.on_get:
                 self.hub.encounter_pane.action_dict[action['action']](step='nothing', **action['aargs'])
 
-    def on_discard(self, card, investigator):
-        is_owner = investigator == self.investigator
+    def on_discard(self, card, is_owner):
+        print(is_owner)
         if is_owner:
             for bonus in getattr(card, 'bonuses', []):
                 index = bonus['index']
                 self.investigator.skill_bonuses[index] = [bonuses for bonuses in self.investigator.skill_bonuses[index] if bonuses['name'] != card.name]
                 self.investigator.max_bonus[index] = self.investigator.calc_max_bonus(index)
                 self.hub.info_panes['investigator'].calc_skill(index)
+            self.hub.info_panes['possessions'].setup()
         for trigger in getattr(card, 'triggers', []):
             if (not trigger.get('owner_only', False) or is_owner):
                 self.hub.triggers[trigger['kind']] = [hub_trigger for hub_trigger in self.hub.triggers[trigger['kind']] if hub_trigger['name'] != card.name]

@@ -202,10 +202,3 @@ class ReservePane():
 
     def on_show(self):
         self.close_discard()
-
-    def reroll(self, new, old):
-        self.rolls.remove(old)
-        self.rolls += new
-        new_successes = len([roll for roll in new if roll >= self.hub.investigator.success])
-        self.successes += new_successes
-        self.acquire_button.text = 'Acquire (Remaining cost: ' + str(self.successes) + ')'

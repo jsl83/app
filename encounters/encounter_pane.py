@@ -1189,13 +1189,11 @@ class EncounterPane():
         if hp == 0 and san == 0:
             action(**args)
         else:
-            choices = []
             if hp < 0:
-                #choices.append(hp damage triggers)
-                pass
+                self.hp_damage = min(-1, self.hp_damage + len(self.hub.triggers['combat_damage_reduction']))
             if san < 0:
-                #choices.append(san damage triggers)
-                pass
+                self.san_damage = min(-1, self.san_damage + len(self.hub.triggers['combat_san_reduction']))
+            choices = []
             def resolve_damage():
                 self.investigator.health = self.investigator.health + self.hp_damage if self.investigator.health + self.hp_damage <= self.investigator.max_health else self.investigator.max_health
                 self.investigator.sanity = self.investigator.sanity + self.san_damage if self.investigator.sanity + self.san_damage <= self.investigator.max_sanity else self.investigator.max_sanity
@@ -1241,7 +1239,7 @@ class EncounterPane():
                     options.append(button)
             next_button = ActionButton(
                 width=100, height=50, texture='buttons/placeholder.png', text='Next', action=resolve_damage)
-            self.choice_layout = create_choices(choices = choices, options=options + [next_button], title='Taking Damage', subtitle='Health: ' + str(hp) + '   Sanity: ' + str(san))
+            self.choice_layout = create_choices(choices = choices, options=options + [next_button], title='Taking Damage', subtitle='Health: ' + str(self.hp_damage) + '   Sanity: ' + str(self.san_damage))
             self.layout.add(self.choice_layout)
 
     def trigger_check(self, kind, match, pass_check, fail):

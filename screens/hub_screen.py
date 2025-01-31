@@ -45,7 +45,10 @@ class HubScreen(arcade.View):
             'observation_test': [],
             'strength_test': [],
             'will_test': [],
-            'rest_actions': []
+            'rest_actions': [],
+            'acquire_assets_test': [],
+            'combat_damage_reduction': [],
+            'combat_san_reduction': []
         }
         
         self.item_actions = {}
@@ -430,10 +433,10 @@ class HubScreen(arcade.View):
                                     #'''
                             case 'encounter':
                                 #FOR TESTING
-                                self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                 #END TESTING
-                                #self.show_encounter_pane()
-                                #self.encounter_pane.encounter_phase()
+                                self.show_encounter_pane()
+                                self.encounter_pane.encounter_phase()
                             case 'reckoning':
                                 self.encounter_pane.reckoning()
                                 #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)

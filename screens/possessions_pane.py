@@ -81,8 +81,8 @@ class PossessionsPane():
         self.back_action()
         self.hub.small_card_pane.encounter_type = [card.kind]
         card.action['title'] = human_readable(card.name)
-        self.hub.small_card_pane.setup([card.action], self, textures=[card.texture], finish_action=self.on_finish_small)
         self.hub.gui_set(False)
+        self.hub.small_card_pane.setup([card.action], self, textures=[card.texture], finish_action=self.on_finish_small)
 
     def on_finish_small(self, name):
         self.active_card.action_used = True
@@ -120,6 +120,7 @@ class PossessionsPane():
     def on_get(self, card, is_owner, is_trade=False):
         if is_owner:
             for bonus in getattr(card, 'bonuses', []):
+                bonus['name'] = card.name
                 index = bonus['index']
                 self.investigator.skill_bonuses[index].append(bonus)
                 self.investigator.max_bonus[index] = max(bonus['value'] if not bonus.get('condition', False) else 0, self.investigator.max_bonus[index])
@@ -127,6 +128,7 @@ class PossessionsPane():
         for triggers in getattr(card, 'triggers', []):
             if not triggers.get('owner_only', False) or is_owner:
                 triggers['trigger']['used'] = False
+                triggers['trigger']['name'] = card.name
                 self.hub.triggers[triggers['kind']].append(triggers['trigger'])
         if getattr(card, 'on_get', False) and not is_trade and is_owner:
             for action in card.on_get:

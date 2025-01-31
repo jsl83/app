@@ -72,13 +72,11 @@
     triggers:
       - kind: gate_test
         trigger:
-          name: gate_box
           owner: artifacts
           additional_die: True
       - owner_only: True
         kind: gate_close
         trigger:
-          name: gate_box
           action:
             - trigger_check
           aargs:
@@ -100,12 +98,10 @@
       - owner_only: True
         kind: spells_test
         trigger:
-          name: glass_of_mortlan
           double_six: True
       - owner_only: True
         kind: hp_san_loss
         trigger:
-          name: glass_of_mortlan
           encounter: spells
           on_san_loss: True
           font_size: 12
@@ -126,7 +122,6 @@
       - owner_only: True
         kind: hp_san_loss
         trigger:
-          name: grotesque_statue
           on_san_loss: True
           font_size: 12
           single_use: True
@@ -173,7 +168,6 @@
     bonuses:
       - index: 3
         value: 6
-        name: lightning_gun
         condition: combat
   mi-go_brain_case:
     tags:
@@ -231,7 +225,6 @@
       - owner_only: True
         kind: precombat
         trigger:
-          name: pallid_mask
           action: skip_combat
   ruby_of_r'lyeh:
     tags:
@@ -250,17 +243,14 @@
     bonuses:
       - index: 3
         value: 5
-        name: sword_of_saint_jerome
         condition: combat
       - index: 4
         value: 2
-        name: sword_of_saint_jerome
         condition: combat
     triggers:
       - kind: monster_kill
         owner_only: True
         trigger:
-          name: sword_of_saint_jerome
           recover_san: 1
   t'tka_halot:
     tags:
@@ -295,12 +285,10 @@
       - owner_only: True
         kind: spend_clue
         trigger:
-          name: the_silver_key
           action: reduce
       - owner_only: True
         kind: gate_test
         trigger:
-          name: the_silver_key
           mod_die: reroll
           action:
             action:

@@ -2,9 +2,169 @@
   amnesia:
     tags:
       - madness
+    triggers:
+      - kind: rest_actions
+        owner_only: True
+        trigger:
+          action:
+            - single_roll
+          aargs:
+            - effects:
+                '1234': nada
+                '56': discard
+              skip: True
+          discard:
+            - discard
+          dargs:
+            - kind: conditions
+              name: amnesia
+              skip: True
+          action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+    reckoning:
+      action:
+        - flip_card
+      aargs:
+        - skip: True
+          name: amnesia
+          kind: conditions
+      is_required: True
+    '1':
+      title: Amnesia - Forgotten Crimes
+      back_action:
+        - request_card
+      bargs:
+        - text: Next
+          kind: conditions
+          name: detained
+          step: lose
+      lose:
+        - discard
+      largs:
+        - kind: conditions
+          name: amnesia
+          skip: True
+      back_action_text: Gain a Detained Condition, then discard this card.
+      back_flavor: You don't want to believe it's true, but the evidence is irrefutable. At some point that you no longer recall, you went on a crime spree. Now you must accompany the police.
+    '2':
+      title: Amnesia - The Terrible Truth
+      back_action:
+        - request_card
+      bargs:
+        - text: Next
+          kind: conditions
+          name: dark_pact
+          step: lose
+      lose:
+        - discard
+      largs:
+        - kind: conditions
+          name: amnesia
+          skip: True
+      back_action_text: Gain a Dark Pact Condition, then discard this card.
+      back_flavor: Suddenly, the terrible memories of the profane ritual return to you. How merciful your mind had been to forget your horrible deeds. Now that you remember the truth, you know you will soon have to hold up your end of the bargain.
+    '3':
+      title: Amnesia - Unexplained Debts
+      back_action:
+        - request_card
+      bargs:
+        - text: Gain a Debt Condition
+          kind: conditions
+          name: debt
+          step: lose
+      lose:
+        - discard
+      largs:
+        - kind: conditions
+          name: amnesia
+          skip: True
+      back_action_text: Gain a Debt Condition, then discard this card.
+      back_flavor: According to the paperwork written in your own hand, you took out a loan and made unspecified promises of repayment. To your dismay, there is no sign of the money or what you could have spent it on.
   back_injury:
     tags:
       - injury
+    triggers:
+      - kind: rest_actions
+        owner_only: True
+        trigger:
+          action:
+            - single_roll
+          aargs:
+            - effects:
+                '1234': nada
+                '56': discard
+              skip: True
+          discard:
+            - discard
+          dargs:
+            - kind: conditions
+              name: back_injury
+              skip: True
+          action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+    reckoning:
+      action:
+        - skill
+      aargs:
+        - stat: 3
+          fail: flip
+          step: finish
+      flip:
+        - flip_card
+      fargs:
+        - skip: True
+          name: back_injury
+          kind: conditions
+      action_text: Test Strength. If you fail, flip this card.
+      is_required: True
+    '1':
+      title: Back Injury - Fractured Spine
+      back_action:
+        - discard
+      bargs:
+        - skip: True
+          kind: assets
+          tag: item
+          step: discard
+          amt: keep_one
+      discard:
+        - discard
+      dargs:
+        - kind: conditions
+          name: back_injury
+          skip: True
+      back_action_text: Discard all but 1 of your Item possessions, then discard this card.
+      back_flavor: Searing pain suddenly runs up and down your spine. You can barely lift your arms, let alone carry a lot of equipment. It is just too painful to carry them all.
+    '2':
+      title: Back Injury - Muscle Spasms
+      back_action:
+        - discard
+      bargs:
+        - skip: True
+          kind: assets
+          tag: item
+          step: discard
+      discard:
+        - discard
+      dargs:
+        - kind: conditions
+          name: back_injury
+          skip: True
+          step: wait
+      wait:
+        - delayed
+      wargs:
+        - skip: True
+      back_action_text: Discard 1 Item possession and become Delayed, then discard this card.
+      back_flavor: Your hand begins to shake uncontrollably, breaking whatever you are holding. Your whole body is overcome by tremors.
+    '3':
+      title: Back Injury - Nerve Damage
+      back_action:
+        - discard
+      bargs:
+        - skip: True
+          kind: assets
+          tag: item
+      back_action_text: Discard 1 Item possession then flip this card.
+      back_flavor: The numbness in your fingers has returned, making it nearly impossible to manipulate objects, and you clumsily drop a valuable beyond recovery.
   blessed:
     tags:
       - boon
@@ -39,14 +199,14 @@
     tags:
       - deal
       - common
-    '1':
-      reckoning:
+    reckoning:
         action:
           - flip_card
         aargs:
           - skip: True
             name: debt
             kind: conditions
+    '1':
       back:
         title: Debt - Beyond Riches
         action:

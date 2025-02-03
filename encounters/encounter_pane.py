@@ -54,7 +54,6 @@ class EncounterPane():
             'loss_per_condition': self.loss_per_condition,
             'monster_heal': self.monster_heal,
             'monster_reckoning': self.monster_reckoning,
-            'monster_reckoning_move': self.monster_reckoning_move,
             'move_investigator': self.move_investigator,
             'move_monster': self.move_monster,
             'mythos_reckoning': self.mythos_reckoning,
@@ -105,9 +104,12 @@ class EncounterPane():
         self.final_step = ''
         self.small_card_dict = None
         self.recover_name = ''
+        self.reckonings = {
+            'monster': [],
+            'mythos': [],
+            'item': []
+        }
         self.mythos_reckonings = []
-        self.monster_reckonings = []
-        self.monster_reckoning_loaded = False
         self.monster_death_triggers = []
         self.no_loc_click = None
         self.last_value = None
@@ -116,6 +118,7 @@ class EncounterPane():
         self.hp_damage = 0
         self.san_damage = 0
         self.current_key = ''
+        self.combat_only = False
 
     def clear_overlay(self):
         if self.choice_layout in self.layout.children:
@@ -142,6 +145,7 @@ class EncounterPane():
         return len(items) > 0
 
     def encounter_phase(self, combat_only=False, step='finish'):
+        self.combat_only = combat_only
         location = self.investigator.location
         monsters = self.hub.location_manager.locations[location]['monsters']
         self.monsters = [monster for monster in monsters] if self.first_fight else self.monsters
@@ -166,7 +170,8 @@ class EncounterPane():
                 options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=human_readable(trigger['name']), action=small_card.setup, action_args={'encounters':[trigger['action']], 'parent': self, 'finish_action': finish_action}, name=human_readable(trigger['name'])))
             self.choice_layout = create_choices('Choose Monster', choices=choices, options=options)
             self.layout.add(self.choice_layout)
-        elif not combat_only and len(self.monsters) == 0:
+        elif not self.combat_only and len(self.monsters) == 0:
+            self.combat_only = False
             self.choose_encounter()
         else:
             self.set_buttons(step)
@@ -280,7 +285,11 @@ class EncounterPane():
                 self.monsters.remove(monster)
                 self.encounter_phase()
             else:
-                self.hub.show_encounter_pane()
+                if hasattr(self, 'parent'):
+                    self.hub.info_manager.children = {0:[]}
+                    self.clear_overlay()
+                    self.hub.info_manager.add(self.parent.layout)
+                    self.hub.info_manager.trigger_render()
                 self.hub.networker.publish_payload({'message': 'action_done'}, player_request + '_player')
         if len(self.monster_death_triggers) > 0:
             def show_triggers():
@@ -309,18 +318,7 @@ class EncounterPane():
             self.ambush_steps = None
             self.hub.show_encounter_pane()
         else:
-            finish_combat()
-
-    def resolve_monster_reckoning(self, step, none_step, is_wait=False):
-        if is_wait:
-            self.clear_overlay()
-            self.choice_layout = create_choices('Waiting for other player to finish')
-            self.layout.add(self.choice_layout)
-            self.player_wait_step = 'monster_reckoning'
-            self.player_wait_args = {'step': step, 'none_step': none_step}
-            self.hub.waiting_pane = self
-        else:
-            self.monster_reckoning(step, none_step)
+            finish_combat()        
 
     def reroll(self, new, old):
         self.rolls.remove(old)
@@ -344,8 +342,6 @@ class EncounterPane():
         self.rumor_not_gate = None
         self.mythos_switch = False
         self.investigator.encounter_impairment = 0
-        self.mythos_reckonings = []
-        self.monster_reckonings = []
         self.no_loc_click = None
         if not skip:
             self.hub.my_turn = False
@@ -586,7 +582,7 @@ class EncounterPane():
                     self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': card.kind}, investigator.name)
                     self.hub.info_panes['possessions'].setup()
                 if amt == 'one':
-                    def next_step(card, step):
+                    def select(card, step):
                         discard_card(card)
                         self.wait_step = step
                         self.hub.waiting_pane = self
@@ -601,16 +597,23 @@ class EncounterPane():
                                     self.wait_step = step
                                     self.hub.waiting_pane = self
                                 discard_card(selected[x])
-                    button = ActionButton(width=150, height=30, text='Discard: 0', texture='buttons/placeholder.png', action=submit)
+                    button = ActionButton(width=150, height=50, text='Discard Selected', texture='buttons/placeholder.png', action=submit)
+                    if amt == 'keep_one' and len(items) != len(selected) + 1:
+                        button.disable()
                     def select(card, step):
                         if card in selected:
                             selected.remove(card)
                         else:
                             selected.append(card)
-                        button.text = 'Discard: ' + str(len(selected))
+                        if amt == 'keep_one':
+                            if len(items) != len(selected) + 1:
+                                button.disable()
+                            else:
+                                button.enable()
+                        button.trigger_render()
                     options = [button]
                 title_text = 'Select ' + ((human_readable(tag) + ' ') if tag != 'any' else '') + (kind[:-1] if kind != 'all' else 'Possession') + ('' if amt == 'one' else 's') + ' to discard'
-                choices = [ActionButton(texture=item.texture, width=120, height=185, action=next_step if amt == 'one' else select, action_args={'card': item, 'step': step}) for item in items]
+                choices = [ActionButton(texture=item.texture, width=120, height=185, action=select, action_args={'card': item, 'step': step}) for item in items]
                 self.choice_layout = create_choices(choices = choices, options = options, title=title_text)
                 self.layout.add(self.choice_layout)
 
@@ -858,74 +861,11 @@ class EncounterPane():
         self.set_buttons(step)
 
     def monster_reckoning(self, step='finish', none_step='finish'):
-        if not self.monster_reckoning_loaded:
-            monsters = [monster for monster in self.hub.location_manager.all_monsters if hasattr(monster, 'reckoning')]
-            if len(monsters) == 0:
-                self.set_buttons(none_step)
-            else:
-                choices = []
-                for monster in monsters:
-                    def choice(monster):
-                        args = getattr(monster, 'reckoning_args', {})
-                        args['monster'] = monster
-                        args['step'] = step
-                        args['none_step'] = none_step
-                        self.action_dict[monster.reckoning](**args)
-                        self.monster_reckonings = [button for button in self.monster_reckonings if button.action_args['monster'] != monster]
-                    button = ActionButton(texture='monsters/' + monster.name + '.png', action=choice, action_args={'monster': monster}, scale=0.5)
-                    choices.append(button)
-                self.monster_reckonings = choices
-                self.monster_reckoning_loaded = True
-                self.monster_reckoning(step, none_step)
+        self.load_reckoning_effects(True)
+        if len(self.reckonings['monster']) == 0:
+            self.set_buttons(none_step)
         else:
-            if self.player_wait_step == None:
-                if len(self.monster_reckonings) == 0:
-                    self.monster_reckoning_loaded = False
-                    self.set_buttons(step)
-                else:
-                    self.clear_overlay()
-                    options = [ActionButton(texture='buttons/placeholder.png', text=button.action_args['monster'].option_text, action=button.action, action_args=button.action_args) for button in self.monster_reckonings]
-                    self.choice_layout = create_choices('Monster Reckoning Effects', choices=self.monster_reckonings, options=options)
-                    self.layout.add(self.choice_layout)
-
-    def monster_reckoning_move(self, monster, step, none_step, distance=1, encounter=True, damage=0):
-        is_wait = damage > 0
-        paths = {}
-        closest = 100
-        investigators = self.hub.location_manager.all_investigators
-        for investigator in investigators:
-            route = list(self.hub.location_manager.find_path(monster.location, investigators[investigator]['location']))
-            if len(route) < closest:
-                paths = {}
-                closest = len(route)
-            if len(route) == closest:
-                paths[investigator] = route
-        if closest - 1 <= distance and encounter:
-            is_wait = True
-        if is_wait:
-            self.hub.waiting_pane = self
-            self.player_wait_step = 'waiting'
-        else:
-            self.player_wait_step = None
-        def move_to_investigator(monster, distance, investigator):
-            route = paths[investigator]
-            distance = distance if distance < len(route) else len(route) - 1
-            self.hub.networker.publish_payload({'message': 'move_monster', 'value': monster.monster_id, 'location': route[distance]}, self.investigator.name)
-            self.resolve_monster_reckoning(step, none_step, is_wait)
-            if route[distance] == investigators[investigator]['location'] and encounter:
-                self.hub.networker.publish_payload({'message': 'combat', 'value': monster.monster_id, 'sender': self.investigator.name}, investigator + '_player')
-        if len(paths) > 1:
-            choices = []
-            for name in paths:
-                choices.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.3, action=move_to_investigator, action_args={
-                    'monster': monster, 'distance': distance, 'investigator': name
-                }))
-            self.clear_overlay()
-            self.choice_layout = create_choices(choices=choices, title='Select Investigator to move to')
-            self.layout.add(self.choice_layout)
-        else:
-            investigator = list(paths.keys())[0]
-            move_to_investigator(monster, distance, investigator)
+            self.reckoning(step=step)
 
     def recover_investigator(self, step='finish'):
         self.hub.networker.publish_payload({'message': 'recover_body', 'body': self.recover_name}, self.investigator.name)
@@ -1016,7 +956,8 @@ class EncounterPane():
             else:
                 buttons = [self.proceed_button, self.option_button, self.last_button]
                 actions = self.encounter[key]
-                self.text_button.text = self.encounter.get(key + '_text', self.text_button.text)
+                has_text = self.encounter.get(key + '_flavor', False) or self.encounter.get(key + '_text', False)
+                self.text_button.text = (self.encounter.get(key + '_flavor', '') + ('\n\n' if self.encounter.get(key + '_flavor', False) else '') + self.encounter.get(key + '_text', '')) if has_text else self.text_button.text
                 for x in range(len(actions)):
                     args = self.encounter[key[0] + 'args'][x]
                     buttons[x].text = args.get('text', '')
@@ -1276,6 +1217,7 @@ class EncounterPane():
     def load_mythos(self, mythos):
         self.mythos = mythos
         self.encounter = MYTHOS[mythos]
+        self.encounter_type = []
         self.phase_button.text = 'Mythos Phase'
         self.layout.clear()
         self.layout.add(self.text_button)
@@ -1297,29 +1239,42 @@ class EncounterPane():
             self.encounter_type.append('mythos')
             self.set_buttons('action')
 
-    def reckoning(self):
-        self.encounter_type.append('reckoning')
-        def choose_mythos(mythos_obj):
-            self.encounter = mythos_obj[0]
-            self.set_buttons('action')
-            self.mythos_reckonings.remove(mythos_obj)
-        if len(self.mythos_reckonings) > 0:
-            self.clear_buttons()
-            self.phase_button.text = 'Mythos Phase - Reckoning'
-            self.text_button.text = ''
-            choices = []
-            for reckon in self.mythos_reckonings:
-                reckon[0]['action_text'] = human_readable(reckon[1]) + '\n\n' + self.hub.location_manager.rumors[reckon[1]]['reckoning']
-                choices.append(ActionButton(texture='ancient_ones/mythos_back.png', text=human_readable(reckon[1]), action=choose_mythos, action_args={'mythos_obj': reckon}, scale=0.4))
-            self.clear_overlay()
-            self.choice_layout = create_choices('Select Mythos Reckoning', choices=choices)
-            self.layout.add(self.choice_layout)
-        elif len(self.reckonings) > 0:
-            pass
-        else:
-            self.finish()
+    def load_reckoning_effects(self, monsters_only=False):
+        self.reckonings = {
+                'mythos': [],
+                'monster': [],
+                'item': [],
+                'ancient_one': []
+            }
+        if self.hub.lead_investigator == self.investigator.name:
+            for monster in [monster for monster in self.hub.location_manager.all_monsters if hasattr(monster, 'reckoning')]:
+                self.reckonings['monster'].append((monster.reckoning, 'monsters/' + monster.name + '.png'))
+            if not monsters_only:
+                if len(self.mythos_reckonings) > 0:
+                    for reckon in self.mythos_reckonings:
+                        self.reckonings['mythos'].append((reckon, 'ancient_ones/mythos_back.png'))
+        if not monsters_only: 
+            for kind in self.investigator.possessions.values():
+                for card in [card for card in kind if hasattr(card, 'reckoning')]:
+                    self.reckonings['item'].append((card.reckoning, card.kind + '/' + card.name + '.png'))
+
+    def reckoning(self, kind='monster', first=False, step='finish'):
+        kinds = ['monster', 'ancient_one', 'mythos', 'item', 'finish']
+        scales = [0.5, 0.5, 0.4, 0.5]
+        index = kinds.index(kind) + 1
+        small_card = SmallCardPane(self.hub)
+        if first:
+            self.load_reckoning_effects()
+        if index == 5:
+            self.set_buttons(step)
             self.load_mythos(self.mythos)
             self.hub.show_encounter_pane()
+        elif len(self.reckonings[kind]) > 0:
+            def finish_action(name):
+                self.reckoning(kinds[index], step=step)
+            small_card.setup([reckon[0] for reckon in self.reckonings[kind]], self, False, 'Resolving ' + human_readable(kind) + ' Reckoning Effects', [reckon[1] for reckon in self.reckonings[kind]], finish_action, scale=scales[index-1])
+        else:
+            self.reckoning(kinds[index], step=step)
 
 class SmallCardPane(EncounterPane):
     def __init__(self, hub):
@@ -1331,7 +1286,8 @@ class SmallCardPane(EncounterPane):
             'trade': self.trade,
             'adjust_damage': self.adjust_damage,
             'mod_die': self.mod_die,
-            'temp_bonus': self.temp_bonus
+            'temp_bonus': self.temp_bonus,
+            'monster_reckoning_move': self.monster_reckoning_move
         }
         small_card_req_dict = {
             'trade': lambda args: self.hub.location_manager.player_count > 1
@@ -1340,28 +1296,34 @@ class SmallCardPane(EncounterPane):
         self.req_dict = self.req_dict | small_card_req_dict
         self.item_used = True
         self.encounter_name = ''
+        self.scale = 0.5
 
-    def setup(self, encounters, parent, single_pick=True, default_text=None, textures=[], finish_action=None, force_select=False):
+    def setup(self, encounters, parent, single_pick=True, default_text=None, textures=[], finish_action=None, force_select=False, scale=0.5):
+        self.scale = scale
         self.item_used = True
         self.finish_action = finish_action
         self.encounters = encounters
-        self.parent = parent
+        self.set_return_gui(parent)
         self.clear_overlay()
-        self.hub.info_manager.children = {0:[]}
-        self.hub.info_manager.add(self.layout)
         self.single_pick = single_pick
         self.default_text = default_text
         self.textures = textures if len(textures) > 0 else ['buttons/placeholder.png'] * len(self.encounters)
-        if (len(encounters) == 1 and encounters[0].get('is_required', False)) or force_select:
+        if force_select:
             self.encounter_selected(encounters[0])
         else:
             self.pick_encounters()
 
+    def set_return_gui(self, parent):
+        self.parent = parent
+        self.hub.info_manager.children = {0:[]}
+        self.hub.info_manager.add(self.layout)
+
     def flip_card(self, kind, name, investigator=None):
         if investigator == None:
             investigator = self.investigator.name
-        self.encounter = getattr(next((card for card in self.hub.location_manager.all_investigators[investigator]['possessions'][kind] if card.name == name)), 'back')
-        self.set_buttons('action')
+        self.encounter = self.encounter | getattr(next((card for card in self.hub.location_manager.all_investigators[investigator].possessions[kind] if card.name == name)), 'back')
+        self.encounter['back_action_text'] = self.encounter['title'] + '\n\n' + (self.encounter.get('back_flavor', '') + '\n\n' if self.encounter.get('back_flavor', False) else '') + self.encounter['back_action_text']
+        self.set_buttons('back_action')
 
     def adjust_damage(self, hp_change=0, san_change=0, step='finish'):
         hp_change = hp_change if type(hp_change) == int else -self.parent.hp_damage
@@ -1401,6 +1363,52 @@ class SmallCardPane(EncounterPane):
             self.hub.info_manager.children[0].append(pane.layout)
             self.hub.info_manager.trigger_render()
 
+    def monster_reckoning_move(self, monster, step='finish', distance=1, encounter=True, damage=0):
+        is_wait = False
+        paths = {}
+        closest = 100
+        investigators = self.hub.location_manager.all_investigators
+        for investigator in investigators:
+            route = list(self.hub.location_manager.find_path(monster.location, investigators[investigator].location))
+            if len(route) < closest:
+                paths = {}
+                closest = len(route)
+            if len(route) == closest:
+                paths[investigator] = route
+        if closest - 1 <= distance and (encounter or damage > 0):
+            is_wait = True
+        if is_wait:
+            self.hub.waiting_pane = self
+            self.player_wait_step = 'waiting'
+        else:
+            self.player_wait_step = None
+        def move_to_investigator(monster, distance, investigator):
+            route = paths[investigator]
+            distance = distance if distance < len(route) else len(route) - 1
+            self.hub.networker.publish_payload({'message': 'move_monster', 'value': monster.monster_id, 'location': route[distance]}, self.investigator.name)
+            if is_wait:
+                self.clear_overlay()
+                self.choice_layout = create_choices('Waiting for other player to finish')
+                self.layout.add(self.choice_layout)
+                self.player_wait_step = 'set_buttons'
+                self.player_wait_args = {'key': step}
+            else:
+                self.set_buttons(step)
+            if route[distance] == investigators[investigator].location and encounter:
+                self.hub.networker.publish_payload({'message': 'combat', 'value': monster.monster_id, 'sender': self.investigator.name}, investigator + '_player')
+        if len(paths) > 1:
+            choices = []
+            for name in paths:
+                choices.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.3, action=move_to_investigator, action_args={
+                    'monster': monster, 'distance': distance, 'investigator': name
+                }))
+            self.clear_overlay()
+            self.choice_layout = create_choices(choices=choices, title='Select Investigator to move to')
+            self.layout.add(self.choice_layout)
+        else:
+            investigator = list(paths.keys())[0]
+            move_to_investigator(monster, distance, investigator)
+
     def encounter_selected(self, encounter):
         self.encounter = encounter
         self.set_buttons('action')
@@ -1412,10 +1420,10 @@ class SmallCardPane(EncounterPane):
         choices = []
         self.text_button.text = self.default_text
         for x in range(len(self.encounters)):
-            choices.append(ActionButton(scale=0.5, texture=self.textures[x], action=self.encounter_selected, action_args={'encounter': self.encounters[x]}))
+            choices.append(ActionButton(scale=self.scale, texture=self.textures[x], action=self.encounter_selected, action_args={'encounter': self.encounters[x]}))
         if len([encounter for encounter in self.encounters if encounter.get('is_required', False)]) == 0:
             choices.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text='Skip Effects', action=self.finish, action_args={'skip': True}))
-        self.choice_layout = create_choices('Choose Effects', choices=choices)
+        self.choice_layout = create_choices('Choose Effect', choices=choices)
         self.layout.add(self.choice_layout)
 
     def set_buttons(self, key):

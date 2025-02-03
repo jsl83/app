@@ -334,7 +334,7 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'web_between_worlds'
+                                            name = 'a_dark_power'
                                             self.is_first = False
                                         else:
                                             pass
@@ -787,14 +787,13 @@ class Networker(threading.Thread, BanyanBase):
 
     def spreading_sickness(self):
         amt = [rumor for rumor in self.reckoning_actions if rumor['name'] == 'spreading_sickness'][0]['recurring'] + 1
-        encounter = {'action': ['hp_san'], 'aargs': [{'hp':-amt, 'step': 'reckoning', 'skip': True}]}
-        self.publish_payload({'message': 'player_mythos_reckoning', 'value': encounter, 'text': 'spreading_sickness'}, 'server_update')
+        encounter = {'action': ['hp_san'], 'aargs': [{'hp':-amt, 'step': 'reckoning', 'skip': True}], 'action_text': 'Spreading Sickness - Reckoning\n\nPlace a Health Token on this card, then each Investigator loses Health equal to the number of tokens on this card.'}
+        self.publish_payload({'message': 'player_mythos_reckoning', 'value': encounter}, 'server_update')
 
     def web_between_worlds(self):
         payment = self.set_payment('investigators', 'clues', 'web_between_worlds', 2)
-        encounter = {'action': ['group_pay_reckoning', 'update_rumor'], 'aargs': [{'kind': 'clues', 'name': 'web_between_worlds', 'first': True, 'text': 'Spend ' + str(payment) + ' Clues'},
-                                                                        {'name': 'web_between_worlds', 'kind': 'value', 'amt': -1, 'step': 'reckoning', 'text': 'Add 1 Eldritch Token'}]}
-        self.publish_payload({'message': 'player_mythos_reckoning', 'value': encounter, 'text': 'web_between_worlds'}, self.selected_investigators[self.lead_investigator] + '_server')
+        encounter = {'action': ['group_pay_reckoning', 'update_rumor'], 'aargs': [{'kind': 'clues', 'name': 'web_between_worlds', 'first': True, 'text': 'Spend ' + str(payment) + ' Clues'}, {'name': 'web_between_worlds', 'kind': 'value', 'amt': -1, 'step': 'reckoning', 'text': 'Add 1 Eldritch Token'}], 'action_text': 'Web Between Worlds - Reckoning\n\nDiscard 1 Eldritch token from this card unless Investigators as a group spend Clues equal to half Investigators.'}
+        self.publish_payload({'message': 'player_mythos_reckoning', 'value': encounter}, self.selected_investigators[self.lead_investigator] + '_server')
 
     def restock_reserve(self, removed=[], discard=False, refill=True, cycle=False):
         if cycle:
@@ -819,7 +818,7 @@ class Networker(threading.Thread, BanyanBase):
             for character in self.ancient_one['mythos'][x]:
                 color = int(character)
                 card = random.choice(list(MYTHOS[color].keys()))
-                if card != 'web_between_worlds':
+                if card != 'a_dark_power':
                 #FOR TESTING
                 #if color == 0:
                 #    card = 'patrolling_the_border'
@@ -832,8 +831,8 @@ class Networker(threading.Thread, BanyanBase):
                     self.mythos_deck[x][card]['color'] = color
                     del MYTHOS[color][card]
         #FOR TESTING
-        self.mythos_deck[0]['web_between_worlds'] = MYTHOS[2]['web_between_worlds']
-        self.mythos_deck[0]['web_between_worlds']['color'] = 2
+        self.mythos_deck[0]['a_dark_power'] = MYTHOS[1]['a_dark_power']
+        self.mythos_deck[0]['a_dark_power']['color'] = 1
         #END TESTING
 
     def set_omen(self, pos=None, trigger=True, increment=1):

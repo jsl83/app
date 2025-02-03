@@ -62,9 +62,10 @@ class Condition(SmallCard):
         self.variant = 1
         SmallCard.__init__(self, name[0:-1], investigator)
         self.kind = 'conditions'
-        self.setup()
-        #for key in CARDS['conditions'][self.name][str(self.variant)]:
-        #    setattr(self, key, CARDS['conditions'][self.name][str(self.variant)][key])
+        self.texture = arcade.load_texture(":resources:eldritch/images/conditions/" + name[0:-1] + '.png')
+        for attr in [attribute for attribute in ['triggers', 'reckoning'] if CARDS['conditions'][self.name].get(attribute, False)]:
+            setattr(self, attr, CARDS['conditions'][self.name][attr])
+        self.back = CARDS['conditions'][self.name][str(self.variant)]
 
     def get_server_name(self):
         return self.name + str(self.variant)

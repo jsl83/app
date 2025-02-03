@@ -31,6 +31,9 @@ class Monster():
 
         self.spawn = self.set_spawn(self.spawn) if hasattr(self, 'spawn') else None
         self.reckoning_text = self.reckoning_text if hasattr(self, 'reckoning_text') else ''
+        for args in [key for key in getattr(self, 'reckoning', {}).keys() if 'args' in key]:
+            for x in range(len(self.reckoning[args])):
+                self.reckoning[args][x]['monster'] = self
         self.damage = 0
         self.monster_id = monster_id
 

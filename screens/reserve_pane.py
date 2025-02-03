@@ -66,8 +66,6 @@ class ReservePane():
             self.reserve.append(card)
         if len(self.reserve) == 0:
             self.acquire_button.disable()
-        else:
-            self.acquire_button.enable()
 
     def acquire_assets(self):
         if self.is_shopping:
@@ -83,8 +81,8 @@ class ReservePane():
                     self.hub.networker.publish_payload({'message': 'card_discarded', 'value': service['name'], 'kind': 'assets'}, self.hub.investigator.name)
                 def finish(name):
                     self.hub.action_taken('shop')
-                    self.hub.gui_set()
-                self.hub.small_card_pane.setup(services, parent=self, single_pick=False, finish_action=finish)
+                    self.hub.gui_set(True)
+                self.hub.small_card_pane.setup(services, parent=self, single_pick=False, finish_action=finish, force_select=True)
             else:
                 self.hub.action_taken('shop')
             self.acquire_button.disable()

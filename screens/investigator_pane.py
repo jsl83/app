@@ -123,12 +123,24 @@ class InvestigatorPane():
         if self.investigator.rest():
             self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, self.investigator.name)
             does_something = True
-        if len(self.hub.triggers['rest_actions']) > 0:
-            does_something = True
+        triggers = []
+        for trigger in self.hub.triggers['rest_actions']:
+            pass_condition = True
+            if trigger['name'] == 'witch_doctor' and len(self.investigator.health_recover_restrictions) > 0 and not next((cond for cond in self.investigator.possessions['conditions'] if cond.name == 'cursed'), False):
+                pass_condition = False
+            if not self.hub.trigger_check(trigger, 'rest'):
+                pass_condition = False
+            if pass_condition:
+                triggers.append(trigger)
+        if len(triggers) > 0:
             self.hub.info_pane = None
             def show(name):
+                self.hub.gui_set(True)
                 self.hub.switch_info_pane('investigator')
                 self.hub.info_manager.trigger_render()
-            self.hub.small_card_pane.setup(self.hub.triggers['rest_actions'], self, single_pick=False, finish_action=show)
-        if does_something:
+                self.hub.action_taken('rest')
+            self.hub.gui_set(False)
+            self.hub.small_card_pane.encounter_type = ['rest']
+            self.hub.small_card_pane.setup(triggers, self, single_pick=False, finish_action=show, textures=['buttons/placeholder.png']*len(self.hub.triggers['rest_actions']))
+        elif does_something:
             self.hub.action_taken('rest')

@@ -404,7 +404,7 @@ class EncounterPane():
                 self.encounter[self.current_key[0] + 'args'][0]['investigator'] = name
                 self.encounter[self.current_key[0] + 'args'][0]['skip'] = True
                 self.set_buttons(self.current_key)
-        for names in [inv.name for inv in list(self.hub.location_manager.all_investigators.values()) if (not no_self or inv != self.investigator.name) and (not on_location or inv.location == self.investigator.location)]:
+        for names in [inv.name for inv in list(self.hub.location_manager.all_investigators.values()) if (not no_self or inv.name != self.investigator.name) and (not on_location or inv.location == self.investigator.location)]:
             choices.append(ActionButton(texture='investigators/' + names + '_portrait.png', action=button_action, action_args={'name': names}, scale=0.4))
         self.clear_overlay()
         self.choice_layout = create_choices('Choose Investigator', subtitle, choices)
@@ -609,9 +609,9 @@ class EncounterPane():
                             selected.append(card)
                         button.text = 'Discard: ' + str(len(selected))
                     options = [button]
-                title = 'Discard ' + (human_readable(tag) + ' ' if tag != 'any' else '') + (human_readable(name) if name != None else kind) + ': ' + human_readable(amt)
+                title_text = 'Select ' + ((human_readable(tag) + ' ') if tag != 'any' else '') + (kind[:-1] if kind != 'all' else 'Possession') + ('' if amt == 'one' else 's') + ' to discard'
                 choices = [ActionButton(texture=item.texture, width=120, height=185, action=next_step if amt == 'one' else select, action_args={'card': item, 'step': step}) for item in items]
-                self.choice_layout = create_choices(choices = choices, options = options, title=title)
+                self.choice_layout = create_choices(choices = choices, options = options, title=title_text)
                 self.layout.add(self.choice_layout)
 
     def end_mythos(self):
@@ -1341,7 +1341,7 @@ class SmallCardPane(EncounterPane):
         self.item_used = True
         self.encounter_name = ''
 
-    def setup(self, encounters, parent, single_pick=True, default_text=None, textures=[], finish_action=None):
+    def setup(self, encounters, parent, single_pick=True, default_text=None, textures=[], finish_action=None, force_select=False):
         self.item_used = True
         self.finish_action = finish_action
         self.encounters = encounters
@@ -1352,7 +1352,7 @@ class SmallCardPane(EncounterPane):
         self.single_pick = single_pick
         self.default_text = default_text
         self.textures = textures if len(textures) > 0 else ['buttons/placeholder.png'] * len(self.encounters)
-        if len(encounters) == 1:
+        if (len(encounters) == 1 and encounters[0].get('is_required', False)) or force_select:
             self.encounter_selected(encounters[0])
         else:
             self.pick_encounters()
@@ -1413,7 +1413,9 @@ class SmallCardPane(EncounterPane):
         self.text_button.text = self.default_text
         for x in range(len(self.encounters)):
             choices.append(ActionButton(scale=0.5, texture=self.textures[x], action=self.encounter_selected, action_args={'encounter': self.encounters[x]}))
-        self.choice_layout = create_choices('Choose Card Effect', choices=choices)
+        if len([encounter for encounter in self.encounters if encounter.get('is_required', False)]) == 0:
+            choices.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text='Skip Effects', action=self.finish, action_args={'skip': True}))
+        self.choice_layout = create_choices('Choose Effects', choices=choices)
         self.layout.add(self.choice_layout)
 
     def set_buttons(self, key):
@@ -1423,10 +1425,10 @@ class SmallCardPane(EncounterPane):
         else:
             super().set_buttons(key)
 
-    def finish(self):
+    def finish(self, skip=False):
         self.encounter_type = []
-        if not self.single_pick and len(self.cards) > 0:
-            self.pick_encounter()
+        if not self.single_pick and len(self.cards) > 0 and not skip:
+            self.pick_encounters()
         else:
             self.hub.info_manager.children = {0:[]}
             self.clear_overlay()

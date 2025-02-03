@@ -558,7 +558,6 @@ class HubScreen(arcade.View):
                 case 'player_mythos_reckoning':
                     self.encounter_pane.mythos_reckonings.append((payload['value'], payload['text']))
                 case 'possession_lost':
-                    print(payload)
                     if payload['kind'] == 'clues':
                         self.location_manager.all_investigators[payload['owner']].clues.remove(payload['value'])
                         self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
@@ -597,7 +596,7 @@ class HubScreen(arcade.View):
         self.investigator.skill_bonuses[skill] = [bonus for bonus in self.investigator.skill_bonuses[skill] if not (bonus.get('temp', False) and (bonus.get('condition', 'dummy') in pane.encounter_type))]
         double_six = False
         triggers = []
-        for kind in pane.encounter_type:
+        for kind in pane.encounter_type + ['all']:
             triggers += [add for add in self.triggers.get(kind + '_test', []) if not add.get('reroll', False) and not add.get('add', False)]
         triggers += self.triggers[titles[skill].lower() + '_test'] 
         for trigger in triggers:
@@ -683,7 +682,7 @@ class HubScreen(arcade.View):
                 reroll_triggers += [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('mod_die', False) and (not reroll['used'] or not reroll.get('single_use', False))]
             if len(reroll_triggers) > 0:
                 for trigger in reroll_triggers:
-                    trigger_button = ActionButton(width=100, height=50, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action}, texture='buttons/placeholder.png', text=human_readable(trigger['name']), name=trigger['name'])
+                    trigger_button = ActionButton(width=100, height=50, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action, 'force_select': True}, texture='buttons/placeholder.png', text=human_readable(trigger['name']), name=trigger['name'])
                     if trigger.get('used', False) and trigger.get('single_use', False):
                         trigger_button.disable()
                     options.append(trigger_button)
@@ -710,6 +709,8 @@ class HubScreen(arcade.View):
         if trigger.get('location', False) and trigger['location'] != self.investigator.location:
             pass_condition = False
         if trigger.get('spend_clue', False) and self.encounter_pane.spend_clue(is_check=True) > len(self.investigator.clues):
+            pass_condition = False
+        if trigger.get('not_encounter', False) and trigger['not_encounter'] in encounter_types:
             pass_condition = False
         return pass_condition
     

@@ -179,7 +179,7 @@ class TradePane(PossessionsPane):
             if len(clues) > 0:
                 self.y_pos -= 50
             super().setup(tags)
-            if ticket_number > 0 and tags == None:
+            if ticket_number > 0 and tags == 'tickets':
                 x_pos = 1070 + (140 - (26 * (ticket_number - 1)) - ticket_number * 57) / 2
                 y_pos = 612
                 self.y_pos -= 50
@@ -189,11 +189,12 @@ class TradePane(PossessionsPane):
                 for x in range(ticket_number):
                     self.button_layout.add(ActionButton(scale=0.75, texture='icons/' + tickets[x] + '.png', x=x_pos, y=y_pos, action_args={'kind': tickets[x], 'name': str(x)}))
                     x_pos += 26
-            if len(clues) > 0 and tags == None:
+            if len(clues) > 0 or tags == 'clues':
                 x_pos = 1070 + (140 - (10 * (len(clues) - 1)) - len(clues) * 36) / 2
                 y_pos = 607 if ticket_number == 0 else 557
                 for clue in clues:
-                    self.button_layout.add(ActionButton(texture='icons/clue.png', x=x_pos, y=y_pos, action_args={'kind': 'clues', 'name': clue}))
+                    self.button_layout.add(ActionButton(texture='icons/clue_small.png', x=x_pos, y=y_pos, action_args={'kind': 'clues', 'name': clue}))
+                    x_pos += 46
             def select(name, kind, button):
                 if name in reference[kind]:
                     reference[kind].remove(name)
@@ -274,5 +275,12 @@ class TradePane(PossessionsPane):
                 self.on_get(card, giver == self.hub.investigator, True)
                 taker.possessions[kind].remove(card)
                 self.on_discard(card, taker)
+        for clue in give['clues']:
+            giver.clues.remove(clue)
+            taker.clues.append(clue)
+        for clue in take['clues']:
+            taker.clues.remove(clue)
+            giver.clues.append(clue)
         self.hub.info_panes['possessions'].setup()
         self.hub.info_panes['investigator'].set_ticket_counts()
+        self.hub.info_panes['investigator'].clue_button.text = 'x ' + len(self.investigator.clues)

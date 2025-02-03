@@ -202,7 +202,8 @@ class EncounterPane():
         if loc == None:
             location = self.investigator.location
             loc = 'gate' if choice[0] == 'gate' else location if (location.find('space') == -1 and choice[0] != 'generic') else self.hub.location_manager.locations[location]['kind']
-        self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
+        #self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
+        self.encounter = ENCOUNTERS['gate']['gate'][0]
         self.encounter_type.append(choice[0])
         if loc == 'gate':
             self.phase_button.text = self.encounter['world']
@@ -520,9 +521,21 @@ class EncounterPane():
                 self.option_button.text = 'Close Monster Selection'
                 self.option_button.action = self.clear_overlay
 
-    def delay(self, step='finish'):
-        self.investigator.delayed = True
-        self.set_buttons(step)
+    def delay(self, step='finish', bypass=False):
+        def get_delayed():
+            self.investigator.delayed = True
+            self.set_buttons(step)
+        if next((item for item in self.investigator.possessions['assets'] if item.name == 'pocket_watch'), False) and not bypass:
+            self.phase_button.text = 'Pocket Watch'
+            self.text_button.text = 'You cannot become Delayed unless you choose to.'
+            self.proceed_button.text = 'Do not become Delayed'
+            self.proceed_button.action = self.set_buttons
+            self.proceed_button.action_args = {'key': step}
+            self.option_button.text = 'Become Delayed'
+            self.option_button.action = get_delayed
+            self.encounter[self.current_key].append('delayed')
+        else:
+            get_delayed()            
 
     def despawn_clues(self, location, player=False, lead_only=False, step='finish'):
         if player:
@@ -743,8 +756,8 @@ class EncounterPane():
             if hp < 0 or san < 0:
                 self.take_damage(hp, san, self.set_buttons, {'key': step})
             else:
-                self.investigator.health = self.investigator.health + hp if self.investigator.health + hp <= self.investigator.max_health else self.investigator.max_health
-                self.investigator.sanity = self.investigator.sanity + san if self.investigator.sanity + san <= self.investigator.max_sanity else self.investigator.max_sanity
+                self.investigator.health = min(self.investigator.health + hp, self.investigator.max_health)
+                self.investigator.sanity = min(self.investigator.sanity + san, self.investigator.max_sanity)
                 self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity})
                 self.set_buttons(step)
 
@@ -1034,8 +1047,8 @@ class EncounterPane():
                 self.layout.clear()
                 self.layout.add(self.text_button)
                 self.layout.add(self.phase_button)
-                for button in self.set_button_set:
-                    self.layout.add(button)
+                for x in range(len(self.encounter[key])):
+                    self.layout.add(buttons[x])
                 if len(self.choice_layout.children) > 0:
                     self.layout.add(self.choice_layout)
             #self.hub.info_manager.trigger_render()
@@ -1215,7 +1228,7 @@ class EncounterPane():
                     self.clear_overlay()
                 if self.investigator.health <= 0 and self.investigator.sanity <= 0:
                     own_death()
-                    self.choice_layout = create_choices('Choose Defeat Type', choices=[ActionButton(width=100, height=40, texture='buttons/placeholder.png', action=choose_defeat, action_args={'kind': kind}, text=kind) for kind in ['Health', 'Sanity']])
+                    self.choice_layout = create_choices('Choose Defeat Type', choices=[ActionButton(width=100, height=50, texture='buttons/placeholder.png', action=choose_defeat, action_args={'kind': kind}, text=kind) for kind in ['Health', 'Sanity']])
                     self.layout.add(self.choice_layout)
                 else:
                     self.hub.networker.publish_payload(payload, self.investigator.name)

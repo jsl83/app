@@ -91,15 +91,20 @@ class ReservePane():
         elif not self.hub.actions_taken['shop'] and self.hub.remaining_actions > 0:
             self.is_shopping = True
             self.hub.gui_set(False)
-            self.rolls, self.choice_layout = self.hub.run_test(1, self)
+            def finish_test():
+                self.choice_layout.clear()
+                self.layout.children.remove(self.choice_layout)
+                for x in self.rolls:
+                    if x >= self.hub.investigator.success:
+                        self.successes += 1
+                self.acquire_button.text = 'Acquire (Remaining cost ' + str(self.successes) + ')'
+                self.acquire_button.enable()
+                self.discard_button.text = 'Cycle 1 Card'
+                self.layout.add(self.debt_button)
+            self.rolls, self.choice_layout = self.hub.run_test(1, self, options=[ActionButton(width=100, height=50, text='Finish', action=finish_test, texture='buttons/placeholder.png')])
             self.layout.add(self.choice_layout)
-            for x in self.rolls:
-                if x >= self.hub.investigator.success:
-                    self.successes += 1
-            self.acquire_button.text = 'Acquire (Remaining cost ' + str(self.successes) + ')'
-            self.discard_button.text = 'Cycle Card'
+            self.acquire_button.disable()
             self.discard_button.disable()
-            self.layout.add(self.debt_button)
 
     def select_item(self, card):
         cost = card['cost']
@@ -107,7 +112,7 @@ class ReservePane():
             if card in self.selected:
                 self.selected.remove(card)
                 self.successes += cost
-                if not self.acquire_button.enabled and self.successes >= 0 and len(self.selected) > 0:
+                if not self.acquire_button.enabled and self.successes >= 0:
                     self.acquire_button.enable()
             else:
                 self.acquire_button.enable()
@@ -122,6 +127,7 @@ class ReservePane():
                 self.discard_button.enable()
             else:
                 self.discard_button.disable()
+            self.layout.trigger_render()
 
     def discard_action(self):
         if self.is_shopping:
@@ -149,6 +155,7 @@ class ReservePane():
         self.acquire_button.text = 'Acquire Assets'
         self.acquire_button.disable()
         self.discard_button.text = 'View Discard'
+        self.discard_button.enable()
         self.layout.children = [elem for elem in self.layout.children if elem not in [self.debt_button, self.choice_layout]]
         self.layout.trigger_render()
         self.hub.clear_overlay()

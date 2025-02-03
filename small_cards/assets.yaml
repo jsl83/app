@@ -557,6 +557,27 @@
     cost: 2
     tags:
       - ally
+    bonuses:
+      - index: 1
+        value: 1
+    triggers:
+      - owner_only: True
+        kind: influence_test
+        mod_die: reroll
+        trigger:
+          single_use: True
+          mod_die: reroll
+          action:
+            action:
+              - mod_die
+              - set_buttons
+            aargs:
+              - trigger_name: influence_test:personal_assistant
+                text: Use
+              - text: Back
+                key: no_use
+            action_text: You may reroll 1 die when resolving an Influence test.
+            title: Personal Assistant
   pocket_watch:
     expansion: 0
     cost: 1
@@ -567,6 +588,12 @@
     cost: 2
     tags:
       - service
+    action:
+      - hp_san
+    aargs:
+      - skip: True
+        hp: 99
+        san: 99
   private_investigator:
     expansion: 0
     cost: 2

@@ -644,6 +644,7 @@ class Networker(threading.Thread, BanyanBase):
         match command:
             case 'acquire':
                 self.restock_reserve([name])
+                self.investigators[investigator]['assets'].append(name)
                 self.publish_payload({'message': 'card_received', 'kind': 'assets', 'value': name, 'owner': investigator}, 'server_update')
                 return name
             case 'restock':

@@ -553,10 +553,12 @@ class HubScreen(arcade.View):
                     self.hub.info_panes['possessions'].setup()
                     self.hub.info_panes['investigator'].set_ticket_counts()
                 case 'become_delayed':
-                    self.investigator.delayed = True
+                    self.show_encounter_pane()
+                    self.encounter_pane.delay('nothing')
                 case 'player_mythos_reckoning':
                     self.encounter_pane.mythos_reckonings.append((payload['value'], payload['text']))
                 case 'possession_lost':
+                    print(payload)
                     if payload['kind'] == 'clues':
                         self.location_manager.all_investigators[payload['owner']].clues.remove(payload['value'])
                         self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))

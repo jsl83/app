@@ -30,9 +30,9 @@
       is_required: True
     '1':
       title: Amnesia - Forgotten Crimes
-      back_action:
+      action:
         - request_card
-      bargs:
+      aargs:
         - text: Next
           kind: conditions
           name: detained
@@ -43,13 +43,12 @@
         - kind: conditions
           name: amnesia
           skip: True
-      back_action_text: Gain a Detained Condition, then discard this card.
-      back_flavor: You don't want to believe it's true, but the evidence is irrefutable. At some point that you no longer recall, you went on a crime spree. Now you must accompany the police.
+      action_text: "You don't want to believe it's true, but the evidence is irrefutable. At some point that you no longer recall, you went on a crime spree. Now you must accompany the police.\n\nGain a Detained Condition, then discard this card."
     '2':
       title: Amnesia - The Terrible Truth
-      back_action:
+      action:
         - request_card
-      bargs:
+      aargs:
         - text: Next
           kind: conditions
           name: dark_pact
@@ -60,13 +59,12 @@
         - kind: conditions
           name: amnesia
           skip: True
-      back_action_text: Gain a Dark Pact Condition, then discard this card.
-      back_flavor: Suddenly, the terrible memories of the profane ritual return to you. How merciful your mind had been to forget your horrible deeds. Now that you remember the truth, you know you will soon have to hold up your end of the bargain.
+      action_text: "Suddenly, the terrible memories of the profane ritual return to you. How merciful your mind had been to forget your horrible deeds. Now that you remember the truth, you know you will soon have to hold up your end of the bargain.\n\nGain a Dark Pact Condition, then discard this card."
     '3':
       title: Amnesia - Unexplained Debts
-      back_action:
+      action:
         - request_card
-      bargs:
+      aargs:
         - text: Gain a Debt Condition
           kind: conditions
           name: debt
@@ -77,8 +75,7 @@
         - kind: conditions
           name: amnesia
           skip: True
-      back_action_text: Gain a Debt Condition, then discard this card.
-      back_flavor: According to the paperwork written in your own hand, you took out a loan and made unspecified promises of repayment. To your dismay, there is no sign of the money or what you could have spent it on.
+      action_text: "According to the paperwork written in your own hand, you took out a loan and made unspecified promises of repayment. To your dismay, there is no sign of the money or what you could have spent it on.\n\nGain a Debt Condition, then discard this card."
   back_injury:
     tags:
       - injury
@@ -117,9 +114,9 @@
       is_required: True
     '1':
       title: Back Injury - Fractured Spine
-      back_action:
+      action:
         - discard
-      bargs:
+      aargs:
         - skip: True
           kind: assets
           tag: item
@@ -131,13 +128,12 @@
         - kind: conditions
           name: back_injury
           skip: True
-      back_action_text: Discard all but 1 of your Item possessions, then discard this card.
-      back_flavor: Searing pain suddenly runs up and down your spine. You can barely lift your arms, let alone carry a lot of equipment. It is just too painful to carry them all.
+      action_text: "Searing pain suddenly runs up and down your spine. You can barely lift your arms, let alone carry a lot of equipment. It is just too painful to carry them all.\n\nDiscard all but 1 of your Item possessions, then discard this card."
     '2':
       title: Back Injury - Muscle Spasms
-      back_action:
+      action:
         - discard
-      bargs:
+      aargs:
         - skip: True
           kind: assets
           tag: item
@@ -153,42 +149,66 @@
         - delayed
       wargs:
         - skip: True
-      back_action_text: Discard 1 Item possession and become Delayed, then discard this card.
-      back_flavor: Your hand begins to shake uncontrollably, breaking whatever you are holding. Your whole body is overcome by tremors.
+      action_text: "Your hand begins to shake uncontrollably, breaking whatever you are holding. Your whole body is overcome by tremors.\n\nDiscard 1 Item possession and become Delayed, then discard this card."
     '3':
       title: Back Injury - Nerve Damage
-      back_action:
+      action:
         - discard
-      bargs:
+      aargs:
         - skip: True
           kind: assets
           tag: item
-      back_action_text: Discard 1 Item possession then flip this card.
-      back_flavor: The numbness in your fingers has returned, making it nearly impossible to manipulate objects, and you clumsily drop a valuable beyond recovery.
+      action_text: "The numbness in your fingers has returned, making it nearly impossible to manipulate objects, and you clumsily drop a valuable beyond recovery.\n\nDiscard 1 Item possession then flip this card."
+      back_flavor: 
   blessed:
     tags:
       - boon
+    reckoning:
+      is_required: True
+      action:
+        - single_roll
+      aargs:
+        - effects:
+            '12': discard
+            '3456': nada
+          skip: True
+      discard:
+        - discard
+      dargs:
+        - kind: conditions
+          name: blessed
+          skip: True
+      nada:
+        - set_buttons
+      nargs:
+        - key: finish
+          skip: True
+      action_text: Roll 1 die. On a 1 or 2, discard this card.
     '1':
-      reckoning:
-        title: Reckoning
-        action:
-          - single_roll
-        aargs:
-          - effects:
-              '12': discard
-              '3456': nada
-            skip: True
-        discard:
-          - discard
-        dargs:
-          - kind: conditions
-            name: blessed
-            skip: True
-        nada:
-          - set_buttons
-        nargs:
-          - key: finish
-        action_text: Roll 1 die. On a 1 or 2, discard this card.
+      title: Blessed - Beloved of Bast
+      action:
+        - hp_san
+      aargs:
+        - text: Next
+          hp: 2
+          san: 2
+      action_text: "The ancient Egyptian goddess is moved by the kindness you have shown to stray cats. Dozens of cats watch over you so you can rest safely.\n\nRecover 2 Health and 2 Sanity, then flip this card."
+    '2':
+      title: Blessed - Blessing of Nodens
+      action:
+        - damage_monsters
+      aargs:
+        - skip: True
+          damage: 99
+      action_text: "The Great Lord of the Abyss and his loyal nightgaunts are hunting the ancient one's servants. Mighty Nodens looks upon you with favor.\n\nYou may discard one Monster of your choice, then flip this card."
+    '3':
+      title: Blessed - Visions of Hypnos
+      action:
+        - gain_clue
+      aargs:
+        - text: Next
+          amt: 2
+      action_text: "You feel that you truly have an important role in the events of the world. It is your calling to share the hope and courage you feel with all the others who stand against the darkness.\n\nGain 2 Clues, then flip this card."
   cursed:
     tags:
       - bane

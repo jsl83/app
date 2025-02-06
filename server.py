@@ -638,7 +638,7 @@ class Networker(threading.Thread, BanyanBase):
             item = random.choice(items)
             #self.decks[kind].remove(item)
             self.investigators[investigator][kind].append(item[:-1])
-        self.publish_payload({'message': 'card_received', 'kind': kind, 'value': item, 'owner': investigator}, 'server_update')
+            self.publish_payload({'message': 'card_received', 'kind': kind, 'value': item, 'owner': investigator}, 'server_update')
 
     def asset_request(self, command, name, investigator, tag=''):
         match command:

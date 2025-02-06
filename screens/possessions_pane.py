@@ -82,7 +82,7 @@ class PossessionsPane():
         self.hub.small_card_pane.encounter_type = [card.kind]
         card.action['title'] = human_readable(card.name)
         self.hub.gui_set(False)
-        self.hub.small_card_pane.setup([card.action], self, textures=[card.texture], finish_action=self.on_finish_small)
+        self.hub.small_card_pane.setup([card.action], self, textures=[card.texture], finish_action=self.on_finish_small, force_select=True)
 
     def on_finish_small(self, name):
         self.active_card.action_used = True
@@ -119,6 +119,7 @@ class PossessionsPane():
 
     def on_get(self, card, is_owner, is_trade=False):
         if is_owner:
+            self.investigator.success = 4 if card.name == 'blessed' else 6 if card.name == 'cursed' else self.investigator.success
             for bonus in getattr(card, 'bonuses', []):
                 bonus['name'] = card.name
                 index = bonus['index']
@@ -135,8 +136,8 @@ class PossessionsPane():
                 self.hub.encounter_pane.action_dict[action['action']](step='nothing', **action['aargs'])
 
     def on_discard(self, card, is_owner):
-        print(is_owner)
         if is_owner:
+            self.investigator.success = 5 if card.name in ['blessed', 'cursed'] else self.investigator.success
             for bonus in getattr(card, 'bonuses', []):
                 index = bonus['index']
                 self.investigator.skill_bonuses[index] = [bonuses for bonuses in self.investigator.skill_bonuses[index] if bonuses['name'] != card.name]

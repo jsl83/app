@@ -226,9 +226,11 @@ class HubScreen(arcade.View):
                     self.info_manager.trigger_render()
             elif getattr(self.click_pane, 'no_loc_click', False):
                 self.click_pane.no_loc_click()
-            buttons = list(self.ui_manager.get_widgets_at((x,y)))
-            if len(buttons) > 0 and type(buttons[0]) == ActionButton:
-                buttons[0].action()
+            buttons = list(self.ui_manager.get_widgets_at((x,y))) + list(self.info_manager.get_widgets_at((x,y)))
+            if len(buttons) > 0:
+                button = next((button for button in buttons if type(button) == ActionButton and button.enabled), False)
+                if button:
+                    button.click_action()
         else:
             ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y))) + list(self.choice_manager.get_widgets_at((x,y)))
             if len(ui_buttons) > 0:
@@ -508,7 +510,8 @@ class HubScreen(arcade.View):
                         self.location_manager.locations[rumor['location']]['rumor'] = False
                         self.maps['world'].remove_tokens('rumor', rumor['location'], payload['value'])
                     if not payload['solved'] and rumor.get('unsolve_encounter', None) != None:
-                        self.encounter_pane.mythos_reckonings.append((rumor['unsolve_encounter'], payload['value']))
+                        rumor['unsolve_encounter']['title'] = human_readable(payload['value']) + ' - Reckoning'
+                        self.encounter_pane.mythos_reckonings.append(rumor['unsolve_encounter'])
                     elif payload['solved'] and rumor.get('solve_action', None) != None:
                         args = rumor.get('solve_action_args', {})
                         self.encounter_pane.action_dict[rumor.get('solve_action')](**args)

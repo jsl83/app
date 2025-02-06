@@ -63,7 +63,7 @@ class Condition(SmallCard):
         SmallCard.__init__(self, name[0:-1], investigator)
         self.kind = 'conditions'
         self.texture = arcade.load_texture(":resources:eldritch/images/conditions/" + name[0:-1] + '.png')
-        for attr in [attribute for attribute in ['triggers', 'reckoning'] if CARDS['conditions'][self.name].get(attribute, False)]:
+        for attr in [attribute for attribute in ['triggers', 'reckoning', 'tags'] if CARDS['conditions'][self.name].get(attribute, False)]:
             setattr(self, attr, CARDS['conditions'][self.name][attr])
         self.back = CARDS['conditions'][self.name][str(self.variant)]
 

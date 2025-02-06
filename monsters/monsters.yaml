@@ -30,7 +30,6 @@
       mod: 0
       str: 1
     toughness: 1
-    reckoning:
     text: '*'
     reckoning_text:
   tick_tock_men:

@@ -150,7 +150,7 @@ class Networker(threading.Thread, BanyanBase):
         self.mythos = None
         self.reckoning_actions = []
         self.end_of_mythos_actions = []
-        self.players_died = False
+        self.players_died = -1
         '''
         #FOR TESTING
         self.set_subscriber_topic('akachi_onyele')
@@ -211,7 +211,7 @@ class Networker(threading.Thread, BanyanBase):
                             }
                     self.publish_payload({'message': 'investigators', 'value': payload['value']}, 'server_update')
                 case 'investigators_selected':
-                    if not self.players_died:
+                    if self.players_died < 0:
                         self.selected_investigators.append(payload['value'])
                     self.investigators[payload['value']] = {
                         'assets':[],
@@ -227,7 +227,7 @@ class Networker(threading.Thread, BanyanBase):
                     self.set_subscriber_topic(payload['value'])
                     self.screen.add_investigator(payload['value'])
                     self.publish_payload({'message': 'investigator_selected', 'value': payload['value']}, 'server_update')
-                    if self.players_died:
+                    if self.players_died > 0:
                         self.publish_payload({
                             'message': 'spawn',
                             'value': 'investigators',
@@ -235,11 +235,21 @@ class Networker(threading.Thread, BanyanBase):
                             'replace': payload['replace'],
                             'map': 'world'}, 'server_update')
                         self.selected_investigators = [name.replace(payload['replace'], payload['value']) for name in self.selected_investigators]
-                        if len(self.investigators) == self.player_count:
-                            self.players_died = False
+                        for possession in INVESTIGATORS[payload['value']]['possessions']:
+                            kind = possession.split(':')[0]
+                            item_name = possession.split(':')[1]
+                            if kind == 'assets':
+                                self.asset_request('get', item_name, payload['value'])
+                            elif kind in ['conditions', 'spells']:
+                                self.spell_conditions_request(kind, payload['value'], name=item_name)
+                            elif kind == 'artifacts':
+                                self.artifact_request(payload['value'], item_name)
+                        self.players_died -= 1
+                        if self.players_died == 0:
                             self.end_mythos()
                     elif len(self.selected_investigators) == self.player_count:
                         self.publish_payload({'message': 'start_game', 'value': self.ancient_one['name'], 'investigators': self.selected_investigators}, 'server_update')
+                        self.players_died = 0
                 case 'number_selected':
                     self.player_count = payload['value']
                     self.reference = REFERENCES[int((int(payload['value']) + 1) / 2)]
@@ -303,7 +313,7 @@ class Networker(threading.Thread, BanyanBase):
                         else:
                             self.decks[payload['kind']].append(payload['value'])
                         true_name = payload['value'] if payload['kind'] not in ['conditions', 'spells'] else payload['value'][:-1]
-                        if true_name in self.investigators[topic][payload['kind']]:
+                        if true_name in self.investigators.get(topic, {payload['kind']: []})[payload['kind']]:
                             self.investigators[topic][payload['kind']].remove(true_name)
                             self.publish_payload({'message': 'possession_lost', 'value': payload['value'], 'kind': payload['kind'], 'owner': topic}, 'server_update')
                         elif payload['kind'] == 'clues' and payload.get('from_map', False):
@@ -334,10 +344,10 @@ class Networker(threading.Thread, BanyanBase):
                                         name = random.choice(list(self.mythos_deck[x].keys()))
                                         #FOR TESTING
                                         if self.is_first:
-                                            name = 'a_dark_power'
+                                            name = 'all_for_nothing'
                                             self.is_first = False
                                         else:
-                                            pass
+                                            name = 'a_dark_power'
                                             #name = 'the_storm'
                                         #END TESTING
                                         self.mythos = self.mythos_deck[x][name]
@@ -388,7 +398,6 @@ class Networker(threading.Thread, BanyanBase):
                             kind = 'expeditions'
                         self.publish_payload({'message': 'encounter_choice', 'value': kind + ':' + str(encounter)}, topic + '_server')
                     case 'doom_change':
-                        print(payload)
                         self.move_doom(int(payload['value']))
                     case 'remove_gate':
                         self.discard_gates(payload['value'])
@@ -415,7 +424,7 @@ class Networker(threading.Thread, BanyanBase):
                         investigator['hp'] = payload['hp']
                         investigator['san'] = payload['san']
                         if investigator['hp'] <= 0 or investigator['san'] <= 0:
-                            self.players_died = True
+                            self.players_died += 1
                             current_lead = self.selected_investigators[self.lead_investigator]
                             if current_lead == topic:
                                 for x in range(len(self.selected_investigators) - 1):
@@ -423,12 +432,14 @@ class Networker(threading.Thread, BanyanBase):
                                     if self.selected_investigators[x] not in self.dead_investigators:
                                         self.publish_payload({'message': 'lead_selected', 'value': self.selected_investigators[x], 'dead_trigger': True}, 'server_update')
                                         break
-                            health_death = self.investigators[topic]['hp'] <= 0
-                            self.dead_investigators[topic] = copy.deepcopy(investigator)
-                            self.dead_investigators[topic]['recovered'] = False
+                            health_death = False
+                            if investigator['hp'] > -900:
+                                health_death = self.investigators[topic]['hp'] <= 0
+                                self.dead_investigators[topic] = copy.deepcopy(investigator)
+                                self.dead_investigators[topic]['recovered'] = False
                             del self.investigators[topic]
                             self.move_doom()
-                            self.publish_payload({'message': 'investigator_died', 'value': topic, 'kind': payload.get('kind', health_death)}, 'server_update')
+                            self.publish_payload({'message': 'investigator_died', 'value': topic, 'kind': payload.get('kind', health_death), 'devoured': investigator['hp'] < -900}, 'server_update')
                         else:
                             self.player_update(topic)
                     case 'update_tickets':
@@ -509,7 +520,7 @@ class Networker(threading.Thread, BanyanBase):
                     self.action_dict[action](**actions['args'])
                 else:
                     self.action_dict[action]()
-        if not self.players_died:
+        if self.players_died == 0:
             self.current_phase = 0
             self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
         else:
@@ -818,7 +829,7 @@ class Networker(threading.Thread, BanyanBase):
             for character in self.ancient_one['mythos'][x]:
                 color = int(character)
                 card = random.choice(list(MYTHOS[color].keys()))
-                if card != 'a_dark_power':
+                if card != 'a_dark_power' and card != 'all_for_nothing':
                 #FOR TESTING
                 #if color == 0:
                 #    card = 'patrolling_the_border'
@@ -833,6 +844,8 @@ class Networker(threading.Thread, BanyanBase):
         #FOR TESTING
         self.mythos_deck[0]['a_dark_power'] = MYTHOS[1]['a_dark_power']
         self.mythos_deck[0]['a_dark_power']['color'] = 1
+        self.mythos_deck[0]['all_for_nothing'] = MYTHOS[1]['all_for_nothing']
+        self.mythos_deck[0]['all_for_nothing']['color'] = 1
         #END TESTING
 
     def set_omen(self, pos=None, trigger=True, increment=1):
@@ -857,7 +870,7 @@ class Networker(threading.Thread, BanyanBase):
             amt = -len(self.get_locations['gate_omen']())
         if all_gates:
             amt = -len(self.decks['gates']['board'])
-        if amt > 0:
+        if amt != 0:
             self.ancient_one['doom'] += amt
             self.ancient_one['doom'] = self.ancient_one['doom'] if self.ancient_one['doom'] >= 0 else 0
             if self.ancient_one['doom'] == 0:

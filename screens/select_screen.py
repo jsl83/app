@@ -97,7 +97,7 @@ class SelectionScreen(arcade.View):
                             self.networker.set_subscriber_topic(self.selected + '_player')
                             self.networker.investigator = self.selected
                             if self.respawn:
-                                self.networker.game_screen.load_investigator(self.selected)
+                                self.networker.game_screen.respawn_name = self.selected
                         elif text == 'Back':
                             self.selected = None
                         elif text == 'Flip':

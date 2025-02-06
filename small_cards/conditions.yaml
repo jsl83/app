@@ -212,6 +212,70 @@
   cursed:
     tags:
       - bane
+    reckoning:
+      is_required: True
+      action:
+        - single_roll
+      aargs:
+        - effects:
+            '123': nada
+            '456': discard
+          skip: True
+      discard:
+        - discard
+      dargs:
+        - kind: conditions
+          name: cursed
+          skip: True
+      nada:
+        - set_buttons
+      nargs:
+        - key: finish
+          skip: True
+      action_text: Roll 1 die. On a 4, 5, or 6, discard this card.
+    '1':
+      title: Cursed - Harried
+      action:
+        - ambush
+      aargs:
+        - text: Next
+      action_text: "The fortune teller explains that you are a beacon, visible to all monstrous beings. For as long as this curse stands, you will be hunted by these creatures. You hear a feral growl outside in the dark.\n\nA Monster ambushes you, then flip this card."
+    '2':
+      title: Cursed - Karmic Justice
+      action:
+        - discard
+      aargs:
+        - text: Next
+          kind: conditions
+          name: cursed
+      action_text: "Perhaps you are not so forsaken. You feel that the dark forces that have hounded you have now dissipated. You do not question this sudden good fortune.\n\nDiscard this card."
+    '3':
+      title: Cursed - The Innsmouth Look
+      action:
+        - condition_check
+      aargs:
+        - space_type: sea
+          step: devour
+          fail: health
+          skip: True
+      devour:
+        - hp_san
+      dargs:
+        - hp: -999
+          text: You are Devoured
+      health:
+        - hp_san
+      hargs:
+        - hp: -3
+          text: Next
+          step: uncard
+      uncard:
+        - discard
+      uargs:
+        - kind: conditions
+          name: cursed
+          skip: True
+      action_text: "Each night, you dream of the dark comfort of the ocean's depths. Even during the day, something beckons you to the water.\n\nIf you are on a Sea space, your body begins to change horribly into a fish-like creature, you are devoured.\n\nIf you are not on a Sea space, the change cripples you; lose 3 Health and discard this card."
   dark_pact:
     tags:
       - deal

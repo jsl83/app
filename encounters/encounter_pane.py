@@ -134,6 +134,13 @@ class EncounterPane():
         for button in buttons:
             self.layout.add(button)
 
+    def death_screen(self):
+        self.investigator.is_dead = True
+        self.text_button.text = 'You have fallen to the forces of the night.\n\nSelect a new Investigator at the end of the turn.'
+        self.clear_buttons()
+        if self.hub.my_turn:
+            self.hub.end_turn()
+
     def get_rumor(self, name):
         return MYTHOS[name]['manager_object']
 
@@ -175,7 +182,13 @@ class EncounterPane():
             self.combat_only = False
             self.choose_encounter()
         else:
-            self.set_buttons(step)
+            if self.first_fight:
+                self.proceed_button.text = 'Next'
+                self.proceed_button.action = self.set_buttons
+                self.proceed_button.action_args = {'key': step}
+                self.clear_buttons([self.proceed_button])
+            else:
+                self.set_buttons(step)
 
     def choose_encounter(self):
         choices = []
@@ -202,7 +215,6 @@ class EncounterPane():
         self.layout.add(self.phase_button)
 
     def start_encounter(self, value, loc=None):
-        print(value, loc)
         #self.clear_overlay()
         choice = value.split(':')
         if loc == None:
@@ -219,7 +231,6 @@ class EncounterPane():
             self.set_buttons('test')
         else:
             self.set_buttons('pass')
-        print('here')
 
     def combat_will(self, monster, player_request=None):
         self.layout.clear()
@@ -317,7 +328,6 @@ class EncounterPane():
         elif is_ambush:
             self.set_buttons(self.ambush_steps[0] if successes >= monster.toughness else self.ambush_steps[1])
             self.ambush_steps = None
-            self.hub.show_encounter_pane()
         else:
             finish_combat()        
 
@@ -658,7 +668,7 @@ class EncounterPane():
         max_pay = min(payment_needed, qty)
         remaining_total = total_payment - qty
         min_pay = max(payment_needed - remaining_total, 0)
-        self.group_payments[name]['my_payment'] = min_pay
+        self.group_payments[name]['my_payment'] = min(min_pay, qty)
         if is_check:
             return qty >= min_pay
         step = step if player_request == None else player_request
@@ -677,7 +687,7 @@ class EncounterPane():
                 title = 'Health'
             case 'san':
                 title = 'Sanity'
-        payment_button = ActionButton(height=100, width=100, text=min_pay, texture='buttons/placeholder.png')
+        payment_button = ActionButton(height=100, width=100, text=str(self.group_payments[name]['my_payment']), texture='buttons/placeholder.png')
         minus_button = ActionButton(height=50, width=50, text='-', texture='buttons/placeholder.png', action_args={'amt': -1})
         submit_button = ActionButton(height=50, width=100, text='Submit Payment', texture='buttons/placeholder.png')
         plus_button =  ActionButton(height=50, width=50, text='+', texture='buttons/placeholder.png', action_args={'amt': 1})
@@ -712,6 +722,8 @@ class EncounterPane():
         minus_button.disable()
         if self.group_payments[name]['my_payment'] == max_pay:
             plus_button.disable()
+        if self.group_payments[name]['my_payment'] < min_pay:
+            submit_button.disable()
         subtitle = 'Minimum: ' + str(min_pay) + '  ' + 'Maximum: ' + str(max_pay)
         self.choice_layout = create_choices(choices=[payment_button], options=options, title='Spend ' + title, subtitle=subtitle)
         self.layout.add(self.choice_layout)
@@ -755,13 +767,16 @@ class EncounterPane():
         if hp == 0 and san == 0:
             self.set_buttons(no_damage_step if no_damage_step != None else step)
         else:
-            if hp < 0 or san < 0:
+            if (hp < 0 or san < 0) and hp != -999:
                 self.take_damage(hp, san, self.set_buttons, {'key': step})
             else:
                 self.investigator.health = min(self.investigator.health + hp, self.investigator.max_health)
                 self.investigator.sanity = min(self.investigator.sanity + san, self.investigator.max_sanity)
-                self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity})
-                self.set_buttons(step)
+                self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, self.investigator.name)
+                if self.investigator.health < 0 or self.investigator.sanity < 0:
+                    self.death_screen()
+                else:
+                    self.set_buttons(step)
 
     def impair_encounter(self, amt, step='finish'):
         self.investigator.encounter_impairment += amt
@@ -890,8 +905,9 @@ class EncounterPane():
                     else:
                         other = next((card for card in self.investigator.possessions['conditions'] if card.name in ['blessed', 'cursed']), False)
                         if other:
-                            self.hub.discard_card('conditions', other.name)
+                            self.hub.networker.publish_payload({'message': 'card_discarded', 'value': other.get_server_name(), 'kind': 'conditions'}, self.investigator.name)
                             self.set_buttons(step)
+                            return
                 self.wait_step = step
                 self.hub.waiting_pane = self
                 message_sent = self.hub.request_card(kind, name, tag=tag, investigator=requestor)
@@ -955,12 +971,6 @@ class EncounterPane():
                     self.layout.add(self.proceed_button)
                 self.proceed_button.action = self.set_buttons
                 self.proceed_button.action_args = {'key': 'finish'}
-            elif key == 'dead':
-                self.layout.clear()
-                self.layout.add(self.text_button)
-                self.text_button.text = 'You have fallen to the forces of darkness'
-                if self.hub.my_turn:
-                    self.hub.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
             else:
                 buttons = [self.proceed_button, self.option_button, self.last_button]
                 actions = self.encounter[key]
@@ -1003,7 +1013,6 @@ class EncounterPane():
             #self.hub.info_manager.trigger_render()
 
     def set_doom(self, increment=1, step='finish'):
-        print(increment)
         self.hub.networker.publish_payload({'message': 'doom_change', 'value': increment}, self.investigator.name)
         self.set_buttons(step)
 
@@ -1169,21 +1178,18 @@ class EncounterPane():
                 self.investigator.health = self.investigator.health + self.hp_damage if self.investigator.health + self.hp_damage <= self.investigator.max_health else self.investigator.max_health
                 self.investigator.sanity = self.investigator.sanity + self.san_damage if self.investigator.sanity + self.san_damage <= self.investigator.max_sanity else self.investigator.max_sanity
                 payload = {'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}
-                def own_death():
-                    self.investigator.is_dead = True
-                    self.set_buttons('dead')
                 def choose_defeat(kind):
                     payload['kind'] = kind.lower() == 'health'
                     self.hub.networker.publish_payload(payload, self.investigator.name)
                     self.clear_overlay()
+                    self.death_screen()
                 if self.investigator.health <= 0 and self.investigator.sanity <= 0:
-                    own_death()
                     self.choice_layout = create_choices('Choose Defeat Type', choices=[ActionButton(width=100, height=50, texture='buttons/placeholder.png', action=choose_defeat, action_args={'kind': kind}, text=kind) for kind in ['Health', 'Sanity']])
                     self.layout.add(self.choice_layout)
                 else:
                     self.hub.networker.publish_payload(payload, self.investigator.name)
                     if self.investigator.health <= 0 or self.investigator.sanity <= 0:
-                        own_death()
+                        self.death_screen()
                     else:
                         self.clear_overlay()
                         action(**args)
@@ -1278,7 +1284,7 @@ class EncounterPane():
             self.set_buttons(step)
             self.load_mythos(self.mythos)
             self.hub.show_encounter_pane()
-        elif len(self.reckonings[kind]) > 0:
+        elif len(self.reckonings[kind]) > 0 and (not self.investigator.is_dead or kind != 'item'):
             def finish_action(name):
                 self.reckoning(kinds[index], step=step)
             small_card.setup([reckon[0] for reckon in self.reckonings[kind]], self, False, 'Resolving ' + human_readable(kind) + ' Reckoning Effects', [reckon[1] for reckon in self.reckonings[kind]], finish_action, scale=scales[index-1])
@@ -1443,7 +1449,6 @@ class SmallCardPane(EncounterPane):
 
     def finish(self, skip=False):
         self.encounter_type = []
-        print(self.encounters)
         if not self.single_pick and len(self.encounters) > 0 and not skip:
             self.pick_encounters()
         else:

@@ -1,4 +1,4 @@
-import yaml
+import yaml, copy
 from util import *
 
 with open('monsters/monsters.yaml') as stream:
@@ -7,6 +7,7 @@ with open('monsters/monsters.yaml') as stream:
 class Monster():
     def __init__(self, name, monster_id, inv_number):
         self.name = name
+        self.monster_id = monster_id
         self.epic = False
         for key in MONSTERS[name]:
             setattr(self, key, MONSTERS[name][key])
@@ -31,11 +32,12 @@ class Monster():
 
         self.spawn = self.set_spawn(self.spawn) if hasattr(self, 'spawn') else None
         self.reckoning_text = self.reckoning_text if hasattr(self, 'reckoning_text') else ''
-        for args in [key for key in getattr(self, 'reckoning', {}).keys() if 'args' in key]:
+        if hasattr(self, 'reckoning'):
+            self.reckoning = copy.deepcopy(self.reckoning)
+        for args in [key for key in self.reckoning.keys() if 'args' in key]:
             for x in range(len(self.reckoning[args])):
                 self.reckoning[args][x]['monster'] = self
         self.damage = 0
-        self.monster_id = monster_id
 
     def set_spawn(self, action):
         pass

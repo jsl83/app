@@ -230,7 +230,6 @@ class TradePane(PossessionsPane):
             self.setup(True, tags=tags)
         else:
             self.layout.remove(self.close_button)
-        print(self.is_taking)
         self.trade_button.text = 'Next' if self.is_taking else 'Finish'
         self.text_button.text = 'Select items to ' + ('take' if self.is_taking else 'give')
         self.is_taking = not self.is_taking

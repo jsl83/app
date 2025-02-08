@@ -71,6 +71,7 @@ class EncounterPane():
             'skip_combat': self.skip_combat,
             'small_card': self.small_card,
             'spawn_clue': self.spawn_clue,
+            'spawn_gate': self.spawn_gate,
             'spend_clue': self.spend_clue,
             'solve_rumor': self.solve_rumor,
             'trigger_check': self.trigger_check,
@@ -138,6 +139,7 @@ class EncounterPane():
         self.investigator.is_dead = True
         self.text_button.text = 'You have fallen to the forces of the night.\n\nSelect a new Investigator at the end of the turn.'
         self.clear_buttons()
+        self.hub.gui_set(False)
         if self.hub.my_turn:
             self.hub.end_turn()
 
@@ -747,36 +749,41 @@ class EncounterPane():
                 self.proceed_button.disable()
                 self.proceed_button.text = 'Waiting for other players'
 
-    def hp_san(self, step='finish', hp=0, san=0, stat='health', kind=None, tag=None, no_damage_step=None):
-        self.layout.clear()
-        self.layout.add(self.text_button)
-        self.layout.add(self.phase_button)
-        if kind != None:
-            if kind in ['assets', 'conditions', 'unique_assets', 'spells', 'artifacts']:
-                damage = len([item for item in self.investigator.possessions[kind] if tag == None or tag in item.tags])
-            elif kind == 'all':
-                all_items = self.investigator.possessions['assets'] + self.investigator.possessions['unique_assets'] + self.investigator.possessions['artifacts']
-                damage = len([item for item in all_items if tag == None or tag in item.tags])
-            elif kind == 'omen_gates':
-                color = ['green', 'blue', 'red', 'blue'][self.hub.omen]
-                damage = len([loc for loc in self.hub.location_manager.locations.values() if loc['gate'] and loc['gate_color'] == color])
-            if stat == 'health':
-                hp = -damage
-            else:
-                san = -damage
-        if hp == 0 and san == 0:
-            self.set_buttons(no_damage_step if no_damage_step != None else step)
+    def hp_san(self, step='finish', hp=0, san=0, stat='health', kind=None, tag=None, no_damage_step=None, investigator='self'):
+        if investigator == 'select':
+            self.choose_investigator('same_action', True)
+            self.clear_buttons()
         else:
-            if (hp < 0 or san < 0) and hp != -999:
-                self.take_damage(hp, san, self.set_buttons, {'key': step})
-            else:
-                self.investigator.health = min(self.investigator.health + hp, self.investigator.max_health)
-                self.investigator.sanity = min(self.investigator.sanity + san, self.investigator.max_sanity)
-                self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, self.investigator.name)
-                if self.investigator.health < 0 or self.investigator.sanity < 0:
-                    self.death_screen()
+            inv = next((player for player in self.hub.location_manager.all_investigators.values() if player.name == investigator), self.investigator)
+            self.layout.clear()
+            self.layout.add(self.text_button)
+            self.layout.add(self.phase_button)
+            if kind != None:
+                if kind in ['assets', 'conditions', 'unique_assets', 'spells', 'artifacts']:
+                    damage = len([item for item in inv.possessions[kind] if tag == None or tag in item.tags])
+                elif kind == 'all':
+                    all_items = inv.possessions['assets'] + inv.possessions['unique_assets'] + inv.possessions['artifacts']
+                    damage = len([item for item in all_items if tag == None or tag in item.tags])
+                elif kind == 'omen_gates':
+                    color = ['green', 'blue', 'red', 'blue'][self.hub.omen]
+                    damage = len([loc for loc in self.hub.location_manager.locations.values() if loc['gate'] and loc['gate_color'] == color])
+                if stat == 'health':
+                    hp = -damage
                 else:
-                    self.set_buttons(step)
+                    san = -damage
+            if hp == 0 and san == 0:
+                self.set_buttons(no_damage_step if no_damage_step != None else step)
+            else:
+                if (hp < 0 or san < 0) and hp != -999:
+                    self.take_damage(hp, san, self.set_buttons, {'key': step})
+                else:
+                    inv.health = min(inv.health + hp, inv.max_health)
+                    inv.sanity = min(inv.sanity + san, inv.max_sanity)
+                    self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': inv.health, 'san': inv.sanity}, inv.name)
+                    if (inv.health < 0 or inv.sanity < 0) and inv == self.investigator:
+                        self.death_screen()
+                    else:
+                        self.set_buttons(step)
 
     def impair_encounter(self, amt, step='finish'):
         self.investigator.encounter_impairment += amt
@@ -1006,7 +1013,7 @@ class EncounterPane():
                 self.layout.clear()
                 self.layout.add(self.text_button)
                 self.layout.add(self.phase_button)
-                for x in range(len(self.encounter[key])):
+                for x in range(len(self.encounter.get(key, actions))):
                     self.layout.add(buttons[x])
                 if len(self.choice_layout.children) > 0:
                     self.layout.add(self.choice_layout)
@@ -1039,7 +1046,7 @@ class EncounterPane():
 
     def single_roll(self, effects):
         def trigger_effects():
-            self.layout.children.remove(self.choice_layout)
+            self.clear_overlay()
             for key in effects.keys():
                 if str(self.rolls[0]) in str(key):
                     self.set_buttons(effects[key])
@@ -1112,6 +1119,16 @@ class EncounterPane():
                     self.set_buttons(step)
             self.hub.click_pane = self
             self.click_action = clue_click
+
+    def spawn_gate(self, step='finish', amt=1, condition=None):
+        match condition:
+            case 'spells':
+                amt = len(self.investigator.possessions['spells'])
+        for x in range(amt):
+            if x == amt - 1:
+                self.wait_step = step
+                self.hub.waiting_pane = self
+            self.hub.networker.publish_payload({'message': 'spawn', 'value': 'gates', 'number': 1}, self.investigator.name)
 
     def spend_clue(self, step='finish', clues=1, condition=None, is_check=False, not_spend=False):
         if condition != None:
@@ -1448,10 +1465,10 @@ class SmallCardPane(EncounterPane):
             super().set_buttons(key)
 
     def finish(self, skip=False):
-        self.encounter_type = []
         if not self.single_pick and len(self.encounters) > 0 and not skip:
             self.pick_encounters()
         else:
+            self.encounter_type = []
             self.hub.info_manager.children = {0:[]}
             self.clear_overlay()
             self.hub.info_manager.add(self.parent.layout)

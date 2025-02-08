@@ -130,6 +130,7 @@ class PossessionsPane():
             if not triggers.get('owner_only', False) or is_owner:
                 triggers['trigger']['used'] = False
                 triggers['trigger']['name'] = card.name
+                triggers['trigger']['owner'] = self.investigator.name
                 self.hub.triggers[triggers['kind']].append(triggers['trigger'])
         if getattr(card, 'on_get', False) and not is_trade and is_owner:
             for action in card.on_get:

@@ -405,8 +405,9 @@ class HubScreen(arcade.View):
                         self.clear_overlay()
                 case 'player_turn':
                     self.my_turn = True
-                    if payload['value'] in ['action', 'encounter', 'reckoning'] and self.investigator.is_dead:
+                    if self.investigator.is_dead:
                         self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                        self.my_turn = False
                     else:
                         match payload['value']:
                             case 'action':
@@ -435,19 +436,13 @@ class HubScreen(arcade.View):
                                     #END TESTING
                                     #'''
                             case 'encounter':
-                                if self.investigator.is_dead:
-                                    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                                else:
                                     #FOR TESTING
-                                    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                     #END TESTING
                                     #self.show_encounter_pane()
                                     #self.encounter_pane.encounter_phase()
                             case 'reckoning':
-                                if not self.investigator.is_dead or self.lead_investigator == self.investigator.name:
-                                    self.encounter_pane.reckoning(first=True)
-                                else:
-                                    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                self.encounter_pane.reckoning(first=True)
                             case 'mythos':
                                 #FOR TESTING
                                 #if self.is_first:
@@ -537,10 +532,10 @@ class HubScreen(arcade.View):
                     self.maps[world].remove_tokens('investigators', dead.location, payload['value'])
                     self.maps[world].token_manager.trigger_render()
                     if payload['value'] == self.investigator.name:
-                        self.gui_set(False)
+                        self.encounter_pane.death_screen()
                         self.show_encounter_pane()
-                        self.encounter_pane.text_button.text = 'You have fallen to the forces of darkness.\n\nChoose a new Investigator at the end of the turn.'
-                        self.encounter_pane.clear_buttons()
+                    for key in self.triggers.keys():
+                        self.triggers[key] = [trigger for trigger in self.triggers[key] if trigger.get('owner', '') != payload['value']]
                 case 'trade':
                     del payload['message']
                     names = list(payload.keys())

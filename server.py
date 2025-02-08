@@ -50,6 +50,7 @@ class Networker(threading.Thread, BanyanBase):
         self.lead_investigator = 0
         self.current_player = 0
         self.current_phase = 0
+        self.temporary_lead = -1
         self.phases = ['action', 'encounter', 'reckoning', 'mythos']
         self.yellow_card = False
 
@@ -338,6 +339,9 @@ class Networker(threading.Thread, BanyanBase):
                             self.current_player = 0
                         if self.current_player == self.lead_investigator:
                             self.current_phase += 1
+                            if self.temporary_lead >= 0:
+                                self.lead_investigator = self.selected_investigators[self.temporary_lead]
+                                self.temporary_lead = -1
                             if self.current_phase == 2:
                                 for x in range(3):
                                     if len(self.mythos_deck[x]) > 0:
@@ -430,7 +434,7 @@ class Networker(threading.Thread, BanyanBase):
                                 for x in range(len(self.selected_investigators) - 1):
                                     index = self.lead_investigator + x + 1 % len(self.selected_investigators)
                                     if self.selected_investigators[x] not in self.dead_investigators:
-                                        self.publish_payload({'message': 'lead_selected', 'value': self.selected_investigators[x], 'dead_trigger': True}, 'server_update')
+                                        self.temporary_lead = x
                                         break
                             health_death = False
                             if investigator['hp'] > -900:
@@ -709,7 +713,7 @@ class Networker(threading.Thread, BanyanBase):
                         if len(self.decks['gates']['deck']) > 0:
                             gate = random.choice(self.decks['gates']['deck'])
                             self.decks['gates']['deck'].remove(gate)
-                            gate = 'world:buenos_aires'
+                            #gate = 'world:buenos_aires'
                             self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
                             self.spawn('monsters', location=gate, name='avian_thrall')

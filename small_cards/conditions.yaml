@@ -279,6 +279,60 @@
   dark_pact:
     tags:
       - deal
+    reckoning:
+      is_required: True
+      action:
+        - single_roll
+      aargs:
+        - effects:
+            '1': flip
+            '23456': nada
+          skip: True
+      flip:
+        - flip_card
+      fargs:
+        - kind: conditions
+          name: dark_pact
+          skip: True
+      action_text: Roll 1 die. On a 1, it is time to fulfill your part of the bargain; flip this card.
+    '1':
+      title: Dark Pact - One of the Thousand
+      action:
+        - hp_san
+      aargs:
+        - hp: -999
+          skip: True
+          step: discard
+          investigator: select
+      discard:
+        - discard
+      dargs:
+        - kind: conditions
+          name: dark_pact
+          skip: True
+      action_text: "The chanting reaches a fever pitch. The cult leader places a ritual dagger in your hand and tells you, \"The time has come. You must pay the blood you owe to the Children of the Black Goat.\"\n\nAnother Investigator of your choice is devoured, then discard this card."
+    '2':
+      title: Dark Pact - Pact with the Dark Man
+      action:
+        - hp_san
+      aargs:
+        - hp: -999
+          skip: True
+      action_text: "You knew that ever since you signed your name in that terrible book, signed it in your own blood, this day would come eventually. You can hear his cloven feet approaching, and you are certain that the end is near.\n\nYou are devoured."
+    '3':
+      title: Dark Pact - Pact with Yog-Sothoth
+      action:
+        - spawn_gate
+      aargs:
+        - condition: spells
+          text: Next
+          step: omen
+      omen:
+        - set_omen
+      oargs:  
+        - skip: True
+          choice: False
+      action_text: "The blasphemous power takes hold of you, forcing you to carry out the desires of the Lurker at the Threshold.\n\nSpawn 1 Gate for each Spell you have, then advance the Omen by 1.\n\nThen discard this card."
   debt:
     tags:
       - deal

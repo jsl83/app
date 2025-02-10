@@ -254,7 +254,7 @@ class HubScreen(arcade.View):
                         self.investigator_token = tokens[0] if self.zoom == 2 else tokens[1]
                         self.original_investigator_location = key
                     
-        elif (self.info_pane == self.info_panes['possessions'] or (self.info_pane == self.info_panes['reserve'] and self.info_panes['reserve'].discard_view)) and x > 1000:
+        elif (self.info_pane == self.info_panes['possessions'] or (self.info_pane == self.info_panes['reserve'] and self.info_panes['reserve'].discard_view) or (self.info_pane == self.info_panes['location'] and self.info_panes['location'].is_trading)) and x > 1000:
             self.holding = 'items'
             self.click_time = 0
 
@@ -371,6 +371,8 @@ class HubScreen(arcade.View):
                     if payload['value'] != None:
                         card = investigator.get_item(payload['kind'], payload['value'])
                         self.info_panes['possessions'].on_get(card, self.investigator.name == payload['owner'])
+                        if card.name == 'debt' or card.name == 'detained':
+                            card.action['pargs'][0]['investigator'] = payload['owner']
                         if payload['owner'] == self.investigator.name:
                             if payload['value'][0:-1] == 'debt':
                                 self.info_panes['reserve'].debt_button.disable()
@@ -427,8 +429,8 @@ class HubScreen(arcade.View):
                                     self.remaining_actions = 3
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
-                                    if self.investigator.name == 'akachi_onyele':
-                                        self.ticket_move(self.investigator.name, 'space_2', 0, 0, self.investigator.location)
+                                    #if self.investigator.name == 'akachi_onyele':
+                                    self.ticket_move(self.investigator.name, 'space_2', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     self.investigator.focus = 0
@@ -535,7 +537,7 @@ class HubScreen(arcade.View):
                         self.encounter_pane.death_screen()
                         self.show_encounter_pane()
                     for key in self.triggers.keys():
-                        self.triggers[key] = [trigger for trigger in self.triggers[key] if trigger.get('owner', '') != payload['value']]
+                        self.triggers[key] = [trigger for trigger in self.triggers[key] if trigger.get('investigator', '') != payload['value']]
                 case 'trade':
                     del payload['message']
                     names = list(payload.keys())

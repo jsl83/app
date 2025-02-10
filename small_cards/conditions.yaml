@@ -337,34 +337,114 @@
     tags:
       - deal
       - common
+    action:
+      action:
+        - skill
+      aargs:
+        - stat: 1
+      pass:
+        - discard
+      pargs:
+        - kind: conditions
+          name: debt
+          skip: True
+      fail:
+        - set_buttons
+      fargs:
+        - key: finish
+          skip: True
+      action_text: Test Influence. If you pass, discard this card.
     reckoning:
-        action:
-          - flip_card
-        aargs:
-          - skip: True
-            name: debt
-            kind: conditions
+      action:
+        - flip_card
+      aargs:
+        - skip: True
+          name: debt
+          kind: conditions
+      is_required: True
     '1':
-      back:
-        title: Debt - Beyond Riches
-        action:
-          - skill
-        aargs:
-          - stat: 2
-        pass:
-          - discard
-        pargs:
-          - kind: conditions
-            name: debt
-            text: Discard this card
-        fail:
-          - hp_san
-        fargs:
-          - san: -3
-            step: pass
-            skip: True
-        action_text: The man wears a hat and a brown trenchcoat. "We do not want money," he hisses and grabs your throat. You feel as if part of your identity is being stolen from you.
-        fail_text: A fragment of your soul is ripped away.
+      title: Debt - Beyond Riches
+      action:
+        - skill
+      aargs:
+        - stat: 4
+      pass:
+        - discard
+      pargs:
+        - kind: conditions
+          name: debt
+          text: Discard this card
+      fail:
+        - hp_san
+      fargs:
+        - san: -3
+          step: discard
+          skip: True
+      discard:
+        - discard
+      dargs:
+        - kind: conditions
+          name: debt
+          skip: True
+      action_text: The man wears a hat and a brown trenchcoat. "We do not want money," he hisses and grabs your throat. You feel as if part of your identity is being stolen from you.
+      pass_text: You resist the 
+      fail_text: A fragment of your soul is ripped away.
+    '2':
+      title: Debt - Debt Collector
+      action:
+        - skill
+      aargs:
+        - stat: 1
+      pass:
+        - discard
+      pargs:
+        - kind: conditions
+          name: debt
+          text: Discard this card
+      fail:
+        - discard
+      fargs:
+        - kind: all
+          tag: item
+          step: discard
+          skip: True
+          amt: 2
+      dargs:
+        - kind: conditions
+          name: debt
+          skip: True
+      discard:
+        - discard
+      action_text: The man in the silk suit hands you a large stack of papers. "I believe you'll find this offer quite reasonable." His smile reminds you of a shark. It's clear that he will not take "no" for an answer.
+      pass_text: Fortunately, your wits prove a match to his.
+      fail_text: "They take some of your equipment as collateral.\n\nDiscard 2 Item Possessions, then discard this card."
+    '3':
+      title: Debt - Hitmen
+      action:
+        - skill
+      aargs:
+        - stat: 3
+      pass:
+        - discard
+      pargs:
+        - kind: conditions
+          name: debt
+          text: Discard this card
+      fail:
+        - hp_san
+      fargs:
+        - hp: -3
+          skip: True
+          step: discard
+      dargs:
+        - kind: conditions
+          name: debt
+          skip: True
+      discard:
+        - discard
+      action_text: You see now that it was no ordinary bank you borrowed from. Some armed men confront you and demand that you repay what you owe.
+      pass_text: The thugs look scary, but that's all that they are. You fight through them and go about your business.
+      fail_text: The men make short work of you, leaving your broken body as an example to any others fools in over their heads.
   detained:
     tags:
       - restriction

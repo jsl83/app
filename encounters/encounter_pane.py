@@ -566,23 +566,23 @@ class EncounterPane():
         self.hub.location_manager.expeditions_enabled = enabled
         self.set_buttons(step)
 
-    def discard(self, kind, step='finish', tag='any', amt='one', name=None, get_owner=False):
-        investigator = self.investigator
+    def discard(self, kind, step='finish', tag='any', amt='one', name=None, get_owner=False, investigator=None):
+        player = self.investigator if investigator == None else self.hub.location_manager.all_investigators[investigator]
         if get_owner:
-            investigator = next((inv for inv in self.hub.location_manager.all_investigators.values() if name in [pos.name for pos in inv.possessions[kind]]))
+            player = next((inv for inv in self.hub.location_manager.all_investigators.values() if name in [pos.name for pos in inv.possessions[kind]]))
         if name != None:
-            card = next((item for item in investigator.possessions[kind] if item.name == name), None)
+            card = next((item for item in player.possessions[kind] if item.name == name), None)
             if card != None:
-                self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, investigator.name)
+                self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, player.name)
                 self.hub.info_panes['possessions'].setup()
             self.set_buttons(step)
         else:
             items = []
             if kind == 'all':
                 for possession_type in ['assets', 'unique_assets', 'artifacts']:
-                    items += investigator.possessions[possession_type]
+                    items += player.possessions[possession_type]
             else:
-                items = investigator.possessions[kind]
+                items = player.possessions[kind]
             items = [item for item in items if tag in item.tags] if tag != 'any' else items
             if len(items) == 0:
                 self.set_buttons(step)
@@ -590,7 +590,7 @@ class EncounterPane():
                 options = []
                 selected = []
                 def discard_card(card):
-                    self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': card.kind}, investigator.name)
+                    self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': card.kind}, player.name)
                     self.hub.info_panes['possessions'].setup()
                 if amt == 'one':
                     def select(card, step):
@@ -609,7 +609,7 @@ class EncounterPane():
                                     self.hub.waiting_pane = self
                                 discard_card(selected[x])
                     button = ActionButton(width=150, height=50, text='Discard Selected', texture='buttons/placeholder.png', action=submit)
-                    if amt == 'keep_one' and len(items) != len(selected) + 1:
+                    if (amt == 'keep_one' and len(items) != len(selected) + 1) or type(amt) == int:
                         button.disable()
                     def select(card, step):
                         if card in selected:
@@ -621,6 +621,11 @@ class EncounterPane():
                                 button.disable()
                             else:
                                 button.enable()
+                        if type(amt) == int:
+                            if len(selected) == amt or (len(selected) == len(items) and len(items) < amt):
+                                button.enable()
+                            else:
+                                button.disable()
                         button.trigger_render()
                     options = [button]
                 title_text = 'Select ' + ((human_readable(tag) + ' ') if tag != 'any' else '') + (kind[:-1] if kind != 'all' else 'Possession') + ('' if amt == 'one' else 's') + ' to discard'

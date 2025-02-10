@@ -75,6 +75,7 @@ class LocationPane():
         self.rumor = None
         self.possession_screen = TradePane(self.hub.investigator, self.hub)
         self.possession_screen.close_button.action = self.on_show
+        self.is_trading = False
         
     def toggle_details(self, flag):
         self.toggle_info.select(flag)
@@ -111,6 +112,7 @@ class LocationPane():
         self.layout.add(self.location_layout)
 
     def on_show(self):
+        self.is_trading = False
         self.location_select(self.selected)
 
     def update_tokens(self):
@@ -185,6 +187,7 @@ class LocationPane():
             self.possession_screen.investigator = investigator
             self.possession_screen.setup(trade)
             self.layout.add(self.possession_screen.layout)
+            self.is_trading = True
 
     def update_all(self):
         self.update_tokens()
@@ -219,3 +222,6 @@ class LocationPane():
 
     def close_monster(self):
         self.location_select(self.selected)
+
+    def move(self, dy):
+        self.possession_screen.move(dy)

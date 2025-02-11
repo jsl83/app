@@ -327,7 +327,8 @@ class Networker(threading.Thread, BanyanBase):
                     case 'spawn':
                         self.spawn(payload['value'], payload.get('name', None), payload.get('location', None), int(payload.get('number', 1)))
                     case 'move_investigator':
-                        self.publish_payload({'message': 'unit_moved', 'value': payload['value'], 'destination': payload['destination'], 'kind': 'investigators'}, 'server_update')
+                        if not next((card for card in self.investigators[payload['value']] if 'detained' in card), False):
+                            self.publish_payload({'message': 'unit_moved', 'value': payload['value'], 'destination': payload['destination'], 'kind': 'investigators'}, 'server_update')
                     case 'lead_selected':
                         self.lead_investigator = self.selected_investigators.index(payload['value'])
                         self.current_player = self.selected_investigators.index(payload['value'])

@@ -65,7 +65,7 @@ class PossessionsPane():
             buttons.append(self.action_button)
             key = card.action.get('check_key', False)
             passes_check = not key or self.hub.small_card_pane.req_dict[card.action[key][0]](card.action[key[0] + 'args'][0])
-            if self.hub.remaining_actions == 0 or card.action_used or not passes_check:
+            if (self.hub.remaining_actions == 0 or card.action_used or not passes_check) and not (self.hub.my_turn and card.name == 'detained'):
                 self.action_button.disable()
         if hasattr(card, 'back'):
             buttons.append(self.flip_button)
@@ -85,8 +85,11 @@ class PossessionsPane():
         self.hub.small_card_pane.setup([card.action], self, textures=[card.texture], finish_action=self.on_finish_small, force_select=True)
 
     def on_finish_small(self, name):
+        point = 1
+        if self.active_card.name == 'detained':
+            point = 0 if next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False) else -1
         self.active_card.action_used = True
-        self.hub.action_taken(None)
+        self.hub.action_taken(None, point)
         self.hub.gui_set(True)
 
     def flip_action(self):
@@ -214,8 +217,8 @@ class TradePane(PossessionsPane):
                         if kind in ['rail','ship']:
                             button.move(-3, -3)
                         self.overlay_layout.add(button)
-                elif name == 'debt' and self.investigator != self.hub.investigator:
-                    self.show_card('debt', 'conditions')
+                elif (name == 'debt' or name == 'detained') and self.investigator != self.hub.investigator:
+                    self.show_card(name, 'conditions')
                 self.hub.info_manager.trigger_render()
             for buttons in self.button_layout.children:
                 buttons.action = select

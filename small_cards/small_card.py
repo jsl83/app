@@ -49,9 +49,12 @@ class Asset(SmallCard):
 class Spell(SmallCard):
     def __init__(self, name, investigator):
         self.variant = int(name[-1])
+        self.variant = 1
         SmallCard.__init__(self, name[0:-1], investigator)
         self.kind = 'spells'
-        self.setup()
+        for attr in [attribute for attribute in ['triggers', 'reckoning', 'tags', 'action'] if CARDS['conditions'][self.name].get(attribute, False)]:
+            setattr(self, attr, CARDS['conditions'][self.name][attr])
+        self.back = CARDS['conditions'][self.name][str(self.variant)]
 
     def get_server_name(self):
         return self.name + str(self.variant)
@@ -59,7 +62,6 @@ class Spell(SmallCard):
 class Condition(SmallCard):
     def __init__(self, name, investigator):
         self.variant = int(name[-1])
-        self.variant = 1
         SmallCard.__init__(self, name[0:-1], investigator)
         self.kind = 'conditions'
         self.texture = arcade.load_texture(":resources:eldritch/images/conditions/" + name[0:-1] + '.png')

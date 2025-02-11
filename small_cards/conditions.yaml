@@ -22,12 +22,18 @@
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
       action:
-        - flip_card
+        - skill
       aargs:
+        - stat: 4
+          step: finish
+      fail:
+        - flip_card
+      fargs:
         - skip: True
           name: amnesia
           kind: conditions
       is_required: True
+      action_text: Test Will. If you fail, flip this card.
     '1':
       title: Amnesia - Forgotten Crimes
       action:
@@ -102,9 +108,8 @@
         - skill
       aargs:
         - stat: 3
-          fail: flip
           step: finish
-      flip:
+      fail:
         - flip_card
       fargs:
         - skip: True
@@ -387,7 +392,7 @@
           name: debt
           skip: True
       action_text: The man wears a hat and a brown trenchcoat. "We do not want money," he hisses and grabs your throat. You feel as if part of your identity is being stolen from you.
-      pass_text: You resist the 
+      pass_text: You resist the unnatural pull and tear yourself away from his grasp.
       fail_text: A fragment of your soul is ripped away.
     '2':
       title: Debt - Debt Collector
@@ -448,15 +453,463 @@
   detained:
     tags:
       - restriction
+    action:
+      action:
+        - skill
+      aargs:
+        - stat: 1
+      pass:
+        - discard
+      pargs:
+        - kind: conditions
+          name: detained
+          skip: True
+      fail:
+        - set_buttons
+      fargs:
+        - key: finish
+          skip: True
+      action_text: Test Influence. If you pass, discard this card.
+    '1':
+      action:
+        - spend_clue
+        - set_buttons
+      aargs:
+        - step: pass
+          text: Spend 1 Clue
+        - key: test
+          text: Test Will (-1)
+      test:
+        - skill
+      targs:
+        - stat: 4
+          mod: -1
+      pass:
+        - discard
+      pargs:
+        - kind: conditions
+          name: detained
+          text: Discard this card
+      fail:
+        - hp_san
+      fargs:
+        - san: -3
+          step: request
+          skip: True
+      request:
+        - request_card
+      rargs:
+        - kind: conditions
+          name: paranoia
+          skip: True
+          step: discard
+      discard:
+        - discard
+      dargs:
+        - kind: conditions
+          name: detained
+          skip: True
+      action_text: "Detained - Cruel and Unusual\n\nYour captors are going to subject you to vicious tactics designed to break your will if you do not give them the information they require."
+      fail_text: "Glimpses of faces. Blood. Incoherent words. You barely recall what happened, but you remain haunted.\n\nYou lose 3 Sanity and gain a Paranoia Condition, then discard this card."
+    '2':
+      action:
+        - spend_clue
+        - set_buttons
+      aargs:
+        - text: Spend 1 Clue
+          step: pass
+        - text: Test Influence (-1)
+          key: influence
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          mod: -1
+      pass:
+        - discard
+      pargs:
+        - kind: conditions
+          name: detained
+          text: Discard this card
+      fail:
+        - hp_san
+      fargs:
+        - hp: -2
+          san: -2
+          skip: True
+          step: rid
+      rid:
+        - discard
+      rargs:
+        - kind: conditions
+          name: detained
+          skip: True
+      action_text: "Detained - Holding Cell\n\nYour captors rarely speak, except to interrogate you for information. You don't think you can hold out much longer, and you hope that the guard that watches your cell might take pity on you."
+      fail_text: "They beat you and leave you to die.\n\nLose 2 Health and 2 Sanity, then discard this card."
+    '3':
+      action:
+        - spend_clue
+        - set_buttons
+      aargs:
+        - step: pass
+          text: Spend 1 Clue
+        - key: test
+          text: Test Strength (-1)
+      test:
+        - skill
+      targs:
+        - stat: 3
+          mod: -1
+      pass:
+        - discard
+      pargs:
+        - kind: conditions
+          name: detained
+          text: Discard this card
+      fail:
+        - hp_san
+      fargs:
+        - hp: -3
+          step: request
+          skip: True
+      request:
+        - request_card
+      rargs:
+        - kind: conditions
+          name: internal_injury
+          skip: True
+          step: discard
+      discard:
+        - discard
+      dargs:
+        - kind: conditions
+          name: detained
+          skip: True
+      action_text: "Detained - Starvation\n\n\"The food is poison\" a fellow prisoner whispers, \"Don't eat it.\" You will surely starve to death if you do not give your captors the information they're seeking."
+      fail_text: "By the time you're released, you're a shadow of your former self.\n\nYou lose 3 Health and gain an Internal Injury Condition, then discard this card."
   hallucinations:
     tags:
       - madness
+    triggers:
+      - kind: rest_actions
+        owner_only: True
+        trigger:
+          action:
+            - single_roll
+          aargs:
+            - effects:
+                '1234': nada
+                '56': discard
+              skip: True
+          discard:
+            - discard
+          dargs:
+            - kind: conditions
+              name: hallucinations
+              skip: True
+          action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+    reckoning:
+      action:
+        - skill
+      aargs:
+        - stat: 4
+          step: finish
+      fail:
+        - flip_card
+      fargs:
+        - skip: True
+          name: hallucinations
+          kind: conditions
+      is_required: True
+      action_text: Test Will. If you fail, flip this card.
+    '1':
+      title: Hallucinations - Delusions
+      action:
+        - spend_clue
+      aargs:
+        - condition: all
+          text: Discard Clues
+          step: discard
+      discard:
+        - discard
+      dargs:
+        - kind: conditions
+          name: hallucinations
+          skip: True
+      action_text: "You see now that all of this supposed evidence you've been collecting is just nonsense. Your head feels so clear now! All of the monsters and conspiracies you've been hunting were obviously figments of your imagination.\n\nDiscard all of your Clues, then discard this card."
+    '2':
+      title: Hallucinations - Swarming
+      action:
+        - hp_san
+      aargs:
+        - san: -3
+          skip: True
+          step: discard
+      discard:
+        - discard
+      dargs:
+        - skip: True
+          kind: conditions
+          name: hallucinations
+      action_text: "The bugs are everywhere. They crawl across your skin and into your mouth.\n\nLose 3 Sanity, then discard this card."
+    '3':
+      title: Hallucinations - The Voices
+      action:
+        - hp_san
+      aargs:
+        - san: -1
+          skip: True
+      action_text: "In the past, you've barely been able to hear the whispering at the edge of your consciousness. Now that the voices are more audible, you can hear the horrible demands they are making of you.\n\nLose 1 Sanity, then flip this card."
   internal_injury:
     tags:
       - injury
+    triggers:
+      - kind: rest_actions
+        owner_only: True
+        trigger:
+          action:
+            - single_roll
+          aargs:
+            - effects:
+                '1234': nada
+                '56': discard
+              skip: True
+          discard:
+            - discard
+          dargs:
+            - kind: conditions
+              name: internal_injury
+              skip: True
+          action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+    reckoning:
+      action:
+        - skill
+      aargs:
+        - stat: 3
+          step: finish
+      fail:
+        - flip_card
+      fargs:
+        - skip: True
+          name: internal_injury
+          kind: conditions
+      is_required: True
+      action_text: Test Strength. If you fail, flip this card.
+    '1':
+      title: Internal Injury - Cracked Rib
+      action:
+        - hp_san
+      aargs:
+        - hp: -1
+          skip: True
+      action_text: "You keep your hand pressed against your side to minimize the pain, but each breath is still agonizing.\n\nLose 1 Health, then flip this card."
+    '2':
+      title: Internal Injury - Excruciating Pain
+      action:
+        - hp_san
+      aargs:
+        - hp: -3
+          skip: True
+          step: discard
+      discard:
+        - discard
+      dargs:
+        - skip: True
+          kind: conditions
+          name: internal_injury
+      action_text: "The pain rises to a crescendo, knocking you off your feet. When you finally regain consciousness, the floor is covered in blood.\n\nLose 3 Health, then discard this card."
+    '3':
+      title: Internal Injury - Internal Bleeding
+      action:
+        - hp_san
+      aargs:
+        - hp: -1
+          skip: True
+          step: delay
+      delay:
+        - delayed
+      dargs:
+        - skip: True
+      action_text: "The hacking fit is too excruciating to continue moving, and you begin coughing up blood.\n\nLose 1 Health and become Delayed, then discard this card."
   leg_injury:
     tags:
       - injury
+    triggers:
+      - kind: rest_actions
+        owner_only: True
+        trigger:
+          action:
+            - single_roll
+          aargs:
+            - effects:
+                '1234': nada
+                '56': discard
+              skip: True
+          discard:
+            - discard
+          dargs:
+            - kind: conditions
+              name: leg_injury
+              skip: True
+          action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+    reckoning:
+      action:
+        - skill
+      aargs:
+        - stat: 3
+          step: finish
+      fail:
+        - flip_card
+      fargs:
+        - skip: True
+          name: leg_injury
+          kind: conditions
+      is_required: True
+      action_text: Test Strength. If you fail, flip this card.
+    '1':
+      title: Leg Injury - Stabbing Pain
+      action:
+        - delayed
+      aargs:
+        - text: Become Delayed
+      action_text: "You know that the injury is not severe, but with every few steps you take, the pain in your ankle forces you to rest for a few minutes.\n\nBecome Delayed, then flip this card."
+    '2':
+      title: Leg Injury - Strange Remedy
+      action:
+        - hp_san
+      aargs:
+        - hp: -1
+          step: choice
+          skip: True
+      choice:
+        - delayed
+        - set_buttons
+      cargs:
+        - text: Become Delayed
+          step: discard
+        - text: Keep moving
+          key: finish
+      discard:
+        - discard
+      dargs:
+        - kind: conditions
+          name: leg_injury
+          skip: True
+      action_text: "You hop forward, trying to keep your weight on your good foot while you search for a doctor that can treat you.\n\nLose 1 Health"
+      choice_text: "You may become Delayed to discard this card. If you do not discard it, flip this card."
+    '3':
+      title: Leg Injury - Twisted Knee
+      action:
+        - hp_san
+        - delayed
+      aargs:
+        - hp: -2
+          text: Lose 2 Health
+        - text: Become Delayed
+      action_text: Your knee hurts and is not strong enough to hold your weight.
   paranoia:
     tags:
       - madness
+    triggers:
+      - kind: rest_actions
+        owner_only: True
+        trigger:
+          action:
+            - single_roll
+          aargs:
+            - effects:
+                '1234': nada
+                '56': discard
+              skip: True
+          discard:
+            - discard
+          dargs:
+            - kind: conditions
+              name: paranoia
+              skip: True
+          action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+    reckoning:
+      action:
+        - skill
+      aargs:
+        - stat: 4
+          step: finish
+      fail:
+        - flip_card
+      fargs:
+        - skip: True
+          name: paranoia
+          kind: conditions
+      is_required: True
+      action_text: Test Will. If you fail, flip this card.
+    '1':
+      title: Paranoia - Agoraphobia
+      action:
+        - condition_check
+      aargs:
+        - space_type: city
+          step: sanity
+          text: Next
+      sanity:
+        - hp_san
+      sargs:
+        - san: -2
+          skip: True
+      action_text: "You cannot tolerate the company of other people any longer. The seething masses of humanity are a blight on the face of the planet.\n\nIf you are on a City space, the presence of other people erodes your reason; lose 2 Sanity.\n\nFlip this card."
+    '2':
+      title: Paranoia - Kleptomania
+      action:
+        - kleptomania
+      aargs:
+        - text: Steal an Item
+      test:
+        - skill
+      targs:
+        - stat: 2
+          step: finish
+          fail: discard
+      discard:
+        - discard
+      dargs:
+        - kind: assets
+          text: Discard
+          step: req
+      req:
+        - request_card
+      rargs:
+        - kind: conditions
+          name: detained
+          skip: True
+          step: paranoia
+      paranoia:
+        - discard
+      pargs:
+        - kind: conditions
+          name: paranoia
+          skip: True
+      action_text: "Against rational thought, you compulsively take what does not belong to you and hide it away.\n\nGain 1 random Item Asset from the deck."
+      test_text: "You must hide from the authorities."
+      discard_text: "Discard that Asset and gain a Detained Condition.\n\nDiscard this card."
+    '3':
+      title: Paranoia - Violent Outbursts
+      action:
+        - violent_outbursts
+      aargs:
+        - skip: True
+          step: discard
+      companion:
+        - discard
+      cargs:
+        - kind: assets
+          tag: ally
+          amt: 'one'
+          skip: True
+      discard:
+        - discard
+      dargs:
+        - kind: conditions
+          name: paranoia
+          text: Discard cards
+          step: companion
+      action_text: "You've felt the anger coiled up inside of you for such a long time. You just can't control it any longer. You lash out at anyone near you.\n\nEach other investigator on your space loses 2 Health.\n\nWaiting for other players."
+      discard_text: Discard an Ally possession. Discard this card.

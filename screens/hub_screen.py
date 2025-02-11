@@ -329,8 +329,9 @@ class HubScreen(arcade.View):
                 case 'group_pay_reckoning':
                     del payload['message']
                     self.encounter_pane.group_pay(**payload)
+                case 'player_encounter':
+                    self.small_card_pane.setup([payload['value']], self.info_pane, force_select=True)
         else:
-            #print(payload)
             match payload['message']:
                 case 'spawn':
                     no_token = False
@@ -417,7 +418,7 @@ class HubScreen(arcade.View):
                                     self.investigator.delayed = False
                                     self.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
                                 else:
-                                    self.remaining_actions = 2
+                                    self.remaining_actions = 2 if not next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False) else 0
                                     for items in self.investigator.possessions.values():
                                         for item in items:
                                             item.action_used = False
@@ -426,14 +427,14 @@ class HubScreen(arcade.View):
                                             trigger['used'] = False
                                     #'''
                                     #FOR TESTING
-                                    self.remaining_actions = 3
+                                    #self.remaining_actions = 3
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
                                     #if self.investigator.name == 'akachi_onyele':
                                     self.ticket_move(self.investigator.name, 'space_2', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
-                                    self.investigator.focus = 0
+                                    #self.investigator.focus = 0
                                     #self.info_panes['investigator'].focus_action()
                                     #END TESTING
                                     #'''
@@ -441,8 +442,8 @@ class HubScreen(arcade.View):
                                     #FOR TESTING
                                 self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                     #END TESTING
-                                    #self.show_encounter_pane()
-                                    #self.encounter_pane.encounter_phase()
+                                #self.show_encounter_pane()
+                                #self.encounter_pane.encounter_phase()
                             case 'reckoning':
                                 self.encounter_pane.reckoning(first=True)
                             case 'mythos':
@@ -877,7 +878,7 @@ class HubScreen(arcade.View):
     def action_taken(self, action, action_point=1):
         def ruby():
             self.clear_overlay()
-            self.remaining_actions += 1
+            self.remaining_actions += 1 if next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False) else 0
             next((trigger for trigger in self.triggers['turn_end'] if trigger['name'] == 'ruby_of_r\'lyeh'))['used'] = True
             self.encounter_pane.take_damage(0, -1, self.clear_overlay, {})
         trigger_dict = {'ruby_of_r\'lyeh': ruby}

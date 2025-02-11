@@ -195,23 +195,30 @@ class EncounterPane():
     def choose_encounter(self):
         choices = []
         self.phase_button.text = 'Encounter Phase'
-        for encounter in self.encounters:
-            request = False
-            args = {}
-            if encounter in ['clue', 'expedition', 'gate', 'generic', 'green', 'orange', 'purple']:
-                path = 'encounters/' + encounter + '.png'
-                request = True
-                args = {'topic': self.investigator.name, 'payload':{'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}}
-            elif encounter[:-2] in self.hub.location_manager.dead_investigators.keys():
-                path = 'investigators/' + encounter[:-2] + '_portrait.png'
-                args = {'value': 'investigators:' + '0' if self.hub.location_manager.dead_investigators[encounter[:-2]].hp_death else '1', 'loc': encounter[:-2]}
-            else:
-                path = 'encounters/rumor.png'
-                args = {'value': 'rumor:0', 'loc': encounter}
-            button = ActionButton(texture=path, scale=0.3)
-            button.action = self.hub.networker.publish_payload if request else self.start_encounter
-            button.action_args = args           
-            choices.append(button)
+        detained = next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False)
+        if detained:
+            def begin_detained():
+                self.encounter = detained.back
+                self.set_buttons('action')
+            choices.append(ActionButton(texture='conditions/detained.png', action=begin_detained, scale=0.5))
+        else:
+            for encounter in self.encounters:
+                request = False
+                args = {}
+                if encounter in ['clue', 'expedition', 'gate', 'generic', 'green', 'orange', 'purple']:
+                    path = 'encounters/' + encounter + '.png'
+                    request = True
+                    args = {'topic': self.investigator.name, 'payload':{'message': 'get_encounter', 'value': encounter if encounter != 'expedition' else self.investigator.location}}
+                elif encounter[:-2] in self.hub.location_manager.dead_investigators.keys():
+                    path = 'investigators/' + encounter[:-2] + '_portrait.png'
+                    args = {'value': 'investigators:' + '0' if self.hub.location_manager.dead_investigators[encounter[:-2]].hp_death else '1', 'loc': encounter[:-2]}
+                else:
+                    path = 'encounters/rumor.png'
+                    args = {'value': 'rumor:0', 'loc': encounter}
+                button = ActionButton(texture=path, scale=0.3)
+                button.action = self.hub.networker.publish_payload if request else self.start_encounter
+                button.action_args = args           
+                choices.append(button)
         self.choice_layout = create_choices('Choose Encounter', choices=choices)
         self.layout.add(self.choice_layout)
         self.layout.add(self.phase_button)
@@ -575,7 +582,10 @@ class EncounterPane():
             if card != None:
                 self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, player.name)
                 self.hub.info_panes['possessions'].setup()
-            self.set_buttons(step)
+                self.wait_step = step
+                self.hub.waiting_pane = self
+            else:
+                self.set_buttons(step)
         else:
             items = []
             if kind == 'all':
@@ -972,6 +982,7 @@ class EncounterPane():
             self.reckoning()
         elif key in self.hub.all_investigators:
             self.hub.networker.publish_payload({'message': 'action_done'}, key + '_player')
+            self.finish(True)
         else:
             self.clear_overlay()
             self.set_button_set = set()
@@ -1071,12 +1082,12 @@ class EncounterPane():
         self.layout.add(self.choice_layout)
         self.rolls = [roll]
 
-    def skill_test(self, stat, mod=0, step='pass', fail='fail', clue_mod=False):
+    def skill_test(self, stat, mod=0, step='pass', fail='fail', clue_mod=False, needed=1):
         self.clear_overlay()
         self.clear_buttons()
         mod = mod if not clue_mod else mod + len(self.investigator.clues)
         def confirm_test():
-            if next((roll for roll in self.rolls if roll >= self.investigator.success), None) != None:
+            if len([roll for roll in self.rolls if roll >= self.investigator.success]) >= needed:
                 self.set_buttons(step)
             else:
                 self.set_buttons(fail)
@@ -1137,6 +1148,8 @@ class EncounterPane():
 
     def spend_clue(self, step='finish', clues=1, condition=None, is_check=False, not_spend=False):
         if condition != None:
+            if condition == 'all':
+                clues = len(self.investigator.clues)
             if condition == 'half':
                 clues = math.ceil(self.hub.location_manager.player_count / 2)
             elif 'rumor_token' in condition:
@@ -1324,7 +1337,9 @@ class SmallCardPane(EncounterPane):
             'adjust_damage': self.adjust_damage,
             'mod_die': self.mod_die,
             'temp_bonus': self.temp_bonus,
-            'monster_reckoning_move': self.monster_reckoning_move
+            'monster_reckoning_move': self.monster_reckoning_move,
+            'kleptomania': self.kleptomania,
+            'violent_outbursts': self.violent_outbursts
         }
         small_card_req_dict = {
             'trade': lambda args: self.hub.location_manager.player_count > 1
@@ -1444,6 +1459,41 @@ class SmallCardPane(EncounterPane):
         else:
             investigator = list(paths.keys())[0]
             move_to_investigator(monster, distance, investigator)
+
+    def kleptomania(self, current_items=None):
+        if current_items == None:
+            self.encounter['aargs'][0]['current_items'] = [item.name for item in self.investigator.possessions['assets']]
+            self.encounter['aargs'][0]['skip'] = True
+            del self.encounter['aargs'][0]['text']
+            self.request_card('assets', 'action', tag='item')
+        else:
+            item = next((item for item in self.investigator.possessions['assets'] if item.name not in current_items))
+            self.encounter['targs'][0]['needed'] = item.cost
+            self.encounter['aargs'][0]['current_items'] = None
+            del self.encounter['aargs'][0]['skip']
+            self.encounter['aargs'][0]['text'] = 'Steal an item'
+            self.encounter['dargs'][0]['text'] = 'Discard ' + human_readable(item.name)
+            self.encounter['dargs'][0]['name'] = item.name
+            self.encounter['test_text'] = 'You must hide from the authorities.\n\nItem Acquired: ' + human_readable(item.name) + '\n\nSuccesses needed (Cost): ' + str(item.cost)
+            self.set_buttons('test')
+
+    def violent_outbursts(self, current_players=None, step='finish'):
+        if current_players == None:
+            current_players = [inv.name for inv in self.hub.location_manager.all_investigators.values() if inv.location == self.investigator.location and inv.name != self.investigator.name]
+        if len(current_players) == 0:
+            self.phase_button.text = self.encounter.get('title', '')
+            self.set_buttons(step)
+        else:
+            encounter = {'action': ['hp_san'], 'aargs': [{'hp': -2, 'skip': True, 'step': self.investigator.name}], 'action_text': 'Paranoia - Violent Outbursts\n\n\n' + human_readable(self.investigator.name)}
+            self.hub.waiting_pane = self
+            receiver = current_players.pop(0)
+            self.player_wait_step = 'violent_outbursts'
+            self.player_wait_args = {'current_players': current_players, 'step': step}
+            self.hub.networker.publish_payload({'message': 'player_encounter', 'value': encounter}, receiver + '_player')
+
+    def player_encounter(self, encounter):
+        self.encounter = encounter
+        self.set_buttons('action')
 
     def encounter_selected(self, encounter):
         self.encounters.remove(encounter)

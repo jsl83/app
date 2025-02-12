@@ -1,38 +1,77 @@
 ---
-  mists_of_releh:
-    tags:
-      - incantation
-    action: "before_combat:test_lore"
-    variants:
-      -
-        - 2:
-          action: None
-          text: You walk forward boldly, knowing the mists will keep you hidden. No additional effects.
-        - 0:
-          action: hp_san
-          text: A thick, black fog engulfs you, chokingyour lungs and stinging your eyes. Lose 1 Health and 1 Sanity
-          args:
-            health: -1
-            sanity: -1
-      -
-        - 1:
-          action: hp_san
-          text: Although you are hidden by the darkness, you feel unnatural tendrils of fog wrapping around your body. Lose 1 Sanity
-          args:
-            health: 0
-            sanity: -1
-        - 0:
-          action: conditional_effect
-          text: You see a monstrous form vanish into the fog. Whatever it was, you fear it may return the next time you recite the incantation. Discard this card unless you gain a Hallucinations Condition.
-          args:
-            action: discard
-            args: mists_of_releh
-            unless: gain_item
-            unless_args: condition:hallucinations
   blessing_of_isis:
     tags:
       - ritual
     variants: 2
+    action:
+      title: Blessing of Isis
+      action:
+        - choose_investigator
+      aargs:
+        - skip: True
+          step: lore
+          no_bless: True
+          on_location: True
+          action: set_chosen
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          mod: -1
+          step: request
+          fail: spell_flip
+      request:
+        - request_card
+      rargs:
+        - kind: conditions
+          name: blessed
+          skip: True
+          investigator: chosen
+          step: spell_flip
+      spell_flip:
+        - spell_flip
+      sargs:
+        - skip: True
+          name: blessing_of_isis
+      action_text: "Test Lore -1. If you pass, choose an investigator on your space that does not have a Blessed Condition to gain a Blessed Condition.\n\nThen flip this card."
+    '1':
+      0:
+        action:
+          - request_card
+        aargs:
+          - kind: conditions
+            name: cursed
+            investigator: chosen
+            text: Next
+        action_text: "The goddess has been angered, and her wrath is terrible to behold.\n\nThe chosen investigator gains 1 Cursed Condition.\n\nThen flip this card."
+      1:
+        action:
+          - hp_san
+        aargs:
+          - san: -1
+            skip: True
+        action_text: "You feel an almighty power surge through you and it is too much for your mind to handle.\n\nLose 1 Sanity.\n\nThen flip this card."
+      2:
+        action:
+          - set_buttons
+        aargs:
+          - key: finish
+            text: Next
+        action_text: "The goddess smiles upon your cause.\n\nNo additional effects.\n\nThen flip this card."
+    '2':
+      0:
+        action:
+          - hp_san
+        aargs:
+          - hp: -1
+            skip: True
+        action_text: "Your chanting fills the air with ancient voices, and you fear the invocation has drained part of your life away.\n\nLose 1 Health.\n\nThen flip this card."
+      3:
+        action:
+          - blessing_of_isis
+        aargs:
+          - text: Next
+        action_text: "The goddess smiles upon your cause.\n\nEach Investigator on your space that does not have a Blessed Condition may gain a Blessed Condition.\n\nThen flip this card."
   clairvoyance:
     tags:
       - incantation
@@ -50,6 +89,10 @@
       - incantation
     variants: 2
   instill_bravery:
+    tags:
+      - incantation
+    variants: 2
+  mists_of_releh:
     tags:
       - incantation
     variants: 2

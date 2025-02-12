@@ -121,6 +121,7 @@ class EncounterPane():
         self.san_damage = 0
         self.current_key = ''
         self.combat_only = False
+        self.chosen_investigator = ''
 
     def clear_overlay(self):
         if self.choice_layout in self.layout.children:
@@ -363,6 +364,7 @@ class EncounterPane():
         self.mythos_switch = False
         self.investigator.encounter_impairment = 0
         self.no_loc_click = None
+        self.chosen_investigator = ''
         if not skip:
             self.hub.my_turn = False
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -406,25 +408,35 @@ class EncounterPane():
         self.ambush_steps = (step, fail)
         self.combat_will(self.hub.location_manager.create_ambush_monster(name))
 
-    def choose_investigator(self, action, no_self=False, on_location=False, step='finish'):
+    def choose_investigator(self, action, no_self=False, on_location=False, step='finish', no_bless=False):
         choices = []
         subtitle = ''
         if action == 'delay':
             def button_action(name):
+                self.chosen_investigator = name
                 self.hub.networker.publish_payload({'message': 'become_delayed'}, name + '_server')
                 self.set_buttons(step)
             subtitle = 'to become Delayed'
         elif action == 'same_action':
             def button_action(name):
+                self.chosen_investigator = name
                 self.clear_overlay()
                 self.encounter[self.current_key[0] + 'args'][0]['investigator'] = name
                 self.encounter[self.current_key[0] + 'args'][0]['skip'] = True
                 self.set_buttons(self.current_key)
-        for names in [inv.name for inv in list(self.hub.location_manager.all_investigators.values()) if (not no_self or inv.name != self.investigator.name) and (not on_location or inv.location == self.investigator.location)]:
-            choices.append(ActionButton(texture='investigators/' + names + '_portrait.png', action=button_action, action_args={'name': names}, scale=0.4))
-        self.clear_overlay()
-        self.choice_layout = create_choices('Choose Investigator', subtitle, choices)
-        self.layout.add(self.choice_layout)
+        elif action == 'set_chosen':
+            def button_action(name):
+                self.chosen_investigator = name
+                self.clear_overlay()
+                self.set_buttons(step)
+        investigators = [inv.name for inv in list(self.hub.location_manager.all_investigators.values()) if (not no_self or inv.name != self.investigator.name) and (not on_location or inv.location == self.investigator.location) and (not no_bless or not next((card for card in inv.possessions['conditions'] if card.name == 'blessed'), False))]
+        if len(investigators) != 0:
+            for names in investigators:
+                choices.append(ActionButton(texture='investigators/' + names + '_portrait.png', action=button_action, action_args={'name': names}, scale=0.4))
+            self.clear_overlay()
+            self.choice_layout = create_choices('Choose Investigator', subtitle, choices)
+            self.layout.add(self.choice_layout)
+        return len(investigators)
 
     def close_gate(self, step='finish', skip_triggers=False):
         if self.gate_close:
@@ -910,10 +922,14 @@ class EncounterPane():
 
     def request_card(self, kind, step='finish', name='', tag='', trigger=False, investigator=None):
         if investigator in ['select', 'on_location']:
-            self.choose_investigator('same_action', on_location=investigator == 'on_location')
+            choices = self.choose_investigator('same_action', on_location=investigator == 'on_location')
+            if choices == 0:
+                self.set_buttons(step)
         else:
             if investigator == None:
                 requestor = self.investigator
+            elif investigator == 'chosen':
+                requestor = self.hub.location_manager.all_investigators[self.chosen_investigator]
             else:
                 requestor = next((inv for inv in self.hub.location_manager.all_investigators.values() if inv.name == investigator))
             card = next((card for card in requestor.possessions[kind] if card.name == name), False)
@@ -1339,7 +1355,9 @@ class SmallCardPane(EncounterPane):
             'temp_bonus': self.temp_bonus,
             'monster_reckoning_move': self.monster_reckoning_move,
             'kleptomania': self.kleptomania,
-            'violent_outbursts': self.violent_outbursts
+            'violent_outbursts': self.violent_outbursts,
+            'spell_flip': self.spell_flip,
+            'blessing_of_isis': self.blessing_of_isis
         }
         small_card_req_dict = {
             'trade': lambda args: self.hub.location_manager.player_count > 1
@@ -1374,6 +1392,22 @@ class SmallCardPane(EncounterPane):
         if investigator == None:
             investigator = self.investigator.name
         self.encounter = getattr(next((card for card in self.hub.location_manager.all_investigators[investigator].possessions[kind] if card.name == name)), 'back')
+        self.set_buttons('action')
+
+    def spell_flip(self, name):
+        card_back = next((card for card in self.investigator.possessions['spells'] if card.name == name)).back
+        thresholds = list(card_back.keys())
+        thresholds.sort()
+        successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
+        index = 0
+        for x in range(len(thresholds)):
+            index = x
+            if successes == thresholds[x]:
+                break
+            elif successes < thresholds[x]:
+                index = x - 1
+                break
+        self.encounter = card_back[thresholds[index]]
         self.set_buttons('action')
 
     def adjust_damage(self, hp_change=0, san_change=0, step='finish'):
@@ -1490,6 +1524,12 @@ class SmallCardPane(EncounterPane):
             self.player_wait_step = 'violent_outbursts'
             self.player_wait_args = {'current_players': current_players, 'step': step}
             self.hub.networker.publish_payload({'message': 'player_encounter', 'value': encounter}, receiver + '_player')
+
+    def blessing_of_isis(self):
+        investigators = [inv for inv in self.hub.location_manager.all_investigators.values() if (not next((card for card in inv.possessions['conditions'] if card.name == 'blessed'), False)) and inv.location == self.investigator.location]
+        for inv in investigators:
+            self.hub.request_card('conditions', 'blessed', investigator=inv)
+        self.set_buttons('finish')
 
     def player_encounter(self, encounter):
         self.encounter = encounter

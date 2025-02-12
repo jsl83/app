@@ -35,6 +35,7 @@ class EncounterPane():
             'allow_move': self.allow_move,
             'ambush': self.ambush,
             'choose_investigator': self.choose_investigator,
+            'choose_location': self.choose_location,
             'close_gate': self.close_gate,
             'combat': self.encounter_phase,
             'condition_check': self.condition_check,
@@ -122,6 +123,8 @@ class EncounterPane():
         self.current_key = ''
         self.combat_only = False
         self.chosen_investigator = ''
+        self.chosen_location = ''
+        self.clue_location = None
 
     def clear_overlay(self):
         if self.choice_layout in self.layout.children:
@@ -193,8 +196,10 @@ class EncounterPane():
             else:
                 self.set_buttons(step)
 
-    def choose_encounter(self):
+    def choose_encounter(self, remote_clue=False):
+        self.clear_overlay()
         choices = []
+        options = []
         self.phase_button.text = 'Encounter Phase'
         detained = next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False)
         if detained:
@@ -206,6 +211,16 @@ class EncounterPane():
             for encounter in self.encounters:
                 request = False
                 args = {}
+                for trigger in [trig for trig in self.hub.triggers['preencounter'] if self.hub.trigger_check(trig, self.encounter_type) and (not trig.get('single_use', False) or not trig['used'])]:
+                    small_card = SmallCardPane(self.hub)
+                    def finish_action(name):
+                        if trigger['name'] == 'clairvoyance' and small_card.rolls != None:
+                            self.choice_layout.children = [button for button in self.choice_layout.children if not getattr(button, 'text', '') == 'Clairvoyance']
+                            trigger['used'] = True
+                            if len([roll for roll in small_card.rolls if roll >= self.investigator.success]) > 0:
+                                self.choose_encounter(small_card.chosen_location)
+                    small_card.rolls = None
+                    options.append(ActionButton(width=100, height=50, text=human_readable(trigger['name']), texture='buttons/placeholder.png', action=small_card.setup, action_args={'encounters': [trigger], 'parent': self, 'force_select': True, 'finish_action': finish_action}))
                 if encounter in ['clue', 'expedition', 'gate', 'generic', 'green', 'orange', 'purple']:
                     path = 'encounters/' + encounter + '.png'
                     request = True
@@ -220,18 +235,21 @@ class EncounterPane():
                 button.action = self.hub.networker.publish_payload if request else self.start_encounter
                 button.action_args = args           
                 choices.append(button)
-        self.choice_layout = create_choices('Choose Encounter', choices=choices)
+        if remote_clue:
+            choices.append(ActionButton(texture='encounters/clue.png', action=self.hub.networker.publish_payload, action_args={'topic': self.investigator.name, 'payload':{'message': 'get_encounter', 'value': 'clue', 'location': remote_clue}}, scale=0.3, text=human_readable(remote_clue)))
+        self.choice_layout = create_choices('Choose Encounter', choices=choices, options=options)
         self.layout.add(self.choice_layout)
         self.layout.add(self.phase_button)
 
     def start_encounter(self, value, loc=None):
-        #self.clear_overlay()
         choice = value.split(':')
         if loc == None:
             location = self.investigator.location
             loc = 'gate' if choice[0] == 'gate' else location if (location.find('space') == -1 and choice[0] != 'generic') else self.hub.location_manager.locations[location]['kind']
-        #self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
-        self.encounter = ENCOUNTERS['gate']['gate'][0]
+        if choice[0] == 'clue':
+            self.clue_location = loc if loc != None else self.investigator.location
+            loc = self.hub.ancient_one.name
+        self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
         self.encounter_type.append(choice[0])
         if loc == 'gate':
             self.phase_button.text = self.encounter['world']
@@ -365,6 +383,9 @@ class EncounterPane():
         self.investigator.encounter_impairment = 0
         self.no_loc_click = None
         self.chosen_investigator = ''
+        self.chosen_location = ''
+        for x in range(5):
+            self.investigator.skill_bonuses[x] = [bonus for bonus in self.investigator.skill_bonuses[x] if not bonus.get('temp', False)]
         if not skip:
             self.hub.my_turn = False
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
@@ -437,6 +458,29 @@ class EncounterPane():
             self.choice_layout = create_choices('Choose Investigator', subtitle, choices)
             self.layout.add(self.choice_layout)
         return len(investigators)
+
+    def choose_location(self, action, has_token=None, step='finish'):
+        def selected(loc):
+            if action == 'set_chosen':
+                self.chosen_location = loc
+            self.set_buttons(step)
+        def no_loc():
+            self.proceed_button.disable()
+            self.proceed_button.text = 'Select Location'
+        def select_loc(loc):
+            if has_token == None or self.hub.location_manager.locations[loc][has_token]:
+                self.proceed_button.enable()
+                self.proceed_button.text = 'Confirm: ' + human_readable(loc)
+                self.proceed_button.action = selected
+                self.proceed_button.action_args = {'loc': loc}
+            else:
+                no_loc()
+        self.clear_buttons([self.proceed_button])
+        self.clear_overlay()
+        self.hub.click_pane = self
+        self.click_action = select_loc
+        self.no_loc_click = no_loc
+        no_loc()
 
     def close_gate(self, step='finish', skip_triggers=False):
         if self.gate_close:
@@ -564,6 +608,7 @@ class EncounterPane():
             get_delayed()            
 
     def despawn_clues(self, location, player=False, lead_only=False, step='finish'):
+        location = location if location != 'chosen' else self.chosen_location
         if player:
             for clue in self.investigator.clues:
                 self.investigator.clues.remove(clue)
@@ -1423,7 +1468,11 @@ class SmallCardPane(EncounterPane):
         self.set_buttons(step)
 
     def temp_bonus(self, stat, value, name, condition, step='finish'):
-        self.investigator.skill_bonuses[stat].append({'temp': True, 'value': value, 'name': name, 'condition': condition})
+        if stat == 'all':
+            for x in range(5):
+                self.investigator.skill_bonuses[x].append({'temp': True, 'value': value, 'name': name, 'condition': condition})
+        else:
+            self.investigator.skill_bonuses[stat].append({'temp': True, 'value': value, 'name': name, 'condition': condition})
         self.set_buttons(step)
 
     def trade(self, investigator=None, give_only=False, tag=None, swap=False, step='finish'):
@@ -1554,6 +1603,7 @@ class SmallCardPane(EncounterPane):
 
     def set_buttons(self, key):
         if key == 'no_use':
+            self.encounters.append(self.encounter)
             self.item_used = False
             self.finish()
         else:

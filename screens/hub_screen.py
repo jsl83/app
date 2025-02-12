@@ -51,7 +51,8 @@ class HubScreen(arcade.View):
             'combat_san_reduction': [],
             'rest_san_bonus': [],
             'rest_hp_bonus': [],
-            'all_test': []
+            'all_test': [],
+            'preencounter': []
         }
         
         self.item_actions = {}
@@ -440,10 +441,10 @@ class HubScreen(arcade.View):
                                     #'''
                             case 'encounter':
                                     #FOR TESTING
-                                self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                     #END TESTING
-                                #self.show_encounter_pane()
-                                #self.encounter_pane.encounter_phase()
+                                self.show_encounter_pane()
+                                self.encounter_pane.encounter_phase()
                             case 'reckoning':
                                 self.encounter_pane.reckoning(first=True)
                             case 'mythos':
@@ -717,6 +718,8 @@ class HubScreen(arcade.View):
         if trigger.get('spend_clue', False) and self.encounter_pane.spend_clue(is_check=True) > len(self.investigator.clues):
             pass_condition = False
         if trigger.get('not_encounter', False) and trigger['not_encounter'] in encounter_types:
+            pass_condition = False
+        if trigger.get('exists', False) and not next((loc for loc in self.location_manager.locations.values() if loc[trigger['exists']]), False):
             pass_condition = False
         return pass_condition
     

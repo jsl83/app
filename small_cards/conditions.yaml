@@ -19,6 +19,11 @@
             - kind: conditions
               name: amnesia
               skip: True
+          nada:
+            - set_buttons
+          nargs:
+            - key: finish
+              skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
       action:
@@ -101,6 +106,11 @@
           dargs:
             - kind: conditions
               name: back_injury
+              skip: True
+          nada:
+            - set_buttons
+          nargs:
+            - key: finish
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
@@ -298,6 +308,11 @@
       fargs:
         - kind: conditions
           name: dark_pact
+          skip: True
+      nada:
+        - set_buttons
+      nargs:
+        - key: finish
           skip: True
       action_text: Roll 1 die. On a 1, it is time to fulfill your part of the bargain; flip this card.
     '1':
@@ -607,6 +622,11 @@
             - kind: conditions
               name: hallucinations
               skip: True
+          nada:
+            - set_buttons
+          nargs:
+            - key: finish
+              skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
       action:
@@ -680,6 +700,11 @@
             - kind: conditions
               name: internal_injury
               skip: True
+          nada:
+            - set_buttons
+          nargs:
+            - key: finish
+              skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
       action:
@@ -750,6 +775,11 @@
           dargs:
             - kind: conditions
               name: leg_injury
+              skip: True
+          nada:
+            - set_buttons
+          nargs:
+            - key: finish
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
@@ -826,6 +856,11 @@
           dargs:
             - kind: conditions
               name: paranoia
+              skip: True
+          nada:
+            - set_buttons
+          nargs:
+            - key: finish
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:

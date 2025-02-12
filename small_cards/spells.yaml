@@ -76,6 +76,94 @@
     tags:
       - incantation
     variants: 2
+    triggers:
+      - owner_only: True
+        kind: preencounter
+        exists: clue
+        trigger:
+          single_use: True
+          title: Clairvoyance
+          action:
+            - set_buttons
+            - set_buttons
+          aargs:
+            - key: choose
+              text: Use
+            - key: no_use
+              text: Back
+          choose:
+            - choose_location
+          cargs:
+            - step: test
+              has_token: clue
+              action: set_chosen
+              skip: True
+          test:
+            - skill
+          targs:
+            - stat: 0
+              step: flip
+              fail: flip
+          flip:
+            - spell_flip
+          fargs:
+            - skip: True
+              name: clairvoyance
+          action_text: "During the Encounter Phase, you may test Lore. If you pass, you may choose to encounter a Clue as if you are on its space, ignoring Monsters on that space.\n\nThen flip this card."
+    '1':
+      0:
+        action:
+          - discard
+          - request_card
+        aargs:
+          - kind: spells
+            name: clairvoyance
+            text: Discard this card
+          - kind: conditions
+            name: paranoia
+            text: Gain a Paranoia Condition
+        action_text: "Opening your mind wreaks havoc on your psyche."
+        flip:
+          - a
+          - a
+      1:
+        action:
+          - set_buttons
+        aargs:
+          - key: finish
+            text: Next
+        action_text: "Your mind travels across the world, and the knowledge becomes clear.\n\nFlip this card."
+      3:
+        action:
+          - temp_bonus
+        aargs:
+          - stat: all
+            value: 1
+            name: clairvoyance
+            condition: clue
+            text: Next
+        action_text: "The journey becomes clear to you, and the answer seems so simple.\n\nYou may roll 1 additional die when resolving tests during the Research Encounter.\n\nThen flip this card."
+    '2':
+      0:
+        action:
+          - despawn_clues
+        aargs:
+          - location: chosen
+            text: Next
+        action_text: "The knowledge gets lost in the void.\n\nDiscard the chosen Clue.\n\nThen flip this card."
+      1:
+        action:
+          - hp_san
+        aargs:
+          - san: -1
+            skip: True
+        action_text: "The knowledge is too great for one mind to contain.\n\nLose 1 Sanity.\n\nThen flip this card."
+      3:
+        action:
+          - gain_clue
+        aargs:
+          - text: Next
+        action_text: "Suddenly, the images and ideas coalesce into a new realization.\n\nGain 1 Clue.\n\nThen flip this card."
   conjuration:
     tags:
       - ritual

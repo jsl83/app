@@ -335,6 +335,7 @@ class Networker(threading.Thread, BanyanBase):
                         self.publish_payload({'message': 'lead_selected', 'value': payload['value']}, 'server_update')
                         self.publish_payload({'message': 'player_turn', 'value': 'action'}, payload['value'] + '_server')
                     case 'turn_finished':
+                        self.restock_reserve()
                         self.current_player += 1
                         if self.current_player == len(self.selected_investigators):
                             self.current_player = 0
@@ -659,7 +660,7 @@ class Networker(threading.Thread, BanyanBase):
     def asset_request(self, command, name, investigator, tag=''):
         match command:
             case 'acquire':
-                self.restock_reserve([name])
+                self.restock_reserve([name], refill=False)
                 self.investigators[investigator]['assets'].append(name)
                 self.publish_payload({'message': 'card_received', 'kind': 'assets', 'value': name, 'owner': investigator}, 'server_update')
                 return name

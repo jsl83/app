@@ -85,7 +85,7 @@ class EncounterPane():
             'spend_clue': lambda args: len(self.investigator.clues) >= self.spend_clue(is_check=True, **args),
             'discard': lambda *args: self.discard_check(args[0]['kind'], args[0].get('tag', 'any'), args[0].get('name', None)),
             'solve_rumor': lambda *args: len(self.hub.location_manager.rumors) > 0,
-            'gain_asset': lambda *args: not args[0].get('reserve', False) or len([item for item in self.hub.info_panes['reserve'].reserve if args[0]['tag'] == 'any' or args[0]['tag'] in item['tags']]) > 0,
+            'gain_asset': lambda args: self.gain_asset(is_check=True, **args),
             'group_pay': lambda args: self.group_pay(is_check=True, **args),
             'group_pay_reckoning': lambda *args: self.group_pay(args[0]['kind'], args[0]['name'], is_check=True)
         }
@@ -630,13 +630,13 @@ class EncounterPane():
         self.hub.location_manager.expeditions_enabled = enabled
         self.set_buttons(step)
 
-    def discard(self, kind, step='finish', tag='any', amt='one', name=None, get_owner=False, investigator=None):
+    def discard(self, kind, step='finish', tag='any', amt='one', name=None, get_owner=False, investigator=None, not_in_rolls=None):
         player = self.investigator if investigator == None else self.hub.location_manager.all_investigators[investigator]
         if get_owner:
             player = next((inv for inv in self.hub.location_manager.all_investigators.values() if name in [pos.name for pos in inv.possessions[kind]]))
         if name != None:
             card = next((item for item in player.possessions[kind] if item.name == name), None)
-            if card != None:
+            if card != None and (not_in_rolls == None or not not_in_rolls in self.rolls):
                 self.hub.networker.publish_payload({'message': 'card_discarded', 'value': card.get_server_name(), 'kind': kind}, player.name)
                 self.hub.info_panes['possessions'].setup()
                 self.wait_step = step
@@ -703,25 +703,68 @@ class EncounterPane():
     def end_mythos(self):
         self.hub.networker.publish_payload({'message': 'end_mythos'}, self.investigator.name)
 
-    def gain_asset(self, tag='any', reserve=False, step='finish', name=''):
+    def gain_asset(self, tag='any', reserve=False, step='finish', name='', successes=False, is_check=False):
+        cost = len([roll for roll in self.rolls if roll >= self.investigator.success]) if successes else 99
+        if successes:
+            card_back = next((card for card in self.investigator.possessions['spells'] if card.name == 'conjuration')).back
+            if successes != 'multi':
+                card_back[2]['cost'] = cost
         if reserve:
             items = self.hub.info_panes['reserve'].reserve
             pickable = []
             for tags in tag.split(','):
-                pickable += items if tag == 'any' else [item for item in items if tags in item['tags']]
+                pickable += items if tag == 'any' else [item for item in items if tags in item['tags'] and item['cost'] <= cost]
+            if is_check:
+                return len(pickable) > 0
             if len(pickable) > 0:
-                def next_step(item, step):
-                    self.wait_step = step
-                    self.hub.waiting_pane = self
-                    self.hub.request_card('assets', item, 'acquire')
-                    self.clear_overlay()
-                choices = [ActionButton(texture=item['texture'], width=120, height=185, action=next_step, action_args={'item': item['name'], 'step': step}) for item in pickable]
-                self.choice_layout = create_choices(choices = choices, title='Choose Asset')
+                selected = []
+                options = []
+                if successes == 'multi':
+                    def confirm():
+                        if len(selected) == 0:
+                            self.set_buttons(step)
+                        else:
+                            for item in selected:
+                                if selected.index(item) == len(selected) - 1:
+                                    self.wait_step = step
+                                    self.hub.waiting_pane = self
+                                self.hub.request_card('assets', item, 'acquire')
+                    confirm_button = ActionButton(width=100, height=50, y=50, action=confirm, text='Confirm', texture='buttons/placeholder.png')
+                    confirm_button.disable()
+                    options.append(confirm_button)
+                    def next_step(item, step):
+                        #card_back = next((card for card in self.investigator.possessions['spells'] if card.name == 'conjuartion')).back
+                        if item['name'] in selected:
+                            selected.remove(item['name'])
+                            card_back[2]['cost'] += item['cost']
+                        else:
+                            selected.append(item['name'])
+                            card_back[2]['cost'] -= item['cost']
+                        if card_back[2]['cost'] < 0:
+                            confirm_button.disable()
+                        else:
+                            confirm_button.enable()
+                        confirm_button.trigger_render()
+                        self.choice_layout.children[2].text = 'Successes: ' + str(card_back[2]['cost'])
+                        self.choice_layout.children[2].trigger_full_render()
+                else:
+                    def next_step(item, step):
+                        self.wait_step = step
+                        self.hub.waiting_pane = self
+                        if successes:
+                            card_back[2]['cost'] -= item['cost']
+                        self.hub.request_card('assets', item['name'], 'acquire')
+                        self.clear_overlay()
+                choices = [ActionButton(texture=item['texture'], width=120, height=185, action=next_step, action_args={'item': item, 'step': step}) for item in pickable]
+                self.choice_layout = create_choices(choices = choices, options=options, title='Choose Asset', subtitle=('Successes: ' + str(card_back[2]['cost'])) if successes else '')
                 self.layout.add(self.choice_layout)
+            elif not successes:
+                self.set_buttons(step)
         else:
             self.wait_step = step
             self.hub.waiting_pane = self
             self.hub.request_card('assets', name, tag=tag)
+            return True
 
     def gain_clue(self, step='finish', amt=1, rolls=False):
         if rolls:

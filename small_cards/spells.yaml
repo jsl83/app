@@ -168,6 +168,97 @@
     tags:
       - ritual
     variants: 2
+    action:
+      title: Conjuration
+      action:
+        - skill
+      aargs:
+        - stat: 0
+          mod: 1
+          step: gain
+      gain:
+        - gain_asset
+      gargs:
+        - reserve: True
+          skip: True
+          tag: trinket,item
+          successes: True
+          step: fail
+      fail:
+        - spell_flip
+      fargs:
+        - skip: True
+          name: conjuration
+      action_text: "Test Lore +1. If you pass, you may gain 1 Item or Trinket Asset from the reserve with value equal to or less than your test result.\n\nThen flip this card."
+    '1':
+      0:
+        action:
+          - discard
+        aargs:
+          - kind: spells
+            name: conjuration
+            not_in_rolls: 4
+            text: Next
+        action_text: "What could you have possibly forgotten? Why didn't the spell work?\n\nIf you did not roll any 4's, discard this card, otherwise flip this card."
+      1:
+        action:
+          - hp_san
+        aargs:
+          - san: -1
+            skip: True
+        action_text: "For a moment, your mind is exposed to a powerful intelligence, dwelling between worlds.\n\nLose 1 Sanity.\n\nThen flip this card."
+      4:
+        action:
+          - gain_asset
+          - set_buttons
+        aargs:
+          - reserve: True
+            text: Next
+            tag: trinket,item
+          - text: Skip
+            key: finish
+        fail:
+          - a
+          - a
+        action_text: "The magic is powerful and beyond your expectations.\n\nGain 1 additional Item or Trinket Asset from the reserve.\n\nThen flip this card."
+    '2':
+      0:
+        action:
+          - discard
+          - discard
+        aargs:
+          - kind: spells
+            name: conjuration
+            text: Discard this card
+          - kind: assets
+            tag: item
+            text: Discard an Item Asset
+        fail:
+          - a
+          - a
+        action_text: You can feel that the spell has not worked the way you hoped.
+      1:
+        action:
+          - hp_san
+        aargs:
+          - san: -1
+            skip: True
+        action_text: Something unnatural tries to pull the object away from you.
+      2:
+        action:
+          - gain_asset
+          - set_buttons
+        aargs:
+          - reserve: True
+            skip: True
+            tag: trinket,item
+            successes: multi
+          - text: Skip
+            key: finish
+        fail:
+          - a
+          - a
+        action_text: "All of your wishes materialize before your eyes.\n\nYou may gain any number of Item or Trinket Assets from the reserve with total value equal to or less than your test result.\n\nThen, flip this card."
   feed_the_mind:
     tags:
       - ritual

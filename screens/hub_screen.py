@@ -331,7 +331,8 @@ class HubScreen(arcade.View):
                     del payload['message']
                     self.encounter_pane.group_pay(**payload)
                 case 'player_encounter':
-                    self.small_card_pane.setup([payload['value']], self.info_pane, force_select=True)
+                    small_card = SmallCardPane(self)
+                    small_card.setup([payload['value']], self.info_pane, force_select=True)
         else:
             match payload['message']:
                 case 'spawn':

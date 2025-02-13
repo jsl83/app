@@ -82,6 +82,7 @@ class PossessionsPane():
         self.hub.small_card_pane.encounter_type = [card.kind]
         card.action['title'] = human_readable(card.name)
         self.hub.gui_set(False)
+        self.hub.info_pane = self.hub.small_card_pane
         self.hub.small_card_pane.setup([card.action], self, textures=[card.texture], finish_action=self.on_finish_small, force_select=True)
 
     def on_finish_small(self, name):

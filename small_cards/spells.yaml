@@ -263,6 +263,94 @@
     tags:
       - ritual
     variants: 2
+    action:
+      title: Feed the Mind
+      action:
+        - choose_investigator
+      aargs:
+        - skip: True
+          step: lore
+          on_location: True
+          action: set_chosen
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          mod: -1
+          step: improve
+      improve:
+        - send_encounter
+      iargs:
+        - investigator: chosen
+          encounter:
+            action:
+              - improve_skill
+            aargs:
+              - skill: '01234'
+                skip: True
+            action_text: "Feed the Mind\n\n\nImprove 1 skill of your choice."
+          step: fail
+          skip: True
+          last_step: action
+      fail:
+        - spell_flip
+      fargs:
+        - skip: True
+          name: feed_the_mind
+      action_text: "Test Lore -1. If you pass, choose an Investigator on your space to improve 1 skill of their choice.\n\nThen flip this card."
+    '1':
+      0:
+        action:
+          - discard
+          - hp_san
+        aargs:
+          - kind: spells
+            name: feed_the_mind
+            text: Discard this card
+          - san: -2
+            text: Lose 2 Sanity
+        fail:
+          - a
+          - a
+        action_text: "Casting the spell, you open yourself to terrible knowledge. Your mind is filled with gibberish, repeating endlessly.\n\nFlip this card."
+      3:
+        action:
+          - send_encounter
+        aargs:
+          - investigator: chosen
+            encounter:
+              action:
+                - improve_skill
+              aargs:
+                - skill: '01234'
+                  skip: True
+              action_text: "Feed the Mind\n\n\nImprove 1 skill of your choice."
+            step: finish
+            text: Next
+            last_step: action
+        finish:
+          - set_buttons
+        fargs:
+          - key: finish
+            skip: True
+        action_text: "You manipulate memories and potential knowledge with a practiced ease.\n\nThe chosen investigator may improve 1 additional skill of his choice.\n\nThen flip this card."
+    '2':
+      0:
+        action:
+          - discard
+        aargs:
+          - kind: spells
+            name: feed_the_mind
+            not_in_rolls: 4
+            text: Next
+        action_text: "You were unable to sufficiently focus your mind. You wonder if you simply lack the mental discipline this spell requires.\n\nIf you did not roll any 4's, discard this card."
+      1:
+        action:
+          - hp_san
+        aargs:
+          - san: -1
+            skip: True
+        action_text: "Casting your thought into the ether, your mind returns with strange knowledge. You may not entirely be the same person you were before.\n\nLose 1 Sanity."
   flesh_ward:
     tags:
       - incantation

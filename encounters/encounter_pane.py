@@ -62,6 +62,7 @@ class EncounterPane():
             'request_card': self.request_card,
             'resting_enabled': self.resting_enabled,
             'select_location': self.select_location,
+            'send_encounter': self.send_encounter,
             'server_check': lambda: self.set_buttons('pass') if self.mythos_switch else self.set_buttons('fail'),
             'set_buttons': self.set_buttons,
             'set_doom': self.set_doom,
@@ -135,7 +136,8 @@ class EncounterPane():
         self.layout.clear()
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
-        self.layout.add(self.choice_layout)
+        if len(self.choice_layout.children) > 0:
+            self.layout.add(self.choice_layout)
         for button in buttons:
             self.layout.add(button)
 
@@ -1074,6 +1076,18 @@ class EncounterPane():
         self.hub.click_pane = self
         self.click_action = select_loc
 
+    def send_encounter(self, investigator, encounter, last_step, step='finish'):
+        player = None
+        if investigator == 'self':
+            player = self.investigator.name
+        elif investigator == 'chosen':
+            player = self.chosen_investigator
+        encounter[last_step[0] + 'args'][0]['step'] = self.investigator.name
+        self.hub.waiting_pane = self
+        self.player_wait_step = 'set_buttons'
+        self.player_wait_args = {'key': step}
+        self.hub.networker.publish_payload({'message': 'player_encounter', 'value': encounter}, player + '_player')
+
     def set_buttons(self, key):
         self.wait_step = None
         self.last_value = None
@@ -1661,5 +1675,6 @@ class SmallCardPane(EncounterPane):
             self.clear_overlay()
             self.hub.info_manager.add(self.parent.layout)
             self.hub.info_manager.trigger_render()
+            self.hub.info_pane = self.parent
             if self.finish_action != None:
                 self.finish_action(self.encounter_name)

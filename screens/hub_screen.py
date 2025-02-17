@@ -649,21 +649,21 @@ class HubScreen(arcade.View):
                     self.info_panes['investigator'].focus_button.text = 'x ' + str(self.investigator.focus)
                     is_reroll = True
                     if self.investigator.focus == 0:
-                        roll_button.disable()
-                        roll_button.style['font_color'] = arcade.color.ASH_GREY
-                        roll_button.trigger_render()
+                        pane.choice_layout.children.remove(roll_button)
                 elif name == 'clue:clue':
                     self.encounter_pane.spend_clue('nothing')
                     is_reroll = True
                     if self.encounter_pane.spend_clue(is_check=True) > len(self.investigator.clues):
-                        roll_button.disable()
-                        roll_button.style['font_color'] = arcade.color.ASH_GREY
-                        roll_button.trigger_render()
+                        pane.choice_layout.children.remove(roll_button)
                 else:
-                    roll_trigger = next((trig for trig in self.triggers[small_card.encounter_name.split(':')[0]] if trig['name'] == small_card.encounter_name.split(':')[1]))
+                    kind = small_card.encounter_name.split(':')[0]
+                    roll_trigger = next((trig for trig in self.triggers[kind] if trig['name'] == small_card.encounter_name.split(':')[1]))
                     if small_card.item_used:
-                        roll_button.disable()
-                        roll_trigger['used'] = True
+                        pane.choice_layout.children.remove(roll_button)
+                        if roll_trigger.get('temp', False):
+                            self.triggers[kind].remove(roll_trigger)
+                        else:
+                            roll_trigger['used'] = True
                         is_reroll = roll_trigger['mod_die'] != 'add_to'
                         reroll_all = roll_trigger['mod_die'] == 'all'
                     else:
@@ -703,7 +703,7 @@ class HubScreen(arcade.View):
             if self.encounter_pane.spend_clue(is_check=True) <= len(self.investigator.clues) and allow_clues:
                 options.append(ActionButton(action=finish_action, action_args={'name':'clue:clue'}, texture='icons/clue.png', text='Use', text_position=(20,-2), name='clue'))
             for kind in pane.encounter_type + [titles[skill].lower()] + ['all']:
-                reroll_triggers += [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('mod_die', False) and (not reroll['used'] or not reroll.get('single_use', False))]
+                reroll_triggers += [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('mod_die', False) and (not reroll.get('used', False) or not reroll.get('single_use', False))]
             if len(reroll_triggers) > 0:
                 for trigger in reroll_triggers:
                     trigger_button = ActionButton(width=100, height=50, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action, 'force_select': True}, texture='buttons/placeholder.png', text=human_readable(trigger['name']), name=trigger['name'])
@@ -914,7 +914,7 @@ class HubScreen(arcade.View):
             else:
                 self.end_turn()
 
-    def damage_monster(self, monster, damage, is_ambush=False):
+    def damage_monster(self, monster, damage, is_ambush=False, is_combat=False):
         choices = []
         if damage != 99 and monster.damage + damage >= monster.toughness:
             for trigger in self.triggers['monster_kill']:

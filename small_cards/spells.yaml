@@ -265,19 +265,19 @@
     variants: 2
     action:
       title: Feed the Mind
-      action:
+      choose:
         - choose_investigator
-      aargs:
+      cargs:
         - skip: True
-          step: lore
+          step: improve
           on_location: True
           action: set_chosen
-      lore:
+      action:
         - skill
-      largs:
+      aargs:
         - stat: 0
           mod: -1
-          step: improve
+          step: choose
       improve:
         - send_encounter
       iargs:
@@ -666,11 +666,290 @@
     tags:
       - ritual
     variants: 2
+    action:
+      title: Plumb the Void
+      action:
+        - choose_investigator
+      aargs:
+        - skip: True
+          step: lore
+          action: set_chosen
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          mod: -1
+          step: move
+          fail: spell_flip
+      move:
+        - allow_move
+      margs:
+        - distance: 99
+          skip: True
+          investigator: chosen
+          step: spell_flip
+      spell_flip:
+        - spell_flip
+      sargs:
+        - skip: True
+          name: plumb_the_void
+      action_text: "Test Lore -1. If you pass, an investigator of your choice may move to any space.\n\nThen flip this card."
+    '1':
+      0:
+        action:
+          - send_encounter
+        aargs:
+          - investigator: chosen
+            encounter:
+              title: Plumb the Void
+              action:
+                - hp_san
+              aargs:
+                - hp: -3
+                  skip: True
+              action_text: "The portal closes abruptly, nearly severing you in half."
+            skip: True
+            step: set
+            last_step: action
+        set:
+          - set_buttons
+        sargs:
+          - key: finish
+        action_text: "The portal closes abruptly, nearly severing your ally in half.\n\nThe chosen investigator loses 3 Health."
+        set_text: "Flip this card."
+      1:
+        action:
+          - hp_san
+        aargs:
+          - san: -1
+            skip: True
+        action_text: "The ritual requires an exhausting amount of concentration. Lose 1 Sanity.\n\nFlip this card."
+      3:
+        action:
+          - additional_action
+        aargs:
+          - text: Finish
+        action_text: "More than just warping space, you also manipulate time.\n\nYou may perform an additional action.\n\nFlip this card."
+    '2':
+      0:
+        action:
+          - discard
+          - request_card
+        aargs:
+          - kind: spells
+            name: plumb_the_void
+            text: Discard this card
+          - kind: conditions
+            name: amnesia
+            text: Gain an Amnesia Condition
+        spell_flip:
+          - a
+          - a
+        action_text: "You remember that a swirling passage to an unknown world opened before you, but did you travel through it? If you did, where did you go?\n\nDiscard this card unless you gain an Amnesia Condition."
+      2:
+        action:
+          - set_buttons
+        aargs:
+          - key: finish
+            text: Finish
+        action_text: "You bend the fabric of space to your will, transporting the subject across the globe.\n\nNo additional effect.\n\nFlip this card."
   shriveling:
     tags:
       - ritual
     variants: 2
+    action:
+      action:
+        - skill
+      aargs:
+        - step: choose
+          stat: 0
+          step: fail
+      fail:
+        - spell_flip
+      fargs:
+        - name: shriveling
+          skip: True
+      action_text: "Test Lore. If you pass, choose a Monster on your space to lose 2 Health.\n\nThen flip this card."
+    '1':
+      0:
+        action:
+          - discard
+          - hp_san
+        aargs:
+          - kind: spells
+            name: shriveling
+            text: Discard this card
+          - san: -2
+            text: Lose 2 Sanity
+        fail:
+          - a
+          - a
+        action_text: "The ritual echoes in your head until it becomes gibberish."
+      2:
+        action:
+          - choose_monster
+        aargs:
+          - skip: True
+            step: damage
+        damage:
+          - damage_monsters
+        dargs:
+          - damage: 2
+            text: Finish
+            chosen: True
+        action_text: "The enemy's flesh boils and peels away.\n\nNo additional effect.\n\nFlip this card."
+      3:
+        action:
+          - choose_monster
+        aargs:
+          - skip: True
+            step: damage
+        damage:
+          - damage_monsters
+        dargs:
+          - damage: success
+            text: Finish
+            chosen: True
+        action_text: "Flames and thick smoke envelop your target.\n\nThe chosen Monster loses Health equal to your test result instead.\n\nFlip this card."
+    '2':
+      0:
+        action:
+          - hp_san
+        aargs:
+          - hp: -2
+            skip: True
+        action_text: "The spell backfires, searing your hands.\n\nLose 2 Health.\n\nFlip this card."
+      1:
+        action:
+          - choose_monster
+        aargs:
+          - skip: True
+            step: damage
+        damage:
+          - damage_monsters
+        dargs:
+          - chosen: True
+            skip: True
+            damage: 2
+            step: sanity
+        sanity:
+          - hp_san
+        sargs:
+          - san: -1
+            skip: True
+        action_text: "The distinct smell of burning flesh lets you know the spell has been cast correctly.\n\nLose 1 Sanity.\n\nFlip this card."
+      2:
+        action:
+          - damage_monsters
+        aargs:
+          - damage: 2
+            single: False
+            location: self
+            text: Finish
+        action_text: "The magic spreads, and the burning flesh peels from your enemies' bodies.\n\nEach other Monster on your space also loses 2 Health.\n\nFlip this card."
   wither:
     tags:
       - incantation
     variants: 2
+    triggers:
+      - owner_only: True
+        kind: precombat
+        trigger:
+          action:
+            action:
+              - set_buttons
+              - set_buttons
+            aargs:
+              - text: Use
+                key: lore
+              - key: no_use
+                text: Back
+            lore:
+              - skill
+            largs:
+              - stat: 0
+                step: bonus
+            bonus:
+              - temp_bonus
+            bargs:
+              - stat: 3
+                value: 3
+                name: wither
+                condition: combat
+                skip: True
+                step: fail
+            fail:
+              - spell_flip
+            fargs:
+              - name: wither
+                skip: True
+            action_text: "When resolving a Combat Encounter, you may test Lore. If you pass, gain +3 Strength during that encounter.\n\nThen flip this card."
+    '1':
+      0:
+        action:
+          - discard
+          - hp_san
+        aargs:
+          - kind: spells
+            name: wither
+            text: Discard this card
+          - san: -2
+            text: Lose 2 Sanity
+        fail:
+          - a
+          - a
+        fargs:
+          - a
+          - a
+        action_text: "The spell's dark energy turns against you, flooding your mind with madness."
+      2:
+        action:
+          - temp_bonus
+        aargs:
+          - stat: 3
+            value: 5
+            name: wither
+            condition: combat
+            skip: True
+            step: sanity
+        sanity:
+          - hp_san
+        sargs:
+          - san: -1
+            skip: True
+        action_text: "The incantation takes effect with horrifying success.  Lose 1 Sanity and gain +5 Strength during that encounter instead."
+    '2':
+      0:
+        action:
+          - discard
+          - request_card
+        aargs:
+          - kind: spells
+            name: wither
+            text: Discard this card
+          - kind: conditions
+            name: internal_injury
+            text: Gain an Internal Injury Condition
+        fail:
+          - a
+          - a
+        fargs:
+          - a
+          - a
+        action_text: "The words must have been wrong. You suffer the damage you had hoped to inflict."
+      1:
+        action:
+          - hp_san
+        aargs:
+          - san: -1
+            skip: True
+        action_text: "The spell compacts and twists the target's body.\n\nLose 1 Sanity.\n\nFlip this card."
+      2:
+        action:
+          - temp_bonus
+        aargs:
+          - name: wither
+            condition: combat_strength_test
+            text: Finish
+            reroll: True
+        action_text: "The magic ripples and surges through the target once more.\n\nYou may reroll 1 die during the Strength test.\n\nFlip this card."

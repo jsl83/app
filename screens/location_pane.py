@@ -208,12 +208,12 @@ class LocationPane():
             self.rumor_details.style = {'font_size': self.location_manager.rumors[self.rumor].get('font_size', 12)}
         self.toggle_details(True)
 
-    def show_monster(self, unit):
+    def show_monster(self, unit_obj):
         self.layout.clear()
-        stats = unit.description_dictionary()
+        stats = unit_obj.description_dictionary()
         for stat in self.monster:
             self.monster[stat].text = str(stats[stat])
-        self.monster_picture.texture = arcade.load_texture(":resources:eldritch/images/monsters/" + unit.name + '.png')
+        self.monster_picture.texture = arcade.load_texture(":resources:eldritch/images/monsters/" + unit_obj.name + '.png')
         self.horror_test = arcade.gui.UITextureButton(x=1030, y=390, texture=self.icons[stats['horror_check']])
         self.strength_test = arcade.gui.UITextureButton(x=1030, y=325, texture=self.icons[stats['strength_check']])
         self.description_layout.add(self.horror_test)

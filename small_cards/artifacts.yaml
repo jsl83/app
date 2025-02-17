@@ -224,8 +224,16 @@
     triggers:
       - owner_only: True
         kind: precombat
+        first_combat: True
         trigger:
-          action: skip_combat
+          action:
+            action:
+              - skip_combat
+              - set_buttons
+            aargs:
+              - text: Use
+              - key: no_use
+                text: Back
   ruby_of_r'lyeh:
     tags:
       - item

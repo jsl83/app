@@ -413,7 +413,7 @@
           - key: finish
             return_value: success
             skip: True
-        action_text: "The spell's energy twists around you and locks your jaw shut as if it were forbidding you from speaking. You don't know if you will be allowed to speak those words again.\n\nIf you did not roll any 4's, discard this card."
+        action_text: "The spell's energy twists around you and locks your jaw shut as if it were forbidding you from speaking. You don't know if you will be allowed to speak those words again.\n\nIf you did not roll any 4's, discard this card.\n\nFlip this card."
       1:
         action:
           - hp_san
@@ -427,7 +427,7 @@
           - key: finish
             return_value: success
             skip: True
-        action_text: "It is unpleasant to watch this transformation, even when it succeeds.\n\nLose 1 Sanity."
+        action_text: "It is unpleasant to watch this transformation, even when it succeeds.\n\nLose 1 Sanity.\n\nFlip this card."
     '2':
       0:
         action:
@@ -453,7 +453,7 @@
         sargs:
           - key: finish
             return_value: success
-        action_text: "Something inside your chest shifts painfully.\n\nThe chosen investigator loses 1 Health unless he gains an Internal Injury Condition."
+        action_text: "Something inside your chest shifts painfully.\n\nThe chosen investigator loses 1 Health unless they gain an Internal Injury Condition.\n\nFlip this card."
       1:
         action:
           - set_buttons
@@ -461,7 +461,7 @@
           - key: finish
             return_value: success
             text: Next
-        action_text: "The spell causes skin to writhe and reform like a living being.\n\nNo additional effect."
+        action_text: "The spell causes skin to writhe and reform like a living being.\n\nNo additional effect.\n\nFlip this card."
       3:
         action:
           - set_buttons
@@ -469,15 +469,199 @@
           - key: finish
             return_value: success_num
             text: Next
-        action_text: "Flesh and bone mend themselves and harden against attack.\n\nPrevent that investigator from losing Health up to your test result instead."
+        action_text: "Flesh and bone mend themselves and harden against attack.\n\nPrevent that investigator from losing Health up to your test result instead.\n\nFlip this card."
   instill_bravery:
     tags:
       - incantation
     variants: 2
+    action:
+      title: Instill Bravery
+      action:
+        - skill
+      aargs:
+        - stat: 0
+          step: fail
+      fail:
+        - spell_flip
+      fargs:
+        - name: instill_bravery
+          skip: True
+      action_text: "Once per round, when an investigator would lose Sanity, you may test Lore. If you pass, prevent that investigator from losing up to 2 Sanity.\n\nThen flip this card."
+    triggers:
+      - kind: hp_san_loss
+        single_use: True
+        trigger:
+          is_required: True
+          on_san_loss: True
+          action:
+            action:
+              - send_encounter
+              - set_buttons
+            aargs:
+              - investigator: trigger
+                encounter:
+                  action:
+                    - spell_flip
+                  aargs:
+                    - name: instill_bravery
+                      take_action: True
+                      skip: True
+                  action_text: "Once per round, when an investigator would lose Sanity, the owner of this card may test Lore. If they pass, prevent that investigator from losing up to 2 Sanity.\n\nThen flip this card."
+                step: mod
+                text: Use
+              - key: no_use
+                text: Back
+            mod:
+              - adjust_damage
+            margs:
+              - san_change: -2
+            action_text: "Prevent the loss of up to 2 Sanity if the owner of this card passes a Lore test."
+    '1':
+      0:
+        action:
+          - discard
+        aargs:
+          - kind: spells
+            name: instill_bravery
+            not_in_rolls: 4
+            text: Next
+            step: set
+        set:
+          - set_buttons
+        sargs:
+          - key: finish
+            return_value: success
+            skip: True
+        action_text: "Your malformed magic lashes against your mind, and you fear your memories have been altered.\n\nIf you did not roll any 4's, discard this card.\n\nFlip this card."
+      1:
+        action:
+          - hp_san
+        aargs:
+          - hp: -1
+            skip: True
+            step: set
+        set:
+          - set_buttons
+        sargs:
+          - key: finish
+            return_value: success
+            skip: True
+        action_text: "Your incantation inspires courage in the face of madness, but at the cost of your own blood.\n\nLose 1 Health.\n\nFlip this card."
+    '2':
+      0:
+        action:
+          - send_encounter
+        aargs:
+          - investigator: request_player
+            encounter:
+              action:
+                - hp_san
+                - request_card
+              aargs:
+                - san: -1
+                  text: Lose 1 Health
+                - kind: conditions
+                  name: hallucinations
+                  text: Gain a Hallucinations Condition
+              action_text: "The magic warps your mind and thoughts until you can no longer tell reality from delusion."
+            skip: True
+            last_step: action
+            step: set
+        set:
+          - set_buttons
+        sargs:
+          - key: finish
+            return_value: success
+        action_text: "The magic warps their mind and thoughts until they can no longer tell reality from delusion.\n\nThe chosen investigator loses 1 Sanity unless they gain an Internal Injury Condition.\n\nFlip this card."
+      1:
+        action:
+          - set_buttons
+        aargs:
+          - key: finish
+            return_value: success
+            text: Next
+        action_text: "The spell prevents any lingering effects of the traumatic experience.\n\nNo additional effect.\n\nFlip this card."
+      3:
+        action:
+          - set_buttons
+        aargs:
+          - key: finish
+            return_value: success_num
+            text: Next
+        action_text: "The spell inspires and invigorates.\n\nPrevent that investigator from losing Health up to your test result instead.\n\nFlip this card."
   mists_of_releh:
     tags:
       - incantation
     variants: 2
+    triggers:
+      - owner_only: True
+        kind: precombat
+        first_combat: True
+        trigger:
+          action:
+            action:
+              - set_buttons
+              - set_buttons
+            aargs:
+              - text: Use
+                key: lore
+              - key: no_use
+                text: Back
+            lore:
+              - skill
+            largs:
+              - stat: 0
+                step: skip
+            skip:
+              - skip_combat
+            sargs:
+              - skip: True
+                step: fail
+            fail:
+              - spell_flip
+            fargs:
+              - name: mists_of_releh
+                skip: True
+            action_text: "During the Encounter Phase, you may test Lore. If you pass, you may choose an encounter as if there are no Monsters on your space.\n\nThen flip this card."
+    '1':
+      0:
+        action:
+          - hp_san
+        aargs:
+          - hp: -1
+            san: -1
+            skip: True
+        action_text: "A thick, black fog engulfs you, choking your lungs and stinging your eyes.\n\nLose 1 Health and 1 Sanity.\n\nFlip this card."
+      2:
+        action:
+          - set_buttons
+        aargs:
+          - key: finish
+            text: Next
+        action_text: "You walk forward boldly, knowing the mists will keep you hidden.\n\nNo additional effects.\n\nFlip this card."
+    '2':
+      0:
+        action:
+          - discard
+          - request_card
+        aargs:
+          - kind: spells
+            name: mists_of_releh
+            text: Discard this card
+          - kind: conditions
+            name: hallucinations
+            text: Gain a Hallucinations Condition
+        fail:
+          - a
+          - a
+        action_text: "You see a monstrous form vanish into the fog. Whatever it was, you fear it may return the next time you recite the incantation.\n\nDiscard this card unless you gain a Hallucinations Condition.\n\nFlip this card."
+      1:
+        action:
+          - hp_san
+        aargs:
+          - san: -1
+            skip: True
+        action_text: "Although you are hidden by the darkness, you feel unnatural tendrils of fog wrapping around your body.\n\nLose 1 Sanity.\n\nFlip this card."
   plumb_the_void:
     tags:
       - ritual

@@ -173,17 +173,18 @@ class EncounterPane():
             def finish_action(name):
                 used_trigger = next((utrig for utrig in self.hub.triggers['precombat'] if human_readable(utrig['name']) == name))
                 if small_card.item_used:
-                    button = next((button for button in self.choice_layout.children if getattr(button, 'name', '') == name))
-                    button.disable()
+                    button = next((button for button in self.choice_layout.children if getattr(button, 'name', '') == name), False)
+                    if button:
+                        self.choice_layout.children = [opt for opt in self.choice_layout.children if opt != button]
                     used_trigger['used'] = True
                 else:
                     small_card.encounters.append(used_trigger['action'])
             for monster in self.monsters:
                 choices.append(ActionButton(texture='monsters/' + monster.name + '.png', action=self.combat_will, action_args={'monster': monster}, scale=0.5))
             options = []
-            for trigger in [trig for trig in self.hub.triggers['precombat'] if (not trig['used'] or not trig.get('single_use', False))]:
+            for trigger in [trig for trig in self.hub.triggers['precombat'] if (not trig['used'] or not trig.get('single_use', False)) and (not trig.get('first_combat', False) or self.first_fight)]:
                 trigger['action']['title'] = human_readable(trigger['name'])
-                options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=human_readable(trigger['name']), action=small_card.setup, action_args={'encounters':[trigger['action']], 'parent': self, 'finish_action': finish_action}, name=human_readable(trigger['name'])))
+                options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=human_readable(trigger['name']), action=small_card.setup, action_args={'encounters':[trigger['action']], 'parent': self, 'finish_action': finish_action, 'force_select': True}, name=human_readable(trigger['name'])))
             self.choice_layout = create_choices('Choose Monster', choices=choices, options=options)
             self.layout.add(self.choice_layout)
         elif not self.combat_only and len(self.hub.location_manager.locations[location]['monsters']) == 0:
@@ -216,9 +217,9 @@ class EncounterPane():
                 for trigger in [trig for trig in self.hub.triggers['preencounter'] if self.hub.trigger_check(trig, self.encounter_type) and (not trig.get('single_use', False) or not trig['used'])]:
                     small_card = SmallCardPane(self.hub)
                     def finish_action(name):
+                        trigger['used'] = small_card.item_used
                         if trigger['name'] == 'clairvoyance' and small_card.rolls != None:
                             self.choice_layout.children = [button for button in self.choice_layout.children if not getattr(button, 'text', '') == 'Clairvoyance']
-                            trigger['used'] = True
                             if len([roll for roll in small_card.rolls if roll >= self.investigator.success]) > 0:
                                 self.choose_encounter(small_card.chosen_location)
                     small_card.rolls = None
@@ -1231,12 +1232,14 @@ class EncounterPane():
         self.rolls, self.choice_layout = self.hub.run_test(stat, self, mod, [next_button])
         self.layout.add(self.choice_layout)
 
-    def skip_combat(self):
-        self.monsters = []
-        self.first_fight = False
-        self.clear_overlay()
-        self.clear_buttons()
-        self.choose_encounter()
+    def skip_combat(self, step=None):
+        self.parent.monsters = []
+        self.parent.first_fight = False
+        self.parent.clear_overlay()
+        self.parent.clear_buttons()
+        self.parent.choose_encounter()
+        if step != None:
+            self.set_buttons(step)
 
     def small_card(self, cards=None, categories=[], single_card=True, attribute='reckoning', step='finish'):
         if cards == None:

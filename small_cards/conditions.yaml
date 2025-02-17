@@ -6,6 +6,7 @@
       - kind: rest_actions
         owner_only: True
         trigger:
+          title: Amnesia
           action:
             - single_roll
           aargs:
@@ -26,6 +27,7 @@
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
+      title: Amnesia
       action:
         - skill
       aargs:
@@ -94,6 +96,7 @@
       - kind: rest_actions
         owner_only: True
         trigger:
+          title: Back Injury
           action:
             - single_roll
           aargs:
@@ -114,6 +117,7 @@
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
+      title: Back Injury
       action:
         - skill
       aargs:
@@ -179,6 +183,7 @@
     tags:
       - boon
     reckoning:
+      title: Blessed
       is_required: True
       action:
         - single_roll
@@ -229,6 +234,7 @@
       - bane
     reckoning:
       is_required: True
+      title: Cursed
       action:
         - single_roll
       aargs:
@@ -295,6 +301,7 @@
     tags:
       - deal
     reckoning:
+      title: Dark Pact
       is_required: True
       action:
         - single_roll
@@ -358,6 +365,7 @@
       - deal
       - common
     action:
+      title: Debt
       action:
         - skill
       aargs:
@@ -375,12 +383,14 @@
           skip: True
       action_text: Test Influence. If you pass, discard this card.
     reckoning:
+      title: Debt
       action:
         - flip_card
       aargs:
-        - skip: True
+        - text: Next
           name: debt
           kind: conditions
+      action_text: Some men have to come to collect on your debt. Flip this card.
       is_required: True
     '1':
       title: Debt - Beyond Riches
@@ -469,6 +479,7 @@
     tags:
       - restriction
     action:
+      title: Detained
       action:
         - skill
       aargs:
@@ -609,6 +620,7 @@
       - kind: rest_actions
         owner_only: True
         trigger:
+          title: Hallucinations
           action:
             - single_roll
           aargs:
@@ -629,6 +641,7 @@
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
+      title: Hallucinations
       action:
         - skill
       aargs:
@@ -687,6 +700,7 @@
       - kind: rest_actions
         owner_only: True
         trigger:
+          title: Internal Injury
           action:
             - single_roll
           aargs:
@@ -707,6 +721,7 @@
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
+      title: Internal Injury
       action:
         - skill
       aargs:
@@ -763,6 +778,7 @@
       - kind: rest_actions
         owner_only: True
         trigger:
+          title: Leg Injury
           action:
             - single_roll
           aargs:
@@ -783,6 +799,7 @@
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
+      title: Leg Injury
       action:
         - skill
       aargs:
@@ -844,6 +861,7 @@
       - kind: rest_actions
         owner_only: True
         trigger:
+          title: Paranoia
           action:
             - single_roll
           aargs:
@@ -864,6 +882,7 @@
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
     reckoning:
+      title: Paranoia
       action:
         - skill
       aargs:

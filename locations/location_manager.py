@@ -91,8 +91,8 @@ class LocationManager():
         if self.rumors.get('secrets_of_the_past', None) != None and self.locations[location]['expedition']:
             encounters.append('secrets_of_the_past')
         for name in self.dead_investigators.keys():
-            if self.dead_investigators[name]['location'] == location:
-                encounters.append(name + ':' + ('0' if self.dead_investigators[name]['death'] else '1'))
+            if self.dead_investigators[name].location == location:
+                encounters.append(name + ':' + ('0' if getattr(self.dead_investigators[name], 'hp_death', True) else '1'))
         return encounters
     
     def get_all(self, kind, is_array=False):

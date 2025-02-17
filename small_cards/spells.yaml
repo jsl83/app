@@ -355,6 +355,121 @@
     tags:
       - incantation
     variants: 2
+    action:
+      title: Flesh Ward
+      action:
+        - skill
+      aargs:
+        - stat: 0
+          step: fail
+      fail:
+        - spell_flip
+      fargs:
+        - name: flesh_ward
+          skip: True
+      action_text: "Once per round, when an investigator would lose Health, you may test Lore. If you pass, prevent that investigator from losing up to 2 Health.\n\nThen flip this card."
+    triggers:
+      - kind: hp_san_loss
+        single_use: True
+        trigger:
+          is_required: True
+          on_hp_loss: True
+          action:
+            action:
+              - send_encounter
+              - set_buttons
+            aargs:
+              - investigator: trigger
+                encounter:
+                  action:
+                    - spell_flip
+                  aargs:
+                    - name: flesh_ward
+                      take_action: True
+                      skip: True
+                  action_text: "Once per round, when an investigator would lose Health, the owner of this card may test Lore. If they pass, prevent that investigator from losing up to 2 Health.\n\nThen flip this card."
+                step: mod
+                text: Use
+              - key: no_use
+                text: Back
+            mod:
+              - adjust_damage
+            margs:
+              - hp_change: -2
+            action_text: "Prevent the loss of up to 2 Health if the owner of this card passes a Lore test."
+    '1':
+      0:
+        action:
+          - discard
+        aargs:
+          - kind: spells
+            name: flesh_ward
+            not_in_rolls: 4
+            text: Next
+            step: set
+        set:
+          - set_buttons
+        sargs:
+          - key: finish
+            return_value: success
+            skip: True
+        action_text: "The spell's energy twists around you and locks your jaw shut as if it were forbidding you from speaking. You don't know if you will be allowed to speak those words again.\n\nIf you did not roll any 4's, discard this card."
+      1:
+        action:
+          - hp_san
+        aargs:
+          - san: -1
+            skip: True
+            step: set
+        set:
+          - set_buttons
+        sargs:
+          - key: finish
+            return_value: success
+            skip: True
+        action_text: "It is unpleasant to watch this transformation, even when it succeeds.\n\nLose 1 Sanity."
+    '2':
+      0:
+        action:
+          - send_encounter
+        aargs:
+          - investigator: request_player
+            encounter:
+              action:
+                - hp_san
+                - request_card
+              aargs:
+                - hp: -1
+                  text: Lose 1 Health
+                - kind: conditions
+                  name: internal_injury
+                  text: Gain an Internal Injury Condition
+              action_text: "Something inside your chest shifts painfully."
+            skip: True
+            last_step: action
+            step: set
+        set:
+          - set_buttons
+        sargs:
+          - key: finish
+            return_value: success
+        action_text: "Something inside your chest shifts painfully.\n\nThe chosen investigator loses 1 Health unless he gains an Internal Injury Condition."
+      1:
+        action:
+          - set_buttons
+        aargs:
+          - key: finish
+            return_value: success
+            text: Next
+        action_text: "The spell causes skin to writhe and reform like a living being.\n\nNo additional effect."
+      3:
+        action:
+          - set_buttons
+        aargs:
+          - key: finish
+            return_value: success_num
+            text: Next
+        action_text: "Flesh and bone mend themselves and harden against attack.\n\nPrevent that investigator from losing Health up to your test result instead."
   instill_bravery:
     tags:
       - incantation

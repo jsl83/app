@@ -148,6 +148,7 @@
         - text: Discard 1 Item
           kind: assets
           tag: item
+          voluntary: False
       pass_text: A night of drinking and good cheer helps raise your spirits.
       obs_text: While you are celebrating, you hardly notice that you are being robbed.
       fail_text: The thief gets away.

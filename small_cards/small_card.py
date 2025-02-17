@@ -1,5 +1,4 @@
-import yaml
-import arcade
+import yaml, arcade, copy
 
 CARDS = {
     'assets': {},
@@ -32,7 +31,7 @@ class SmallCard():
     def setup(self):
         self.texture = arcade.load_texture(":resources:eldritch/images/" + self.kind + '/' + self.name.replace('.','') + '.png')
         for key in CARDS[self.kind][self.name]:
-            setattr(self, key, CARDS[self.kind][self.name][key])
+            setattr(self, key, copy.deepcopy(CARDS[self.kind][self.name][key]))
 
     def discard(self, investigator):
         pass
@@ -53,8 +52,8 @@ class Spell(SmallCard):
         self.kind = 'spells'
         self.texture = arcade.load_texture(":resources:eldritch/images/spells/" + name[0:-1] + '.png')
         for attr in [attribute for attribute in ['triggers', 'reckoning', 'tags', 'action'] if CARDS['spells'][self.name].get(attribute, False)]:
-            setattr(self, attr, CARDS['spells'][self.name][attr])
-        self.back = CARDS['spells'][self.name][str(self.variant)]
+            setattr(self, attr, copy.deepcopy(CARDS['spells'][self.name][attr]))
+        self.back = copy.deepcopy(CARDS['spells'][self.name][str(self.variant)])
 
     def get_server_name(self):
         return self.name + str(self.variant)
@@ -66,8 +65,8 @@ class Condition(SmallCard):
         self.kind = 'conditions'
         self.texture = arcade.load_texture(":resources:eldritch/images/conditions/" + name[0:-1] + '.png')
         for attr in [attribute for attribute in ['triggers', 'reckoning', 'tags', 'action'] if CARDS['conditions'][self.name].get(attribute, False)]:
-            setattr(self, attr, CARDS['conditions'][self.name][attr])
-        self.back = CARDS['conditions'][self.name][str(self.variant)]
+            setattr(self, attr, copy.deepcopy(CARDS['conditions'][self.name][attr]))
+        self.back = copy.deepcopy(CARDS['conditions'][self.name][str(self.variant)])
 
     def get_server_name(self):
         return self.name + str(self.variant)

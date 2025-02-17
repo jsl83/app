@@ -61,7 +61,7 @@ class PossessionsPane():
         self.layout.clear()
         self.small_card_layout.clear()
         buttons = [self.big_card, self.back_button]
-        if hasattr(card, 'action'):
+        if hasattr(card, 'action') and 'incantation' not in card.tags:
             buttons.append(self.action_button)
             key = card.action.get('check_key', False)
             passes_check = not key or self.hub.small_card_pane.req_dict[card.action[key][0]](card.action[key[0] + 'args'][0])
@@ -122,7 +122,8 @@ class PossessionsPane():
         self.back_action()
         self.reset()
 
-    def on_get(self, card, is_owner, is_trade=False):
+    def on_get(self, card, owner, is_trade=False):
+        is_owner = self.investigator.name == owner
         if is_owner:
             self.investigator.success = 4 if card.name == 'blessed' else 6 if card.name == 'cursed' else self.investigator.success
             for bonus in getattr(card, 'bonuses', []):
@@ -135,7 +136,8 @@ class PossessionsPane():
             if not triggers.get('owner_only', False) or is_owner:
                 triggers['trigger']['used'] = False
                 triggers['trigger']['name'] = card.name
-                triggers['trigger']['investigator'] = self.investigator.name
+                triggers['trigger']['investigator'] = owner
+                triggers['trigger']['texture'] = card.kind + '/' + card.name + '.png'
                 self.hub.triggers[triggers['kind']].append(triggers['trigger'])
         if getattr(card, 'on_get', False) and not is_trade and is_owner:
             for action in card.on_get:
@@ -282,11 +284,11 @@ class TradePane(PossessionsPane):
                 giver.possessions[kind].remove(card)
                 self.on_discard(card, giver)
                 taker.possessions[kind].append(card)
-                self.on_get(card, taker == self.hub.investigator, True)
+                self.on_get(card, taker.name, True)
             for item in take[kind]:
                 card = next((card for card in taker.possessions[kind] if card.name == item))
                 giver.possessions[kind].append(card)
-                self.on_get(card, giver == self.hub.investigator, True)
+                self.on_get(card, giver.name, True)
                 taker.possessions[kind].remove(card)
                 self.on_discard(card, taker)
         for clue in give['clues']:

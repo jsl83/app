@@ -133,7 +133,7 @@ class HubScreen(arcade.View):
         self.select_ui_button(0)
         self.set_doom(self.ancient_one.doom)
         self.set_omen(0)
-        self.waiting_pane = self.encounter_pane
+        self.waiting_panes = []
 
         self.undo_action = {
             'action': None,
@@ -315,10 +315,16 @@ class HubScreen(arcade.View):
         if topic == self.investigator.name + '_player':
             match payload['message']:
                 case 'action_done':
-                    if self.waiting_pane.player_wait_step != None:
-                        action = self.waiting_pane.action_dict[self.waiting_pane.player_wait_step]
-                        args = self.waiting_pane.player_wait_args
-                        self.waiting_pane.player_wait_step = None
+                    if self.waiting_panes[-1].player_wait_step != None:
+                        action = self.waiting_panes[-1].action_dict[self.waiting_panes[-1].player_wait_step]
+                        args = self.waiting_panes[-1].player_wait_args
+                        self.waiting_panes[-1].player_wait_step = None
+                        self.info_manager.children = {0:[]}
+                        self.info_manager.add(self.waiting_panes[-1].layout)
+                        self.info_pane = self.waiting_panes[-1]
+                        self.waiting_panes = self.waiting_panes[:-1]
+                        if payload.get('return_value', None) != None and args != None:
+                            args['return_value'] = payload['return_value']
                         if args != None:
                             action(**args)
                         else:
@@ -332,7 +338,11 @@ class HubScreen(arcade.View):
                     self.encounter_pane.group_pay(**payload)
                 case 'player_encounter':
                     small_card = SmallCardPane(self)
+                    small_card.request_player = payload['requestor']
                     small_card.setup([payload['value']], self.info_pane, force_select=True)
+                    small_card.gui_enabled = self.gui_enabled
+                    self.gui_set(False)
+                    self.info_pane = small_card
         else:
             match payload['message']:
                 case 'spawn':
@@ -373,7 +383,7 @@ class HubScreen(arcade.View):
                     investigator = self.location_manager.all_investigators[payload['owner']]
                     if payload['value'] != None:
                         card = investigator.get_item(payload['kind'], payload['value'])
-                        self.info_panes['possessions'].on_get(card, self.investigator.name == payload['owner'])
+                        self.info_panes['possessions'].on_get(card, payload['owner'])
                         if card.name == 'debt' or card.name == 'detained':
                             card.action['pargs'][0]['investigator'] = payload['owner']
                         if payload['owner'] == self.investigator.name:
@@ -433,7 +443,7 @@ class HubScreen(arcade.View):
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
                                     #if self.investigator.name == 'akachi_onyele':
-                                    self.ticket_move(self.investigator.name, 'space_2', 0, 0, self.investigator.location)
+                                    self.ticket_move(self.investigator.name, 'arkham', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     #self.investigator.focus = 0
@@ -556,7 +566,7 @@ class HubScreen(arcade.View):
                     for kind in ['assets', 'unique_assets', 'artifacts', 'spells']:
                         for item in dead.possessions[kind]:
                             recover.possessions[kind].append(item)
-                            self.info_pane['possessions'].on_get(item)
+                            self.info_pane['possessions'].on_get(item, self.investigator.name)
                     del self.location_manager.dead_investigators[payload['value']]
                     self.hub.info_panes['possessions'].setup()
                     self.hub.info_panes['investigator'].set_ticket_counts()
@@ -578,9 +588,15 @@ class HubScreen(arcade.View):
                     investigator = self.location_manager.all_investigators[payload['owner']]
                     for key in ['health', 'sanity', 'ship_tickets', 'rail_tickets']:
                         setattr(self.location_manager.all_investigators[payload['owner']], key, payload[key])
-            if self.waiting_pane.wait_step != None:
-                if self.waiting_pane.last_value == None or self.waiting_pane.last_value == payload['value']:
-                    self.waiting_pane.set_buttons(self.waiting_pane.wait_step)
+            if len(self.waiting_panes) > 0 and self.waiting_panes[-1].wait_step != None:
+                if self.waiting_panes[-1].last_value == None or self.waiting_panes[-1].last_value == payload['value']:
+                    self.waiting_panes[-1].set_buttons(self.waiting_panes[-1].wait_step)
+                    self.waiting_panes = self.waiting_panes[:-1]
+            if payload['message'] == 'trigger_used':
+                ident = payload['value'].split(':')
+                used_trigger = next((trigger for trigger in self.triggers[payload['kind']] if trigger['investigator'] == ident[0] and trigger['name'] == ident[1]), False)
+                if used_trigger:
+                    used_trigger['used'] = True
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max

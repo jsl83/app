@@ -30,17 +30,12 @@ class Monster():
         if '+' in str(self.toughness):
             self.toughness = int(inv_number + len(self.toughness))
 
-        self.spawn = self.set_spawn(self.spawn) if hasattr(self, 'spawn') else None
-        self.reckoning_text = self.reckoning_text if hasattr(self, 'reckoning_text') else ''
         if hasattr(self, 'reckoning'):
             self.reckoning = copy.deepcopy(self.reckoning)
-        for args in [key for key in self.reckoning.keys() if 'args' in key]:
-            for x in range(len(self.reckoning[args])):
-                self.reckoning[args][x]['monster'] = self
+            for key in self.reckoning.get('keys', []):
+                for x in range(len(self.reckoning[key])):
+                    self.reckoning[key][x]['monster'] = self
         self.damage = 0
-
-    def set_spawn(self, action):
-        pass
 
     def description_dictionary(self):
         return {
@@ -53,8 +48,8 @@ class Monster():
             'strength_check': self.strength['index'],
             'damage': self.strength['str'],
             'damage_taken': self.damage,
-            'text': self.text,
-            'reckoning': self.reckoning_text
+            'text': getattr(self, 'text', ''),
+            'reckoning': getattr(self, 'reckoning_text', '')
         }
     
     def heal(self, amt=1):

@@ -1,5 +1,89 @@
 ---
-  avian_thrall:
+  byakhee:
+    count: 1
+    horror:
+      index: 4
+      mod: 0
+      san: 1
+    strength:
+      index: 3
+      mod: 0
+      str: 2
+    toughness: 2
+    death_trigger:
+      special_encounter:
+        temp: True
+        texture: monsters/byakhee.png
+        action:
+          - hp_san
+        aargs:
+          - san: -1
+            step: move
+            skip: True
+        move:
+          - allow_move
+        margs:
+          - distance: 3
+            skip: True
+        title: Byakhee - Death Encounter
+        action_text: You may lose 1 Sanity and move 3 spaces instead of resolving another encounter.
+    text: "If you defeat this Monster during a Combat Encounter, you may lose 1 Sanity and move 3 spaces instead of resolving another encounter."
+  colour_out_of_space:
+    count: 1
+    horror:
+      index: 4
+      mod: 0
+      san: 2
+    strength:
+      index: 3
+      mod: '-'
+      str: N/A
+      single: '56'
+    toughness: 2
+    location: world:tunguska
+    text: "When this Monster is spawned, move it to Tunguska.\n\nAfter resolving the Will test, roll 1 die. On a 5 or 6, defeat this Monster."
+  cthonian:
+    count: 1
+    horror:
+      index: 4
+      mod: -1
+      san: 2
+    strength:
+      index: 3
+      mod: -2
+      str: 3
+    toughness: 4
+    location: world:the_heart_of_africa
+    text: "When this Monster is spawned, move it to The Heart of Africa."
+  dark_young:
+    count: 1
+    horror:
+      index: 4
+      mod: -1
+      san: 3
+    strength:
+      index: 3
+      mod: -3
+      str: 3
+    toughness: 5
+    reckoning:
+      is_required: True
+      action:
+        - single_roll
+      aargs:
+        - effects:
+            12: doom
+            3456: finish
+          skip: True
+      doom:
+        - set_doom
+      dargs:
+        - skip: True
+          increment: -1
+      title: Dark Young - Reckoning
+      action_text: Roll 1 die. On a 1 or 2, advance Doom by 1.
+    text: "Reckoning\n\nRoll 1 die. On a 1 or 2, advance Doom by 1."
+  deep_one:
     count: 1
     horror:
       index: 4
@@ -8,30 +92,46 @@
     strength:
       index: 3
       mod: -1
-      str: 2
-    toughness: 3
+      str: 1
+    toughness: 2
     reckoning:
-      action:
-        - monster_reckoning_move
-      aargs:
-        - skip: True
+      all_players: True
       is_required: True
-    text: If you lose Sanity from the Will test, gain a Corruption Condition.
-    reckoning_text: Move this Monster to the nearest Investigator. Then they encounter this Monster.
-    option_text: Move 1 and encounter
-  cultist:
-    count: 6
+      action:
+        - hp_san
+      aargs:
+        - san: -1
+          skip: True
+      title: Deep One - Reckoning
+      on_location: True
+      action_text: Each investigator on this space loses 1 Sanity.
+    text: "Reckoning\n\nEach investigator on this space loses 1 Sanity."
+  elder_thing:
+    count: 1
     horror:
       index: 4
       mod: 0
-      san: 1
+      san: 3
     strength:
       index: 3
-      mod: 0
-      str: 1
-    toughness: 1
-    text: '*'
-    reckoning_text:
+      mod: -1
+      str: 2
+    toughness: 3
+    location: world:antarctica
+    text: "When this Monster is spawned, move it to Antarctica."
+  ghost:
+    count: 1
+    horror:
+      index: 4
+      mod: -1
+      san: 2
+      damage: True
+    strength:
+      index: 3
+      mod: '-'
+      str: N/A
+    toughness: 2
+    text: "If you pass the Will test, this Monster loses Health equal to the test result."
   tick_tock_men:
     epic: True
     count: 1
@@ -71,6 +171,7 @@
       index: 3
       mod: -2
       str: 2
+      skip: True
     horror:
       index: 4
       mod: 0

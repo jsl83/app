@@ -56,8 +56,7 @@ class LocationPane():
             'strength': arcade.gui.UITextureButton(x=1040, y=335, width=100, height=20, text='', texture=self.blank, align='center', multiline=True),
             'damage': arcade.gui.UITextureButton(x=1140, y=335, width=100, height=20, text='', texture=self.blank, align='center', multiline=True),
             'damage_taken': arcade.gui.UITextureButton(x=1140, y=465, width=140, height=20, text='', texture=self.blank, align='center', multiline=True),
-            'text': arcade.gui.UITextureButton(x=1020, y=185, width=240, height=130, text='', texture=self.blank, align='center', multiline=True),
-            'reckoning': arcade.gui.UITextureButton(x=1020, y=50, width=240, height=130, text='', texture=self.blank, align='center', multiline=True)
+            'text': arcade.gui.UITextureButton(x=1020, y=25, width=240, height=290, text='', texture=self.blank, align='center', multiline=True),
         }
         for key in self.monster:
             self.description_layout.add(self.monster[key])

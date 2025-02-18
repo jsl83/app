@@ -242,6 +242,9 @@ class EncounterPane():
                 button.action = self.hub.networker.publish_payload if request else self.start_encounter
                 button.action_args = args           
                 choices.append(button)
+            for x in range(len(self.hub.triggers['special_encounters'])):
+                button = ActionButton(texture=self.hub.triggers['special_encounters'][x]['texture'], width=75, height=75, action=self.start_encounter, action_args={'value': 'special:' + str(x)})
+                choices.append(button)
         if remote_clue:
             choices.append(ActionButton(texture='encounters/clue.png', action=self.hub.networker.publish_payload, action_args={'topic': self.investigator.name, 'payload':{'message': 'get_encounter', 'value': 'clue', 'location': remote_clue}}, scale=0.3, text=human_readable(remote_clue)))
         self.choice_layout = create_choices('Choose Encounter', choices=choices, options=options)
@@ -250,22 +253,27 @@ class EncounterPane():
 
     def start_encounter(self, value, loc=None):
         choice = value.split(':')
-        if loc == None:
-            location = self.investigator.location
-            loc = 'gate' if choice[0] == 'gate' else location if (location.find('space') == -1 and choice[0] != 'generic') else self.hub.location_manager.locations[location]['kind']
-        if choice[0] == 'clue':
-            self.clue_location = loc if loc != None else self.investigator.location
-            loc = self.hub.ancient_one.name
-        self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
-        self.encounter_type.append(choice[0])
-        if loc == 'gate':
-            self.phase_button.text = self.encounter['world']
-        elif choice[0] == 'investigators':
-            self.recover_name = loc
-        if self.encounter['test'] != 'None':
-            self.set_buttons('test')
+        if choice[0] == 'special':
+            self.encounter = self.hub.triggers['special_encounters'][int(choice[1])]
+            self.set_buttons('action')
+            self.hub.triggers['special_encounters'] = [trigger for trigger in self.hub.triggers['special_encounters'] if not trigger.get('temp', False)]
         else:
-            self.set_buttons('pass')
+            if loc == None:
+                location = self.investigator.location
+                loc = 'gate' if choice[0] == 'gate' else location if (location.find('space') == -1 and choice[0] != 'generic') else self.hub.location_manager.locations[location]['kind']
+            if choice[0] == 'clue':
+                self.clue_location = loc if loc != None else self.investigator.location
+                loc = self.hub.ancient_one.name
+            self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
+            self.encounter_type.append(choice[0])
+            if loc == 'gate':
+                self.phase_button.text = self.encounter['world']
+            elif choice[0] == 'investigators':
+                self.recover_name = loc
+            if self.encounter['test'] != 'None':
+                self.set_buttons('test')
+            else:
+                self.set_buttons('pass')
 
     def combat_will(self, monster, player_request=None):
         self.layout.clear()
@@ -286,7 +294,7 @@ class EncounterPane():
                 successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
                 dmg = successes - monster.horror['san']
                 dmg = dmg if dmg < 0 else 0
-                self.take_damage(0, dmg, self.combat_strength, {'monster': monster, 'player_request': player_request})
+                self.take_damage(0, dmg, self.resolve_combat if (monster.horror.get('skip', False) and successes == 0) or monster.horror.get('damage', False) else self.combat_strength, {'monster': monster, 'player_request': player_request})
             next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_san)
             self.encounter_type.append('combat_will')
             self.rolls, self.choice_layout = self.hub.run_test(monster.horror['index'],
@@ -301,6 +309,11 @@ class EncounterPane():
         self.clear_overlay()
         if monster.strength['mod'] == '-':
             self.resolve_combat(monster, player_request)
+        elif monster.strength.get('single', False):
+            def damage():
+                self.rolls = [6]*25 if str(self.rolls[0]) in monster.strength['single'] else [0]
+                self.resolve_combat(monster, player_request)
+            self.single_roll({}, damage)
         else:
             def lose_hp():
                 self.clear_overlay()
@@ -330,8 +343,12 @@ class EncounterPane():
             if player_request == None:
                 self.hub.show_encounter_pane()
                 self.monsters.remove(monster)
-                self.encounter_phase()
+                self.hub.waiting_panes.append(self)
+                self.wait_step = 'combat'
+                self.encounter = {'combat': ['combat'], 'cargs': [{'skip': True}]}
+                self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': successes}, self.investigator.name)
             else:
+                self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': successes}, self.investigator.name)
                 if hasattr(self, 'parent'):
                     self.hub.info_manager.children = {0:[]}
                     self.clear_overlay()
@@ -410,7 +427,6 @@ class EncounterPane():
         self.set_buttons(step)
 
     def allow_move(self, distance, step='finish', same_loc=True, must_move=False, investigator='self'):
-
         allowed_locs = self.hub.get_locations_within(distance, self.investigator.location if investigator == 'self' else self.hub.location_manager[self.chosen_investigator].location, same_loc=same_loc) if distance != 99 else[]
         def move(unit, location):
             self.hub.move_unit(unit, location)
@@ -1228,7 +1244,7 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'shuffle_mystery'}, self.investigator.name)
         self.set_buttons(step)
 
-    def single_roll(self, effects):
+    def single_roll(self, effects, other_action=None):
         def trigger_effects():
             self.clear_overlay()
             for key in effects.keys():
@@ -1236,7 +1252,7 @@ class EncounterPane():
                     self.set_buttons(effects[key])
         roll = random.randint(1, 6) + self.investigator.encounter_impairment
         roll = 1 if roll < 1 else roll
-        options = [ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=trigger_effects)]
+        options = [ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=trigger_effects if other_action == None else other_action)]
         #FOR TESTING
         def autofail():
             self.rolls = [1]
@@ -1484,11 +1500,16 @@ class EncounterPane():
             }
         if self.hub.lead_investigator == self.investigator.name:
             for monster in [monster for monster in self.hub.location_manager.all_monsters if hasattr(monster, 'reckoning')]:
-                self.reckonings['monster'].append((monster.reckoning, 'monsters/' + monster.name + '.png'))
+                if not monster.reckoning.get('on_location', False) or monster.location == self.investigator.location:
+                    self.reckonings['monster'].append((monster.reckoning, 'monsters/' + monster.name + '.png'))
             if not monsters_only:
                 if len(self.mythos_reckonings) > 0:
                     for reckon in self.mythos_reckonings:
                         self.reckonings['mythos'].append((reckon, 'ancient_ones/mythos_back.png'))
+        else:
+            for monster in [monster for monster in self.hub.location_manager.all_monsters if getattr(monster, 'reckoning', {}).get('all_players', False)]:
+                if not monster.reckoning.get('on_location', False) or monster.location == self.investigator.location:
+                    self.reckonings['monster'].append((monster.reckoning, 'monsters/' + monster.name + '.png'))
         if not monsters_only: 
             for kind in self.investigator.possessions.values():
                 for card in [card for card in kind if hasattr(card, 'reckoning')]:

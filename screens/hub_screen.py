@@ -52,7 +52,8 @@ class HubScreen(arcade.View):
             'rest_san_bonus': [],
             'rest_hp_bonus': [],
             'all_test': [],
-            'preencounter': []
+            'preencounter': [],
+            'special_encounters': []
         }
         
         self.item_actions = {}
@@ -916,7 +917,7 @@ class HubScreen(arcade.View):
 
     def damage_monster(self, monster, damage, is_ambush=False, is_combat=False):
         choices = []
-        if damage != 99 and monster.damage + damage >= monster.toughness:
+        if damage != 99 and monster.damage + damage >= monster.toughness and is_combat:
             for trigger in self.triggers['monster_kill']:
                 def result_action():
                     match trigger['result']:
@@ -935,7 +936,8 @@ class HubScreen(arcade.View):
                     if trigger.get('receive_clue', False):
                         self.encounter_pane.gain_clue('nothing')
             if hasattr(monster, 'death_trigger'):
-                pass
-        if not is_ambush:
+                if monster.death_trigger.get('special_encounter', False):
+                    self.triggers['special_encounters'].append(monster.death_trigger['special_encounter'])
+        if not is_ambush and not is_combat:
             self.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
         return choices

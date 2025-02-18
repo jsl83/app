@@ -22,7 +22,7 @@ with open('small_cards/server_conditions.yaml') as stream:
     CONDITIONS = yaml.safe_load(stream)
 with open('investigators/server_investigators.yaml') as stream:
     INVESTIGATORS = yaml.safe_load(stream)
-with open('monsters/server_monsters.yaml') as stream:
+with open('monsters/monsters.yaml') as stream:
     MONSTERS = yaml.safe_load(stream)
 with open('small_cards/server_artifacts.yaml') as stream:
     ARTIFACTS = yaml.safe_load(stream)
@@ -750,6 +750,7 @@ class Networker(threading.Thread, BanyanBase):
                         monster = random.choice(self.decks['monsters'])
                         #self.decks['monsters'].remove(monster)
                     if monster != None:
+                        loc = loc if not MONSTERS[monster].get('location', False) else MONSTERS[monster]['location']
                         server_monster = {'name': monster, 'location': loc, 'monster_id': self.monster_id, 'damage': 0, 'is_epic': is_epic}
                         self.monsters.append(server_monster)
                         self.publish_payload({'message': 'spawn',

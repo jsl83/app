@@ -95,16 +95,17 @@
       str: 1
     toughness: 2
     reckoning:
-      all_players: True
       is_required: True
       action:
-        - hp_san
+        - monster_reckoning_damage
       aargs:
-        - san: -1
-          skip: True
-      title: Deep One - Reckoning
-      on_location: True
-      action_text: Each investigator on this space loses 1 Sanity.
+        - skip: True
+          san: -1
+          first: True
+      title: Gnoph-Keh - Reckoning
+      keys:
+        - aargs
+      action_text: Each Investigator on this space loses 1 Health.
     text: "Reckoning\n\nEach investigator on this space loses 1 Sanity."
   elder_thing:
     count: 1
@@ -133,7 +134,7 @@
     toughness: 2
     text: "If you pass the Will test, this Monster loses Health equal to the test result."
   ghoul:
-    count: 1
+    count: 2
     horror:
       index: 4
       mod: 1
@@ -161,7 +162,7 @@
       mod: -2
       str: 2
     toughness: 3
-    text: "When this Monster is spawned, move it to the Himalayas.\n\nEach Investigator on this space loses 1 Health."
+    text: "When this Monster is spawned, move it to the Himalayas.\n\nReckoning\n\nEach Investigator on this space loses 1 Health."
     location: world:the_himalayas
     reckoning:
       is_required: True
@@ -169,14 +170,14 @@
         - monster_reckoning_damage
       aargs:
         - skip: True
+          hp: -1
           first: True
-          adjacent: True
       title: Gnoph-Keh - Reckoning
       keys:
         - aargs
       action_text: Each Investigator on this space loses 1 Health.
   goat_spawn:
-    count: 1
+    count: 2
     horror:
       index: 4
       mod: 0
@@ -209,6 +210,91 @@
         action_text: You may gain a Dark Pact Condition to discard 1 Monster from any space.
         title: Goat Spawn - Defeated
         texture: monsters/goat_spawn.png
+  gug:
+    count: 1
+    horror:
+      index: 4
+      mod: 0
+      san: 2
+    strength:
+      index: 3
+      mod: -2
+      str: 3
+    toughness: 4
+    text: "If you defeat this Monster during a Combat Encounter, you do not resolve an additional encounter."
+    death_trigger:
+      no_encounter: True
+  hound_of_tindalos:
+    count: 1
+    horror:
+      index: 4
+      mod: 0
+      san: 2
+    strength:
+      index: 3
+      mod: -1
+      str: 3
+    toughness: 3
+    text: "Reckoning\n\nMove this Monster to the nearest space containing an investigator. Then an investigator on that space immediately encounters it."
+    reckoning:
+      action:
+        - monster_reckoning_move
+      aargs:
+        - distance: 99
+          text: Move
+      is_required: True
+      keys:
+        - aargs
+      title: Hound of Tindalos - Reckoning
+      action_text: Move this Monster to the nearest space containing an investigator. Then an investigator on that space immediately encounters it.
+  lloigor:
+    count: 1
+    horror:
+      index: 4
+      mod: 0
+      san: 2
+    strength:
+      index: 3
+      mod: -2
+      str: 3
+    toughness: 4
+    text: "Reckoning\n\nMove this Monster to the nearest space containing an investigator. Then an investigator on that space immediately encounters it."
+    reckoning:
+      is_required: True
+      action:
+        - monster_reckoning_damage
+      aargs:
+        - skip: True
+          first: True
+          adjacent: True
+          hp: -1
+          san: -1
+      title: Lloigor - Reckoning
+      keys:
+        - aargs
+      action_text: Each Investigator on this space or an adjacent space loses 1 Health and 1 Sanity.
+  maniac:
+    count: 1
+    horror:
+      index: 4
+      mod: 1
+      san: 1
+    strength:
+      index: 3
+      mod: -1
+      str: 2
+    toughness: 1
+    text: "If you fail the Strength test, you may discard 1 Ally Asset instead of losing Health.\n\nIf you defeat this Monster during a Combat Encounter, gain 1 Axe Asset."
+    death_trigger:
+      action:
+        action:
+          - request_card
+        aargs:
+          - kind: assets
+            name: axe
+            text: Gain an Axe Asset
+        texture: monsters/maniac.png
+        is_required: True
   tick_tock_men:
     epic: True
     count: 1

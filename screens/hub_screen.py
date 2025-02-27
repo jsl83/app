@@ -382,7 +382,7 @@ class HubScreen(arcade.View):
                         self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name, monster_id)
                 case 'card_received':
                     investigator = self.location_manager.all_investigators[payload['owner']]
-                    if payload['value'] != None:
+                    if payload['value'] != None and payload['value'] != '':
                         card = investigator.get_item(payload['kind'], payload['value'])
                         self.info_panes['possessions'].on_get(card, payload['owner'])
                         if card.name == 'debt' or card.name == 'detained':
@@ -931,6 +931,8 @@ class HubScreen(arcade.View):
                         self.investigator.sanity = min(self.investigator.max_sanity, self.investigator.sanity + trigger['recover_san'])
                     if trigger.get('receive_clue', False):
                         self.encounter_pane.gain_clue('nothing')
+                    if trigger.get('no_encounter', False):
+                        self.encounter_pane.no_encounter = True
             if hasattr(monster, 'death_trigger') and monster.death_trigger.get('special_encounter', False):
                 self.triggers['special_encounters'].append(monster.death_trigger['special_encounter'])
         if not is_ambush and not is_combat:

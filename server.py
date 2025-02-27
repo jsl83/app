@@ -302,9 +302,9 @@ class Networker(threading.Thread, BanyanBase):
             else:
                 match payload['message']:
                     case 'assets':
-                        item = self.asset_request(payload['command'], payload['value'], topic, payload['tag'])                            
+                        self.asset_request(payload['command'], payload['value'], topic, payload['tag'])                            
                     case 'artifacts':
-                        item = self.artifact_request(topic, payload.get('value', ''), payload.get('tag', ''))                            
+                        self.artifact_request(topic, payload.get('value', ''), payload.get('tag', ''))                            
                     case 'card_discarded':
                         if payload['kind'] == 'assets':
                             self.assets['discard'].append(payload['value'])
@@ -672,16 +672,15 @@ class Networker(threading.Thread, BanyanBase):
             case 'get':
                 if name != '':
                     if name in self.assets['deck']:
-                        pass
-                    #self.assets['deck'].remove(name)
+                        self.assets['deck'].remove(name)
                     else:
                         name = None
                 else:
                     name = random.choice([item for item in self.assets['deck'] if tag in ASSETS[item]['tags'] or tag == 'any'])
-                    #self.assets['deck'].remove(name)
+                    self.assets['deck'].remove(name)
                 if name != None:
                     self.investigators[investigator]['assets'].append(name)
-                    self.publish_payload({'message': 'card_received', 'kind': 'assets', 'value': name, 'owner': investigator}, 'server_update')
+                self.publish_payload({'message': 'card_received', 'kind': 'assets', 'value': name, 'owner': investigator}, 'server_update')
         
     def artifact_request(self, investigator, name='', tag=''):
         if name != '' and name not in self.decks['used_artifacts']:
@@ -691,8 +690,8 @@ class Networker(threading.Thread, BanyanBase):
             if len(artifacts) > 0:
                 name = random.choice(artifacts)
                 self.decks['used_artifacts'].append(name)
+        self.publish_payload({'message': 'card_received', 'kind': 'artifacts', 'value': name, 'owner': investigator}, 'server_update')
         if name != '':
-            self.publish_payload({'message': 'card_received', 'kind': 'artifacts', 'value': name, 'owner': investigator}, 'server_update')
             self.investigators[investigator]['artifacts'].append(name)
 
     def monster_surge(self):

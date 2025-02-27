@@ -1,4 +1,4 @@
-import arcade, arcade.gui, yaml, random, math
+import arcade, arcade.gui, yaml, random, math, copy
 from screens.action_button import ActionButton
 from util import *
 
@@ -116,7 +116,6 @@ class EncounterPane():
             'ancient_one': []
         }
         self.mythos_reckonings = []
-        self.monster_death_triggers = []
         self.no_loc_click = None
         self.last_value = None
         self.player_index = 0
@@ -337,8 +336,8 @@ class EncounterPane():
         self.encounter_type.remove('combat')
         successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
         is_ambush = self.ambush_steps != None
-        self.monster_death_triggers = self.hub.damage_monster(monster, successes, is_ambush, True)
-        def finish_combat():
+        triggers = self.hub.damage_monster(monster, successes, is_ambush, True)
+        def finish_combat(name=None):
             self.layout.remove(self.hub.info_panes['location'].layout)
             if player_request == None:
                 self.hub.show_encounter_pane()
@@ -355,28 +354,9 @@ class EncounterPane():
                     self.hub.info_manager.add(self.parent.layout)
                     self.hub.info_manager.trigger_render()
                 self.hub.networker.publish_payload({'message': 'action_done'}, player_request + '_player')
-        if len(self.monster_death_triggers) > 0:
-            def show_triggers():
-                if len(self.monster_death_triggers) > 0:
-                    self.choice_layout = create_choices(choices=self.monster_death_triggers, title=human_readable(monster.name) + ' killed')
-                    self.layout.add(self.choice_layout)
-                    show_triggers()
-                else:
-                    finish_combat()
-            triggers = []
-            for trigger in self.monster_death_triggers:
-                button_action = trigger.action
-                button_args = trigger.action_args
-                def action():
-                    if button_args != None:
-                        button_action(**button_args)
-                    else:
-                        button_action()
-                    self.clear_overlay()
-                trigger.action = action
-                trigger.action_args = None
-            self.monster_death_triggers = triggers
-            show_triggers()
+        if len(triggers) > 0:
+            small_card = SmallCardPane(self.hub)
+            small_card.setup(triggers, self, False, human_readable(monster.name) + ' - Defeated', [trig.get('texture') for trig in triggers], finish_combat)
         elif is_ambush:
             self.set_buttons(self.ambush_steps[0] if successes >= monster.toughness else self.ambush_steps[1])
             self.ambush_steps = None
@@ -602,13 +582,17 @@ class EncounterPane():
                     self.proceed_button.action = damage_all
                     self.proceed_button.text = 'Select Location'
                 def select(monster):
-                    self.hub.damage_monster(monster, damage)
+                    self.clear_overlay()
+                    self.hub.waiting_panes.append(self)
                     if lose_hp:
-                        self.clear_overlay()
+                        self.encounter['1action'] = ['hp_san']
+                        self.encounter['1args'] = [{'step': step, 'hp': -monster.toughness, 'skip': True}]
+                        self.wait_step = '1action'
                         self.hp_san(step, -monster.toughness)
                     else:
-                        self.set_buttons(step)
+                        self.wait_step = step
                     self.click_action = None
+                    self.hub.damage_monster(monster, damage)
                 def damage_loc(loc):
                     self.proceed_button.disable()
                     choices = []
@@ -640,6 +624,7 @@ class EncounterPane():
                         self.proceed_button.text = 'Select Location'
                         self.clear_overlay()
                     self.option_button.action = close
+                    self.option_button.action_args = None
 
     def delay(self, step='finish', bypass=False):
         def get_delayed():
@@ -1125,7 +1110,7 @@ class EncounterPane():
         self.click_action = select_loc
 
     def send_encounter(self, investigator, encounter, last_step=None, step='finish'):
-        player = None
+        player = investigator
         if investigator == 'self':
             player = self.investigator.name
         elif investigator == 'chosen':
@@ -1412,7 +1397,14 @@ class EncounterPane():
                     if self.investigator.health <= 0 or self.investigator.sanity <= 0:
                         self.death_screen()
                     else:
+                        triggers = []
+                        if args.get('monster', False) and hasattr(args['monster'], 'health_damage') and self.hp_damage < 0:
+                            triggers.append(args['monster'].health_damage)
+                        if args.get('monster', False) and hasattr(args['monster'], 'san_damage') and self.san_damage < 0:
+                            triggers.append(args['monster'].health_damage)
                         self.clear_overlay()
+                        for trigger in triggers:
+                            self.action_dict[trigger['action']](**trigger['aargs'])
                         action(**args)
             options = []
             for trigger in [trig for trig in self.hub.triggers['hp_san_loss'] if not trig.get('used', False)]:
@@ -1530,6 +1522,7 @@ class EncounterPane():
             def finish_action(name):
                 self.reckoning(kinds[index], step=step)
             small_card.setup([reckon[0] for reckon in self.reckonings[kind]], self, False, 'Resolving ' + human_readable(kind) + ' Reckoning Effects', [reckon[1] for reckon in self.reckonings[kind]], finish_action, scale=scales[index-1])
+            small_card.phase_button.text = 'Reckoning Phase'
         else:
             self.reckoning(kinds[index], step=step)
 
@@ -1545,6 +1538,7 @@ class SmallCardPane(EncounterPane):
             'mod_die': self.mod_die,
             'temp_bonus': self.temp_bonus,
             'monster_reckoning_move': self.monster_reckoning_move,
+            'monster_reckoning_damage': self.monster_reckoning_damage,
             'kleptomania': self.kleptomania,
             'violent_outbursts': self.violent_outbursts,
             'spell_flip': self.spell_flip,
@@ -1561,6 +1555,7 @@ class SmallCardPane(EncounterPane):
         self.scale = 0.5
         self.request_player = None
         self.gui_enabled = True
+        self.player_encounters = []
 
     def setup(self, encounters, parent, single_pick=True, default_text=None, textures=[], finish_action=None, force_select=False, scale=0.5):
         self.scale = scale
@@ -1572,7 +1567,7 @@ class SmallCardPane(EncounterPane):
         self.single_pick = single_pick
         self.default_text = default_text
         self.textures = textures if len(textures) > 0 else ['buttons/placeholder.png'] * len(self.encounters)
-        if force_select:
+        if force_select and len(encounters) == 1:
             self.encounter_selected(encounters[0])
         else:
             self.pick_encounters()
@@ -1724,6 +1719,21 @@ class SmallCardPane(EncounterPane):
             investigator = list(paths.keys())[0]
             move_to_investigator(monster, distance, investigator)
 
+    def monster_reckoning_damage(self, monster, damage=-1, adjacent=False, first=False, step='finish'):
+        if first:
+            new_args = copy.deepcopy(self.encounter[self.current_key[0] + 'args'])
+            del new_args[0]['first']
+            del new_args[0]['skip']
+            self.encounter[self.current_key[0] + 'args'] = new_args
+            locations = [monster.location] + (list(self.hub.location_manager.locations[monster.location]['routes'].keys()) if adjacent else [])
+            self.player_encounters = [inv.name for inv in self.hub.location_manager.all_investigators.values() if inv.location in locations]
+        if len(self.player_encounters) == 0:
+            self.set_buttons(step)
+        else:
+            investigator = self.player_encounters[0]
+            self.player_encounters = self.player_encounters[1:]
+            self.send_encounter(investigator, {'action': ['hp_san'], 'aargs': [{'hp': damage, 'skip': True}], 'action_text': 'Each Investigator on this space loses 1 Health.', 'title': human_readable(monster.name) + ' - Reckoning'}, step=self.current_key)
+
     def kleptomania(self, current_items=None):
         if current_items == None:
             self.encounter['aargs'][0]['current_items'] = [item.name for item in self.investigator.possessions['assets']]
@@ -1766,6 +1776,8 @@ class SmallCardPane(EncounterPane):
         self.set_buttons('action')
 
     def encounter_selected(self, encounter):
+        index = self.encounters.index(encounter)
+        self.textures.pop(index)
         self.encounters.remove(encounter)
         self.encounter = encounter
         self.set_buttons('action')
@@ -1775,6 +1787,7 @@ class SmallCardPane(EncounterPane):
     def pick_encounters(self):
         choices = []
         self.text_button.text = self.default_text
+        self.choice_layout.clear()
         for x in range(len(self.encounters)):
             choices.append(ActionButton(scale=self.scale, texture=self.textures[x], action=self.encounter_selected, action_args={'encounter': self.encounters[x]}))
         if len([encounter for encounter in self.encounters if encounter.get('is_required', False)]) == 0:
@@ -1794,6 +1807,7 @@ class SmallCardPane(EncounterPane):
 
     def finish(self, skip=False):
         if not self.single_pick and len(self.encounters) > 0 and not skip:
+            self.clear_buttons()
             self.pick_encounters()
         else:
             self.encounter_type = []

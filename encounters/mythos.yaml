@@ -531,10 +531,29 @@
         args:
           location: space_19
           spend_clue: True
-          clue_text: to progress Rumor
-          result: rumor_add
           name: return_of_the_ancient_ones
-          custom_action: return_of_the_ancient_ones
+          set_monster:
+            attr: toughness
+            key: uargs
+            arg: amt
+          action:
+            action:
+              - spend_clue
+              - set_buttons
+            aargs:
+              - text: Spend 1 Clue
+                step: update
+              - text: Skip
+                key: finish
+            update:
+              - update_rumor
+            uargs:
+              - name: return_of_the_ancient_ones
+                kind: solve_amt
+                skip: True
+            action_text: You may spend 1 Clue to place the defeated Monster on the Return of the Ancient Ones Rumor. When the total toughness of Monsters on that Rumor is equal to or greater than the number of Investigators, solve the Rumor.
+            title: Return of the Ancient Ones
+            texture: encounters/rumor.png
         step: end
     end:
       - end_mythos
@@ -549,11 +568,7 @@
       eldritch: 0
       is_solve: True
       not_encounter: True
-      solve_action: adjust_triggers
-      solve_action_args:
-        kind: monster_kill
-        args:
-          name: return_of_the_ancient_ones
+      trigger: monster_kill
   rising_terror:
     action:
       - monster_reckoning

@@ -224,6 +224,7 @@
       space_1: ship
       shanghai: rail
       tunguska: rail
+      tokyo: ship
   space_20:
     map: world
     name: Space 20

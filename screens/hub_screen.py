@@ -523,12 +523,11 @@ class HubScreen(arcade.View):
                     if not payload['solved'] and rumor.get('unsolve_encounter', None) != None:
                         rumor['unsolve_encounter']['title'] = human_readable(payload['value']) + ' - Reckoning'
                         self.encounter_pane.mythos_reckonings.append(rumor['unsolve_encounter'])
-                    elif payload['solved'] and rumor.get('solve_action', None) != None:
-                        args = rumor.get('solve_action_args', {})
-                        self.encounter_pane.action_dict[rumor.get('solve_action')](**args)
+                    elif payload['solved'] and rumor.get('trigger', False):
+                        self.triggers[rumor['trigger']] = [trig for trig in self.triggers[rumor['trigger']] if trig['name'] != payload['value']]
                     del self.location_manager.rumors[payload['value']]
                 case 'update_rumor':
-                    if self.location_manager.rumors.get(payload['name'], None) != None:
+                    if self.location_manager.rumors.get(payload['name'], False):
                         is_solve = self.location_manager.rumors[payload['name']].get('is_solve', False)
                         self.location_manager.rumors[payload['name']]['eldritch'] = payload['value'] if not is_solve else payload.get('solve', self.location_manager.rumors[payload['name']]['eldritch'])
                 case 'group_pay_update':
@@ -591,8 +590,9 @@ class HubScreen(arcade.View):
                         setattr(self.location_manager.all_investigators[payload['owner']], key, payload[key])
             if len(self.waiting_panes) > 0 and self.waiting_panes[-1].wait_step != None:
                 if self.waiting_panes[-1].last_value == None or self.waiting_panes[-1].last_value == payload['value']:
-                    self.waiting_panes[-1].set_buttons(self.waiting_panes[-1].wait_step)
+                    pane = self.waiting_panes[-1]
                     self.waiting_panes = self.waiting_panes[:-1]
+                    pane.set_buttons(pane.wait_step)
             if payload['message'] == 'trigger_used':
                 ident = payload['value'].split(':')
                 used_trigger = next((trigger for trigger in self.triggers[payload['kind']] if trigger['investigator'] == ident[0] and trigger['name'] == ident[1]), False)
@@ -738,6 +738,8 @@ class HubScreen(arcade.View):
         if trigger.get('not_encounter', False) and trigger['not_encounter'] in encounter_types:
             pass_condition = False
         if trigger.get('exists', False) and not next((loc for loc in self.location_manager.locations.values() if loc[trigger['exists']]), False):
+            pass_condition = False
+        if trigger.get('monsters_exist', False) and len(self.location_manager.all_monsters) <= 0:
             pass_condition = False
         return pass_condition
     
@@ -918,26 +920,19 @@ class HubScreen(arcade.View):
     def damage_monster(self, monster, damage, is_ambush=False, is_combat=False):
         choices = []
         if damage != 99 and monster.damage + damage >= monster.toughness and is_combat:
-            for trigger in self.triggers['monster_kill']:
-                def result_action():
-                    match trigger['result']:
-                        case 'rumor_add':
-                            self.networker.publish_payload({'message': 'update_rumor_solve', 'solve_amt': monster.toughness, 'name': trigger['name']}, self.investigator.name)
+            for trigger in self.triggers['monster_kill'] + [getattr(monster, 'death_trigger', {})]:
                 if self.trigger_check(trigger, []):
-                    if trigger.get('custom_action', False):
-                        match trigger['custom_action']:
-                            case 'return_of_the_ancient_ones':
-                                def custom_action():
-                                    self.encounter_pane.spend_clue('nothing')
-                                    result_action()
-                        choices.append(ActionButton(texture='buttons/placeholder.png', text='Spend 1 Clue ' + trigger['clue_text'], action=custom_action, style={'font_size': 10}))
+                    if trigger.get('action', False):
+                        encounter = trigger['action']
+                        if trigger.get('set_monster', False):
+                            encounter[trigger['set_monster']['key']][0][trigger['set_monster']['arg']] = getattr(monster, trigger['set_monster']['attr'])
+                        choices.append(encounter)
                     if trigger.get('recover_san', False):
                         self.investigator.sanity = min(self.investigator.max_sanity, self.investigator.sanity + trigger['recover_san'])
                     if trigger.get('receive_clue', False):
                         self.encounter_pane.gain_clue('nothing')
-            if hasattr(monster, 'death_trigger'):
-                if monster.death_trigger.get('special_encounter', False):
-                    self.triggers['special_encounters'].append(monster.death_trigger['special_encounter'])
+            if hasattr(monster, 'death_trigger') and monster.death_trigger.get('special_encounter', False):
+                self.triggers['special_encounters'].append(monster.death_trigger['special_encounter'])
         if not is_ambush and not is_combat:
             self.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
         return choices

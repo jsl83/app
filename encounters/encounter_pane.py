@@ -358,7 +358,7 @@ class EncounterPane():
                 self.hub.networker.publish_payload({'message': 'action_done'}, player_request + '_player')
         if len(triggers) > 0:
             small_card = SmallCardPane(self.hub)
-            small_card.setup(triggers, self, False, human_readable(monster.name) + ' - Defeated', [trig.get('texture') for trig in triggers], finish_combat)
+            small_card.setup(triggers, self, False, human_readable(monster.name) + ' - Defeated', [trig.get('texture') for trig in triggers], finish_combat, len(triggers) == 1 and triggers[0]['is_required'])
         elif is_ambush:
             self.set_buttons(self.ambush_steps[0] if successes >= monster.toughness else self.ambush_steps[1])
             self.ambush_steps = None
@@ -408,10 +408,15 @@ class EncounterPane():
         self.gate_close = allow
         self.set_buttons(step)
 
-    def allow_move(self, distance, step='finish', same_loc=True, must_move=False, investigator='self'):
+    def allow_move(self, distance, step='finish', same_loc=True, must_move=False, investigator='self', nightgaunt=None):
         allowed_locs = self.hub.get_locations_within(distance, self.investigator.location if investigator == 'self' else self.hub.location_manager[self.chosen_investigator].location, same_loc=same_loc) if distance != 99 else[]
         def move(unit, location):
-            self.hub.move_unit(unit, location)
+            self.hub.networker.publish_payload({'message': 'move_investigator', 'value': unit, 'destination': location}, self.investigator.name)
+            if nightgaunt != None:
+                self.hub.networker.publish_payload({'message': 'move_monster', 'value': nightgaunt, 'location': location}, self.investigator.name)
+                self.delay()
+            self.click_action = None
+            self.no_loc_click = None
             self.set_buttons(step)
         self.proceed_button.action = move
         self.proceed_button.action_args = {'unit': self.investigator.name if investigator == 'self' else self.chosen_investigator, 'location': ''}
@@ -1684,14 +1689,36 @@ class SmallCardPane(EncounterPane):
         is_wait = False
         paths = {}
         closest = 100
-        investigators = self.hub.location_manager.all_investigators
-        for investigator in investigators:
-            route = list(self.hub.location_manager.find_path(monster.location, investigators[investigator].location))
+        is_migo = monster.name == 'mi-go'
+        if is_migo:
+            locs = [loc for loc in self.hub.location_manager.locations.keys() if self.hub.location_manager.locations[loc]['clue']]
+            if len(locs) == 0:
+                self.set_buttons(step)
+                return
+        else:
+            locs = self.hub.location_manager.all_investigators
+        if monster.name == 'nightgaunt':
+            same_space = [inv for inv in locs if locs[inv].location == monster.location]
+            def send_move(investigator):
+                self.send_encounter(investigator, {'action': ['allow_move'], 'aargs': [{'distance': 1, 'same_loc': False, 'must_move': True, 'nightgaunt': monster.monster_id, 'step': 'delayed', 'skip': True}], 'delayed': ['delayed'], 'dargs': [{'skip': True}], 'action_text': 'Move you and this Monster 1 space and become Delayed', 'title': 'Nightgaunt - Reckoning'}, step=step)
+            if len(same_space) == 1:
+                send_move(same_space[0])
+                return
+            elif len(same_space) > 1:
+                choices = []
+                for names in same_space:
+                    choices.append(ActionButton(texture='investigators/' + names + '_portrait.png', action=send_move, action_args={'investigator': names}, scale=0.4))
+                self.clear_overlay()
+                self.choice_layout = create_choices('Select Investigator', choices=choices)
+                return
+        for loc in locs :
+            location = loc if is_migo else locs[loc].location
+            route = list(self.hub.location_manager.find_path(monster.location, location))
             if len(route) < closest:
                 paths = {}
                 closest = len(route)
             if len(route) == closest:
-                paths[investigator] = route
+                paths[location if is_migo else loc] = route
         if closest - 1 <= distance and (encounter or damage > 0):
             is_wait = True
         if is_wait:
@@ -1700,27 +1727,28 @@ class SmallCardPane(EncounterPane):
         else:
             self.player_wait_step = None
         def move_to_investigator(monster, distance, investigator):
+            self.clear_overlay()
             route = paths[investigator]
             distance = distance if distance < len(route) else len(route) - 1
             self.hub.networker.publish_payload({'message': 'move_monster', 'value': monster.monster_id, 'location': route[distance]}, self.investigator.name)
             if is_wait:
-                self.clear_overlay()
                 self.choice_layout = create_choices('Waiting for other player to finish')
                 self.layout.add(self.choice_layout)
                 self.player_wait_step = 'set_buttons'
                 self.player_wait_args = {'key': step}
             else:
-                self.set_buttons(step)
-            if route[distance] == investigators[investigator].location and encounter:
+                if is_migo:
+                    self.despawn_clues(investigator, step=step)
+                else:
+                    self.set_buttons(step)
+            if not is_migo and route[distance] == locs[investigator].location and encounter:
                 self.hub.networker.publish_payload({'message': 'combat', 'value': monster.monster_id, 'sender': self.investigator.name}, investigator + '_player')
         if len(paths) > 1:
             choices = []
             for name in paths:
-                choices.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.3, action=move_to_investigator, action_args={
-                    'monster': monster, 'distance': distance, 'investigator': name
-                }))
+                choices.append(ActionButton(texture='buttons/placeholder.png' if is_migo else 'investigators/' + name + '_portrait.png', scale=1 if is_migo else 0.3, text=human_readable(name) if is_migo else '', action=move_to_investigator, action_args={'monster': monster, 'distance': distance, 'investigator': name}))
             self.clear_overlay()
-            self.choice_layout = create_choices(choices=choices, title='Select Investigator to move to')
+            self.choice_layout = create_choices(choices=choices, title='Select ' + ('Location' if is_migo else 'Investigator') + ' to move to')
             self.layout.add(self.choice_layout)
         else:
             investigator = list(paths.keys())[0]
@@ -1815,6 +1843,7 @@ class SmallCardPane(EncounterPane):
     def finish(self, skip=False):
         if not self.single_pick and len(self.encounters) > 0 and not skip:
             self.clear_buttons()
+            self.phase_button.text = ''
             self.pick_encounters()
         else:
             self.encounter_type = []

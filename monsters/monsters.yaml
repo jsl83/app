@@ -295,6 +295,82 @@
             text: Gain an Axe Asset
         texture: monsters/maniac.png
         is_required: True
+  mi-go:
+    count: 1
+    horror:
+      index: 4
+      mod: 0
+      san: 1
+    strength:
+      index: 3
+      mod: -2
+      str: 2
+    toughness: 3
+    text: "If you defeat this Monster during a Combat Encounter, gain 1 Artifact.\n\nReckoning\n\nDiscard the nearest Clue and move this Monster to that space."
+    reckoning:
+      is_required: True
+      action:
+        - monster_reckoning_move
+      aargs:
+        - text: Move
+          distance: 99
+          encounter: False
+      title: Mi-go - Reckoning
+      keys:
+        - aargs
+      action_text: Discard the nearest Clue and move this Monster to that space.
+    death_trigger:
+      action:
+        action:
+          - request_card
+        aargs:
+          - kind: artifacts
+            text: Gain an Artifact Asset
+        texture: monsters/mi-go.png
+        is_required: True
+        title: Mi-go - Defeated
+        action_args: If you defeat this Monster during a Combat Encounter, gain 1 Artifact.
+  mummy:
+    count: 1
+    horror:
+      index: 4
+      mod: 0
+      san: 2
+    strength:
+      index: 3
+      mod: -2
+      str: 2
+    toughness: 3
+    text: "When this Monster is spawned, move it to The Pyramids."
+    location: world:the_pyramids
+  nightgaunt:
+    count: 1
+    horror:
+      index: 4
+      mod: 0
+      san: 2
+    strength:
+      index: 3
+      mod: -2
+      str: 1
+    toughness: 2
+    text: "Reckoning\n\nIf there is an Investigator on this space, move them and this Monster 1 space and they becomes Delayed. Otherwise, move this Monster 2 spaces toward the nearest investigator."
+    location: world:the_pyramids
+    reckoning:
+      is_required: True
+      action:
+        - monster_reckoning_move
+      aargs:
+        - skip: True
+          distance: 2
+          step: done
+          encounter: False
+      done:
+        - set_buttons
+      dargs:
+        - key: finish
+      keys:
+        - aargs
   tick_tock_men:
     epic: True
     count: 1

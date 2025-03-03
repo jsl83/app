@@ -371,6 +371,76 @@
         - key: finish
       keys:
         - aargs
+  riot:
+    count: 1
+    horror:
+      index: 1
+      mod: -1
+      san: 'N/A'
+    strength:
+      index: 3
+      mod: -3
+      str: 3
+    toughness: 3
+    text: "Before resolving the Strength test, you may attempt to disperse the mob (Influence -1). If you pass, defeat this Monster."
+  serpent_people:
+    count: 1
+    horror:
+      index: 4
+      mod: 0
+      san: 2
+    strength:
+      index: 3
+      mod: -1
+      str: 3
+    toughness: 2
+    text: "When this Monster is spawned, move it to The Amazon.\n\nReckoning\n\nRoll 1 die. On a 1 or 2, the nearest Investigator moves 1 space toward this Monster."
+    location: world:the_amazon
+    reckoning:
+      is_required: True
+      action:
+        - single_roll
+      aargs:
+        - effects:
+            '12': draw
+            '3456': finish
+          skip: True
+      finish:
+        - set_buttons
+      fargs:
+        - key: finish
+          skip: True
+      draw:
+        - attract_investigator
+      dargs:
+        - skip: True
+      title: Serpent People - Reckoning
+      action_text: Roll 1 die. On a 1 or 2, the nearest Investigator moves 1 space toward this Monster.
+      keys:
+        - dargs
+  shoggoth:
+    count: 1
+    horror:
+      index: 4
+      mod: 0
+      san: 3
+    strength:
+      index: 3
+      mod: -2
+      str: 2
+    toughness: 4
+    text: "Reckoning\n\nThis Monster recovers all Health."
+    reckoning:
+      is_required: True
+      action:
+        - heal_monster
+      aargs:
+        - amt: -99
+          text: Next
+      title: Shoggoth - Reckoning
+      action_text: This Monster recovers all Health.
+      keys:
+        - aargs
   tick_tock_men:
     epic: True
     count: 1

@@ -35,6 +35,7 @@ class EncounterPane():
             'allow_gate_close': self.allow_gate_close,
             'allow_move': self.allow_move,
             'ambush': self.ambush,
+            'attract_investigator': self.attract_investigator,
             'choose_investigator': self.choose_investigator,
             'choose_location': self.choose_location,
             'choose_monster': self.choose_monster,
@@ -51,6 +52,7 @@ class EncounterPane():
             'gain_clue': self.gain_clue,
             'group_pay': self.group_pay,
             'group_pay_reckoning': self.group_pay_reckoning,
+            'heal_monster': self.heal_monster,
             'hp_san': self.hp_san,
             'impair_encounter': self.impair_encounter,
             'improve_skill': self.improve_skill,
@@ -293,9 +295,16 @@ class EncounterPane():
                 self.clear_overlay()
                 self.encounter_type.remove('combat_will')
                 successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
-                dmg = successes - monster.horror['san']
-                dmg = dmg if dmg < 0 else 0
-                self.take_damage(0, dmg, self.resolve_combat if (monster.horror.get('skip', False) and successes == 0) or monster.horror.get('damage', False) else self.combat_strength, {'monster': monster, 'player_request': player_request})
+                if monster.name == 'riot':
+                    if successes > 0:
+                        self.rolls = [6,6,6,6]
+                        self.resolve_combat(monster, player_request)
+                    else:
+                        self.combat_strength(monster, player_request)
+                else:
+                    dmg = successes - monster.horror['san']
+                    dmg = dmg if dmg < 0 else 0
+                    self.take_damage(0, dmg, self.resolve_combat if (monster.horror.get('skip', False) and successes == 0) or monster.horror.get('damage', False) else self.combat_strength, {'monster': monster, 'player_request': player_request})
             next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_san)
             self.encounter_type.append('combat_will')
             self.rolls, self.choice_layout = self.hub.run_test(monster.horror['index'],
@@ -443,6 +452,43 @@ class EncounterPane():
     def ambush(self, name=None, step='finish', fail='finish'):
         self.ambush_steps = (step, fail)
         self.combat_will(self.hub.location_manager.create_ambush_monster(name))
+
+    def attract_investigator(self, distance=1, location='', step='finish', monster=None):
+        if monster != None:
+            location = monster.location
+        routes = {}
+        for inv in self.hub.location_manager.all_investigators:
+            routes[inv] = self.hub.location_manager.find_path(self.hub.location_manager.all_investigators[inv].location, location, distance)
+        shortest = min([len(path[0]) for path in routes.values()])
+        investigators = [name for name in routes.keys() if len(routes[name][0]) == shortest]
+        def move_investigator(name):
+            places = set()
+            for route in routes[name]:
+                places.add(route[min(distance, len(route) - 1)])
+            if len(places) > 1:
+                self.clear_overlay()
+                def choose_path(loc):
+                    self.hub.networker.publish_payload({'message': 'move_investigator', 'value': name, 'destination': loc}, self.investigator.name)
+                    self.set_buttons(step)
+                choices = []
+                for destination in places:
+                    choices.append(ActionButton(texture='buttons/placeholder.png', text=human_readable(destination), action=choose_path, action_args={'loc': destination}))
+                self.clear_overlay()
+                self.clear_buttons()
+                self.choice_layout = create_choices(choices=choices, title='Select Location')
+                self.layout.add(self.choice_layout)
+            else:
+                self.hub.networker.publish_payload({'message': 'move_investigator', 'value': name, 'destination': routes[name][0][distance]}, self.investigator.name)
+                self.set_buttons(step)
+        if len(investigators) == 1:
+            move_investigator(investigators[0])
+        else:
+            inv_choices = []
+            for inv in investigators:
+                inv_choices.append(ActionButton(texture='investigators/' + inv + '_portrait.png', action=move_investigator, action_args={'name': inv}, scale=0.4))
+            self.clear_overlay()
+            self.choice_layout = create_choices('Select Investigator', choices=inv_choices)
+            self.layout.add(self.choice_layout)
 
     def choose_investigator(self, action, no_self=False, on_location=False, step='finish', no_bless=False):
         choices = []
@@ -908,6 +954,10 @@ class EncounterPane():
                 self.clear_buttons([self.proceed_button])
                 self.proceed_button.disable()
                 self.proceed_button.text = 'Waiting for other players'
+
+    def heal_monster(self, monster, amt, step='finish'):
+        self.hub.networker.publish_payload({'message': 'monster_damaged', 'value': monster.monster_id, 'damage': amt}, 'server_update')
+        self.set_buttons(step)
 
     def hp_san(self, step='finish', hp=0, san=0, stat='health', kind=None, tag=None, no_damage_step=None, investigator='self'):
         if investigator == 'select':
@@ -1686,8 +1736,7 @@ class SmallCardPane(EncounterPane):
             self.hub.info_manager.trigger_render()
 
     def monster_reckoning_move(self, monster, step='finish', distance=1, encounter=True, damage=0):
-        is_wait = False
-        paths = {}
+        paths = []
         closest = 100
         is_migo = monster.name == 'mi-go'
         if is_migo:
@@ -1713,46 +1762,56 @@ class SmallCardPane(EncounterPane):
                 return
         for loc in locs :
             location = loc if is_migo else locs[loc].location
-            route = list(self.hub.location_manager.find_path(monster.location, location))
-            if len(route) < closest:
-                paths = {}
-                closest = len(route)
-            if len(route) == closest:
-                paths[location if is_migo else loc] = route
-        if closest - 1 <= distance and (encounter or damage > 0):
-            is_wait = True
-        if is_wait:
-            self.hub.waiting_panes.append(self)
-            self.player_wait_step = 'waiting'
-        else:
-            self.player_wait_step = None
-        def move_to_investigator(monster, distance, investigator):
+            if monster.location == location:
+                routes = [[location]]
+            else:
+                routes = self.hub.location_manager.find_path(monster.location, location, distance)
+            if len(routes[0]) < closest:
+                paths = []
+                closest = len(routes[0])
+            if len(routes[0]) == closest:
+                paths = paths + routes
+        def move_to_investigator(monster, destination):
             self.clear_overlay()
-            route = paths[investigator]
-            distance = distance if distance < len(route) else len(route) - 1
-            self.hub.networker.publish_payload({'message': 'move_monster', 'value': monster.monster_id, 'location': route[distance]}, self.investigator.name)
-            if is_wait:
-                self.choice_layout = create_choices('Waiting for other player to finish')
-                self.layout.add(self.choice_layout)
-                self.player_wait_step = 'set_buttons'
-                self.player_wait_args = {'key': step}
+            self.hub.networker.publish_payload({'message': 'move_monster', 'value': monster.monster_id, 'location': destination}, self.investigator.name)
+            same_loc = [inv for inv in self.hub.location_manager.all_investigators.keys() if self.hub.location_manager.all_investigators[inv].location == destination]
+            if (damage > 0 or encounter) and len(same_loc) > 0:
+                def selected(investigator):
+                    self.hub.waiting_panes.append(self)
+                    self.player_wait_step = 'waiting'
+                    self.choice_layout = create_choices('Waiting for other player to finish')
+                    self.layout.add(self.choice_layout)
+                    self.player_wait_step = 'set_buttons'
+                    self.player_wait_args = {'key': step}
+                    self.clear_buttons()
+                    self.hub.networker.publish_payload({'message': 'combat', 'value': monster.monster_id, 'sender': self.investigator.name}, investigator + '_player')
+                if len(same_loc) == 1:
+                    selected(same_loc[0])
+                else:
+                    inv_choices = []
+                    for inv in same_loc:
+                        inv_choices.append(ActionButton(texture='investigators/' + inv + '_portrait.png', action=selected, action_args={'investigator': inv}, scale=0.4))
+                    self.clear_overlay()
+                    self.choice_layout = create_choices('Select Investigator', choices=inv_choices)
+                    self.layout.add(self.choice_layout)
             else:
                 if is_migo:
-                    self.despawn_clues(investigator, step=step)
+                    self.despawn_clues(destination, step=step)
                 else:
                     self.set_buttons(step)
-            if not is_migo and route[distance] == locs[investigator].location and encounter:
-                self.hub.networker.publish_payload({'message': 'combat', 'value': monster.monster_id, 'sender': self.investigator.name}, investigator + '_player')
-        if len(paths) > 1:
+        places = set()
+        for route in paths:
+            places.add(route[min(distance, len(route) - 1)])
+        if len(places) > 1:
             choices = []
-            for name in paths:
-                choices.append(ActionButton(texture='buttons/placeholder.png' if is_migo else 'investigators/' + name + '_portrait.png', scale=1 if is_migo else 0.3, text=human_readable(name) if is_migo else '', action=move_to_investigator, action_args={'monster': monster, 'distance': distance, 'investigator': name}))
+            for destination in places:
+                choices.append(ActionButton(texture='buttons/placeholder.png', text=human_readable(destination), action=move_to_investigator, action_args={'monster': monster, 'destination': destination}))
             self.clear_overlay()
-            self.choice_layout = create_choices(choices=choices, title='Select ' + ('Location' if is_migo else 'Investigator') + ' to move to')
+            self.clear_buttons()
+            self.choice_layout = create_choices(choices=choices, title='Select Location')
             self.layout.add(self.choice_layout)
         else:
-            investigator = list(paths.keys())[0]
-            move_to_investigator(monster, distance, investigator)
+            move_to_investigator(monster, paths[0][min(distance, len(paths[0]) - 1)])
 
     def monster_reckoning_damage(self, monster, hp=0, san=0, adjacent=False, first=False, step='finish'):
         if first:

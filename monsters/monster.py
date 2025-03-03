@@ -58,5 +58,5 @@ class Monster():
 
     def on_damage(self, amt, investigator=None):
         self.damage += amt
-        self.damage = 0 if self.damage < 0 else self.damage
+        self.damage = max(self.damage, 0)
         return self.damage >= self.toughness

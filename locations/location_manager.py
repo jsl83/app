@@ -41,9 +41,18 @@ class LocationManager():
                 return (scaled_location[0], scaled_location[1], key)
         return None
     
-    def find_path(self, start, goal):
+    def find_path(self, start, goal, distance=1):
         neighbors = lambda name: list(map(lambda route: route, self.locations[name]['routes']))
-        return astar.find_path(start, goal, neighbors)
+        direct = list(astar.find_path(start, goal, neighbors))
+        if len(direct) - 1 <= distance:
+            return [direct]
+        else:
+            start_locs = [loc for loc in list(self.hub.get_locations_within(distance, start, same_loc=False)) if len(list(astar.find_path(start, loc, neighbors)))]
+            all_paths = []
+            for adjacent in start_locs:
+                route = list(astar.find_path(adjacent, goal, neighbors))
+                all_paths.append(list(astar.find_path(start, adjacent, neighbors))[:-1] + route)
+            return [path for path in all_paths if len(path) == min([len(path) for path in all_paths])]
     
     def spawn_monster(self, name, location, world, monster_id):
         monster = Monster(name, monster_id, self.player_count)

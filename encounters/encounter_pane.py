@@ -41,6 +41,7 @@ class EncounterPane():
             'choose_monster': self.choose_monster,
             'close_gate': self.close_gate,
             'combat': self.encounter_phase,
+            'combat_strength': self.combat_strength,
             'condition_check': self.condition_check,
             'damage_monsters': self.damage_monsters,
             'delayed': self.delay,
@@ -62,6 +63,7 @@ class EncounterPane():
             'move_investigator': self.move_investigator,
             'move_monster': self.move_monster,
             'mythos_reckoning': self.mythos_reckoning,
+            'nearest_investigator': self.nearest_investigator,
             'recover': self.recover_investigator,
             'request_card': self.request_card,
             'resting_enabled': self.resting_enabled,
@@ -301,9 +303,12 @@ class EncounterPane():
                         self.resolve_combat(monster, player_request)
                     else:
                         self.combat_strength(monster, player_request)
+                elif monster.name == 'witch' and successes == 0:
+                    self.encounter = {'combat': ['combat_strength'], 'cargs':[{'monster': monster, 'player_request': player_request, 'skip': True}]}
+                    self.request_card('conditions', 'combat', 'cursed')
                 else:
                     dmg = successes - monster.horror['san']
-                    dmg = dmg if dmg < 0 else 0
+                    dmg = min(dmg, 0)
                     self.take_damage(0, dmg, self.resolve_combat if (monster.horror.get('skip', False) and successes == 0) or monster.horror.get('damage', False) else self.combat_strength, {'monster': monster, 'player_request': player_request})
             next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_san)
             self.encounter_type.append('combat_will')
@@ -350,15 +355,16 @@ class EncounterPane():
         triggers = self.hub.damage_monster(monster, successes, is_ambush, True)
         def finish_combat(name=None):
             self.layout.remove(self.hub.info_panes['location'].layout)
+            damage = successes - 2 if monster.name == 'vampire' and self.hp_damage < 0 and successes + monster.damage < 3 else successes
             if player_request == None:
                 self.hub.show_encounter_pane()
                 self.monsters.remove(monster)
                 self.hub.waiting_panes.append(self)
                 self.wait_step = 'combat'
                 self.encounter = {'combat': ['combat'], 'cargs': [{'skip': True}]}
-                self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': successes}, self.investigator.name)
+                self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
             else:
-                self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': successes}, self.investigator.name)
+                self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
                 if hasattr(self, 'parent'):
                     self.hub.info_manager.children = {0:[]}
                     self.clear_overlay()
@@ -1098,6 +1104,32 @@ class EncounterPane():
         else:
             self.reckoning(step=step)
 
+    def nearest_investigator(self, monster=None, step='finish'):
+        location = self.investigator.location
+        if monster:
+            location = monster.location
+        shortest = 99
+        investigators = []
+        for investigator in self.hub.location_manager.all_investigators:
+            path = self.hub.location_manager.find_path(location, self.hub.location_manager.all_investigators[investigator].location, 99)
+            if len(path[0]) < shortest:
+                investigators = []
+                shortest = len(path[0])
+            if len(path[0]) == shortest:
+                investigators.append(investigator)
+        def set_chosen(name):
+            self.clear_overlay()
+            self.chosen_investigator = name
+            self.set_buttons(step)
+        if len(investigators) == 1:
+            set_chosen(investigators[0])
+        else:
+            choices = []
+            for name in investigators:
+                choices.append(ActionButton(texture='investigators/' + name + '_portrait.png', action=set_chosen, action_args={'name': name}, scale=0.4))
+            self.clear_overlay()
+            self.choice_layout = create_choices('Select Investigator', choices=choices)
+            
     def recover_investigator(self, step='finish'):
         self.hub.networker.publish_payload({'message': 'recover_body', 'body': self.recover_name}, self.investigator.name)
         self.wait_step = step
@@ -1262,6 +1294,8 @@ class EncounterPane():
                     self.layout.add(buttons[x])
                 if len(self.choice_layout.children) > 0:
                     self.layout.add(self.choice_layout)
+                if 'combat_strength' in self.encounter[key]:
+                    self.layout.add(self.hub.info_panes['location'].layout)
             #self.hub.info_manager.trigger_render()
 
     def set_doom(self, increment=1, step='finish'):
@@ -1813,14 +1847,17 @@ class SmallCardPane(EncounterPane):
         else:
             move_to_investigator(monster, paths[0][min(distance, len(paths[0]) - 1)])
 
-    def monster_reckoning_damage(self, monster, hp=0, san=0, adjacent=False, first=False, step='finish'):
+    def monster_reckoning_damage(self, monster, hp=0, san=0, adjacent=False, first=False, step='finish', cursed=False):
         if first:
             new_args = copy.deepcopy(self.encounter[self.current_key[0] + 'args'])
             del new_args[0]['first']
             del new_args[0]['skip']
             self.encounter[self.current_key[0] + 'args'] = new_args
-            locations = [monster.location] + (list(self.hub.location_manager.locations[monster.location]['routes'].keys()) if adjacent else [])
-            self.player_encounters = [inv.name for inv in self.hub.location_manager.all_investigators.values() if inv.location in locations]
+            if cursed:
+                self.player_encounters = [inv.name for inv in self.hub.location_manager.all_investigators.values() if next((cond for cond in inv.possessions['conditions'] if cond.name == 'cursed'), False)]
+            else:
+                locations = [monster.location] + (list(self.hub.location_manager.locations[monster.location]['routes'].keys()) if adjacent else [])
+                self.player_encounters = [inv.name for inv in self.hub.location_manager.all_investigators.values() if inv.location in locations]
         if len(self.player_encounters) == 0:
             self.set_buttons(step)
         else:

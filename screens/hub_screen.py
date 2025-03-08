@@ -617,7 +617,7 @@ class HubScreen(arcade.View):
         rolls = []
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
         subtitle = subtitle if subtitle != '' else '' if mod == 0 else 'Mod: ' + str(mod)
-        dice = self.investigator.skills[skill] + mod + self.investigator.skill_tokens[skill] + self.investigator.calc_max_bonus(skill, pane.encounter_type)
+        dice = max(1, self.investigator.skills[skill] + mod + self.investigator.skill_tokens[skill] + self.investigator.calc_max_bonus(skill, pane.encounter_type))
         self.investigator.skill_bonuses[skill] = [bonus for bonus in self.investigator.skill_bonuses[skill] if not (bonus.get('temp', False) and (bonus.get('condition', 'dummy') in pane.encounter_type))]
         double_six = False
         triggers = []
@@ -630,9 +630,9 @@ class HubScreen(arcade.View):
                     double_six = True
                 elif trigger.get('additional_die', False):
                     dice += 1
-        for x in range(dice if dice > 1 else 1):
+        for x in range(dice):
             roll = random.randint(1, 6) + self.investigator.encounter_impairment
-            roll = 1 if roll < 1 else roll
+            roll = max(1, roll)
             rolls.append(roll)
             choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
         if not (len(set(rolls)) == 1 and 6 in rolls):
@@ -698,6 +698,7 @@ class HubScreen(arcade.View):
                         pane.rolls[index] = new_roll
                         if new_roll == 6 and double_six:
                             pane.rolls.append(6)
+                self.info_manager.trigger_render()
             small_card.finish_action = finish_action
             if self.investigator.focus > 0:
                 options.append(ActionButton(action=finish_action, action_args={'name': 'focus:focus'}, texture='icons/focus.png', text='Use', text_position=(20,-2), name='focus'))
@@ -929,6 +930,7 @@ class HubScreen(arcade.View):
                         choices.append(encounter)
                     if trigger.get('recover_san', False):
                         self.investigator.sanity = min(self.investigator.max_sanity, self.investigator.sanity + trigger['recover_san'])
+                        self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, self.investigator.name)
                     if trigger.get('receive_clue', False):
                         self.encounter_pane.gain_clue('nothing')
                     if trigger.get('no_encounter', False):

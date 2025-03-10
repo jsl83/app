@@ -259,6 +259,7 @@
       - kind: monster_kill
         owner_only: True
         trigger:
+          encounter: combat
           recover_san: 1
   t'tka_halot:
     tags:

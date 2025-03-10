@@ -366,6 +366,9 @@ class HubScreen(arcade.View):
                     elif payload['value'] == 'monsters':
                         monster = self.location_manager.spawn_monster(name, payload['location'], payload['map'], int(payload['monster_id']))
                         monster_id = str(monster.monster_id)
+                        if hasattr(monster, 'on_spawn') and (not monster.on_spawn.get('lead_only', False) or self.investigator.name == self.lead_investigator):
+                            if monster.on_spawn.get('action', False):
+                                self.encounter_pane.monster_spawns.append(monster.on_spawn['action'])
                     elif payload['value'] == 'rumor':
                         if payload['location'] == 'no_spawn':
                             no_token = True
@@ -542,7 +545,7 @@ class HubScreen(arcade.View):
                     if not payload['devoured']:
                         dead.hp_death = payload['kind']
                         self.location_manager.dead_investigators[payload['value']] = dead
-                    world = self.location_manager.get_world(dead.location)
+                    world = self.location_manager.get_map_name(dead.location)
                     del self.location_manager.all_investigators[payload['value']]
                     self.maps[world].remove_tokens('investigators', dead.location, payload['value'])
                     self.maps[world].token_manager.trigger_render()
@@ -920,9 +923,9 @@ class HubScreen(arcade.View):
 
     def damage_monster(self, monster, damage, is_ambush=False, is_combat=False):
         choices = []
-        if damage != 99 and monster.damage + damage >= monster.toughness and is_combat:
+        if damage != 99 and monster.damage + damage >= monster.toughness:
             for trigger in self.triggers['monster_kill'] + [getattr(monster, 'death_trigger', {})]:
-                if self.trigger_check(trigger, []):
+                if self.trigger_check(trigger, ['combat'] if is_combat else []):
                     if trigger.get('action', False):
                         encounter = trigger['action']
                         if trigger.get('set_monster', False):

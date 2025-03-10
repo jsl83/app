@@ -27,6 +27,7 @@
             skip: True
         title: Byakhee - Death Encounter
         action_text: You may lose 1 Sanity and move 3 spaces instead of resolving another encounter.
+      encounter: combat
     text: "If you defeat this Monster during a Combat Encounter, you may lose 1 Sanity and move 3 spaces instead of resolving another encounter."
   colour_out_of_space:
     count: 1
@@ -190,6 +191,7 @@
     text: "If you defeat this Monster during a Combat Encounter, you may gain a Dark Pact Condition to discard 1 Monster from any space."
     death_trigger:
       monsters_exist: True
+      encounter: combat
       action:
         action:
           - request_card
@@ -223,6 +225,7 @@
     toughness: 4
     text: "If you defeat this Monster during a Combat Encounter, you do not resolve an additional encounter."
     death_trigger:
+      encounter: combat
       no_encounter: True
   hound_of_tindalos:
     count: 1
@@ -286,6 +289,7 @@
     toughness: 1
     text: "If you fail the Strength test, you may discard 1 Ally Asset instead of losing Health.\n\nIf you defeat this Monster during a Combat Encounter, gain 1 Axe Asset."
     death_trigger:
+      encounter: combat
       action:
         action:
           - request_card
@@ -320,6 +324,7 @@
         - aargs
       action_text: Discard the nearest Clue and move this Monster to that space.
     death_trigger:
+      encounter: combat
       action:
         action:
           - request_card
@@ -354,7 +359,7 @@
       mod: -2
       str: 1
     toughness: 2
-    text: "Reckoning\n\nIf there is an Investigator on this space, move them and this Monster 1 space and they becomes Delayed. Otherwise, move this Monster 2 spaces toward the nearest investigator."
+    text: "Reckoning\n\nIf there is an Investigator on this space, move them and this Monster 1 space and they become Delayed. Otherwise, move this Monster 2 spaces toward the nearest investigator."
     location: world:the_pyramids
     reckoning:
       is_required: True
@@ -363,12 +368,7 @@
       aargs:
         - skip: True
           distance: 2
-          step: done
           encounter: False
-      done:
-        - set_buttons
-      dargs:
-        - key: finish
       keys:
         - aargs
   riot:
@@ -454,6 +454,7 @@
     toughness: 2
     text: "If you defeat this Monster during a Combat Encounter, recover 1 Sanity."
     death_trigger:
+      encounter: combat
       recover_san: True
   star_spawn:
     count: 1
@@ -575,6 +576,93 @@
       str: 2
     toughness: 3
     text: "When this Monster is spawned, the Lead Investigator gains a Cursed Condition.\n\nWhen this Monster is defeated, an Investigator may discard a Cursed Condition."
+    on_spawn:
+      lead_only: True
+      action:
+        action:
+          - request_card
+        aargs:
+          - kind: conditions
+            name: cursed
+            text: Gain a Cursed Condition
+        title: Wraith - Spawn
+        action_text: When this Monster is spawned, the Lead Investigator gains a Cursed Condition.
+        texture: monsters/wraith.png
+    death_trigger:
+      action:
+        action:
+          - choose_investigator
+        aargs:
+          - action: set_chosen
+            has_curse: True
+            skip: True
+            step: discard
+            none_step: finish
+        discard:
+          - discard
+        dargs:
+          - kind: conditions
+            name: cursed
+            investigator: chosen
+            skip: True
+        texture: monsters/wraith.png
+        is_required: True
+        title: Wraith - Defeated
+        action_text: When this Monster is defeated, an Investigator may discard a Cursed Condition.
+  zombie:
+    count: 1
+    horror:
+      index: 4
+      mod: -1
+      san: 1
+    strength:
+      index: 3
+      mod: -1
+      str: 2
+    toughness: 2
+    text: "Reckoning\n\nSpawn the Zombie Horde Epic Monster on this space. If you do, discard this Monster."
+    reckoning:
+      is_required: True
+      action:
+        - choose_monster
+      aargs:
+        - text: Next
+          step: damage
+      damage:
+        - damage_monsters
+      dargs:
+        - damage: 99
+          chosen: True
+          skip: True
+          step: spawn
+      spawn:
+        - spawn_monster
+      sargs:
+        - name: zombie_horde
+          skip: True
+      title: Zombie - Reckoning
+      action_text: Spawn the Zombie Horde Epic Monster on this space. If you do, discard this Monster.
+      keys:
+        - aargs
+        - sargs
+  spinner_of_webs:
+    epic: True
+    count: 1
+    strength:
+      index: 3
+      mod: -2
+      str: 2
+    horror:
+      index: 4
+      mod: 0
+      san: 2
+      skip: True
+    toughness: ++
+    text: If you fail the Will test, do not resolve the Strength test.
+    death: solve_rumor
+    dargs:
+      name: web_between_worlds
+      step: nothing
   tick_tock_men:
     epic: True
     count: 1
@@ -603,25 +691,57 @@
       san: 2
     toughness: ++
     text: Before resolving the Will test, lose 1 Health and 1 Sanity unless you spend 1 Clue.
+    before_will:
+      action:
+        - spend_clue
+        - hp_san
+      aargs:
+        - text: Spend 1 Clue
+        - hp: -1
+          san: -1
+          text: Lose 1 Health and 1 Sanity
+      title: Wind-Walker
+      action_text: Before resolving the Will test, lose 1 Health and 1 Sanity unless you spend 1 Clue.
     death: solve_rumor
     dargs:
       name: the_wind-walker
       step: nothing
-  spinner_of_webs:
+  zombie_horde:
     epic: True
     count: 1
     strength:
       index: 3
-      mod: -2
-      str: 2
+      mod: -3
+      str: 3
     horror:
       index: 4
       mod: 0
       san: 2
-      skip: True
-    toughness: ++
-    text: If you fail the Will test, do not resolve the Strength test.
-    death: solve_rumor
-    dargs:
-      name: web_between_worlds
-      step: nothing
+    toughness: 5
+    text: "If you lose Health from the Strength test, discard 1 Ally asset.\n\nReckoning\n\nRoll 1 die. On a 1 or 2, advance Doom by 1."
+    reckoning:
+      is_required: True
+      action:
+        - single_roll
+      aargs:
+        - effects:
+            12: doom
+            3456: finish
+          skip: True
+      doom:
+        - set_doom
+      dargs:
+        - skip: True
+          increment: -1
+      title: Zombie Horde - Reckoning
+      action_text: Roll 1 die. On a 1 or 2, advance Doom by 1.
+    on_hp_damage:
+      check: discard
+      action:
+        - discard
+      aargs:
+        - kind: assets
+          tag: ally
+          skip: True
+      action_text: If you lose Health from the Strength test, discard 1 Ally asset.
+      title: Zombie Horde - Health damage

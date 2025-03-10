@@ -80,6 +80,7 @@ class EncounterPane():
             'small_card': self.small_card,
             'spawn_clue': self.spawn_clue,
             'spawn_gate': self.spawn_gate,
+            'spawn_monster': self.spawn_monster,
             'spend_clue': self.spend_clue,
             'solve_rumor': self.solve_rumor,
             'trigger_check': self.trigger_check,
@@ -120,6 +121,7 @@ class EncounterPane():
             'ancient_one': []
         }
         self.mythos_reckonings = []
+        self.monster_spawns = []
         self.no_loc_click = None
         self.last_value = None
         self.player_index = 0
@@ -280,18 +282,24 @@ class EncounterPane():
             else:
                 self.set_buttons('pass')
 
-    def combat_will(self, monster, player_request=None):
+    def combat_will(self, monster, player_request=None, first_trigger=True):
         self.layout.clear()
         self.encounter_type.append('combat')
         self.first_fight = False
         self.hub.info_manager.children = {0:[]}
         self.hub.info_panes['location'].show_monster(monster)
-        self.hub.info_panes['location'].description_layout.children.remove(self.hub.info_panes['location'].monster_close)
+        if first_trigger:
+            self.hub.info_panes['location'].description_layout.children.remove(self.hub.info_panes['location'].monster_close)
         self.layout.add(self.hub.info_panes['location'].layout)
         self.hub.info_manager.add(self.layout)
         self.clear_overlay()
         if monster.horror['mod'] == '-':
             self.combat_strength(monster, player_request)
+        if first_trigger and hasattr(monster, 'before_will'):
+            trigger_pane = SmallCardPane(self.hub)
+            def finish_action(name):
+                self.combat_will(monster, player_request, False)
+            trigger_pane.setup([monster.before_will], self, finish_action=finish_action, force_select=True)
         else:
             def lose_san():
                 self.clear_overlay()
@@ -347,38 +355,44 @@ class EncounterPane():
                                         allow_clues=not hasattr(monster, 'no_clues'))
             self.layout.add(self.choice_layout)
 
-    def resolve_combat(self, monster, player_request=None):
-        self.hub.info_panes['location'].description_layout.add(self.hub.info_panes['location'].monster_close)
-        self.encounter_type.remove('combat')
-        successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
-        is_ambush = self.ambush_steps != None
-        triggers = self.hub.damage_monster(monster, successes, is_ambush, True)
-        def finish_combat(name=None):
-            self.layout.remove(self.hub.info_panes['location'].layout)
-            damage = successes - 2 if monster.name == 'vampire' and self.hp_damage < 0 and successes + monster.damage < 3 else successes
-            if player_request == None:
-                self.hub.show_encounter_pane()
-                self.monsters.remove(monster)
-                self.hub.waiting_panes.append(self)
-                self.wait_step = 'combat'
-                self.encounter = {'combat': ['combat'], 'cargs': [{'skip': True}]}
-                self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
-            else:
-                self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
-                if hasattr(self, 'parent'):
-                    self.hub.info_manager.children = {0:[]}
-                    self.clear_overlay()
-                    self.hub.info_manager.add(self.parent.layout)
-                    self.hub.info_manager.trigger_render()
-                self.hub.networker.publish_payload({'message': 'action_done'}, player_request + '_player')
-        if len(triggers) > 0:
-            small_card = SmallCardPane(self.hub)
-            small_card.setup(triggers, self, False, human_readable(monster.name) + ' - Defeated', [trig.get('texture') for trig in triggers], finish_combat, len(triggers) == 1 and triggers[0]['is_required'])
-        elif is_ambush:
-            self.set_buttons(self.ambush_steps[0] if successes >= monster.toughness else self.ambush_steps[1])
-            self.ambush_steps = None
+    def resolve_combat(self, monster, player_request=None, first_trigger=True):
+        if first_trigger and hasattr(monster, 'on_hp_damage') and self.hp_damage < 0 and (not monster.on_hp_damage.get('check', False) or self.req_dict[monster.on_hp_damage['check']]):
+            trigger_pane = SmallCardPane(self.hub)
+            def finish_action(name):
+                self.resolve_combat(monster, player_request, False)
+            trigger_pane.setup([monster.on_hp_damage], self, finish_action=finish_action, force_select=True)
         else:
-            finish_combat()        
+            self.hub.info_panes['location'].description_layout.add(self.hub.info_panes['location'].monster_close)
+            self.encounter_type.remove('combat')
+            successes = len([roll for roll in self.rolls if roll >= self.investigator.success])
+            is_ambush = self.ambush_steps != None
+            triggers = self.hub.damage_monster(monster, successes, is_ambush, True)
+            def finish_combat(name=None):
+                self.layout.remove(self.hub.info_panes['location'].layout)
+                damage = successes - 2 if monster.name == 'vampire' and self.hp_damage < 0 and successes + monster.damage < 3 else successes
+                if player_request == None:
+                    self.hub.show_encounter_pane()
+                    self.monsters.remove(monster)
+                    self.hub.waiting_panes.append(self)
+                    self.wait_step = 'combat'
+                    self.encounter = {'combat': ['combat'], 'cargs': [{'skip': True}]}
+                    self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
+                else:
+                    self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
+                    if hasattr(self, 'parent'):
+                        self.hub.info_manager.children = {0:[]}
+                        self.clear_overlay()
+                        self.hub.info_manager.add(self.parent.layout)
+                        self.hub.info_manager.trigger_render()
+                    self.hub.networker.publish_payload({'message': 'action_done'}, player_request + '_player')
+            if len(triggers) > 0:
+                small_card = SmallCardPane(self.hub)
+                small_card.setup(triggers, self, False, human_readable(monster.name) + ' - Defeated', [trig.get('texture') for trig in triggers], finish_combat, len(triggers) == 1 and triggers[0]['is_required'])
+            elif is_ambush:
+                self.set_buttons(self.ambush_steps[0] if successes >= monster.toughness else self.ambush_steps[1])
+                self.ambush_steps = None
+            else:
+                finish_combat()
 
     def reroll(self, new, old):
         self.rolls.remove(old)
@@ -424,7 +438,7 @@ class EncounterPane():
         self.set_buttons(step)
 
     def allow_move(self, distance, step='finish', same_loc=True, must_move=False, investigator='self', nightgaunt=None):
-        allowed_locs = self.hub.get_locations_within(distance, self.investigator.location if investigator == 'self' else self.hub.location_manager[self.chosen_investigator].location, same_loc=same_loc) if distance != 99 else[]
+        allowed_locs = self.hub.get_locations_within(distance, self.investigator.location if investigator == 'self' else self.hub.location_manager[self.chosen_investigator].location, same_loc=same_loc) if distance != 99 else []
         def move(unit, location):
             self.hub.networker.publish_payload({'message': 'move_investigator', 'value': unit, 'destination': location}, self.investigator.name)
             if nightgaunt != None:
@@ -496,7 +510,7 @@ class EncounterPane():
             self.choice_layout = create_choices('Select Investigator', choices=inv_choices)
             self.layout.add(self.choice_layout)
 
-    def choose_investigator(self, action, no_self=False, on_location=False, step='finish', no_bless=False):
+    def choose_investigator(self, action, no_self=False, on_location=False, step='finish', no_bless=False, has_curse=False, none_step=None):
         choices = []
         subtitle = ''
         if action == 'delay':
@@ -517,29 +531,45 @@ class EncounterPane():
                 self.chosen_investigator = name
                 self.clear_overlay()
                 self.set_buttons(step)
-        investigators = [inv.name for inv in list(self.hub.location_manager.all_investigators.values()) if (not no_self or inv.name != self.investigator.name) and (not on_location or inv.location == self.investigator.location) and (not no_bless or not next((card for card in inv.possessions['conditions'] if card.name == 'blessed'), False))]
+        investigators = list(self.hub.location_manager.all_investigators.values())
+        if on_location:
+            investigators = [inv.name for inv in investigators if inv.location == self.investigator.location]
+        elif no_bless:
+            investigators = [inv.name for inv in investigators if not next((card for card in inv.possessions['conditions'] if card.name == 'blessed'), False)]
+        elif has_curse:
+            investigators = [inv.name for inv in investigators if next((card for card in inv.possessions['conditions'] if card.name == 'cursed'), False)]
+        else:
+            investigators = [inv.name for inv in investigators]
+        if no_self and self.investigator.name in investigators:
+            investigators.remove(self.investigator.name)
         if len(investigators) != 0:
             for names in investigators:
                 choices.append(ActionButton(texture='investigators/' + names + '_portrait.png', action=button_action, action_args={'name': names}, scale=0.4))
             self.clear_overlay()
             self.choice_layout = create_choices('Choose Investigator', subtitle, choices)
             self.layout.add(self.choice_layout)
+        elif none_step:
+            self.set_buttons(none_step)
         return len(investigators)
 
-    def choose_monster(self, step='finish', on_location=True):
-        monsters = [monster for monster in self.hub.location_manager.locations[self.investigator.location]['monsters']] if on_location else self.hub.location_manager.all_monsters
-        def select(monster):
+    def choose_monster(self, step='finish', on_location=True, monster=None):
+        if monster != None:
             self.chosen_monster = monster.monster_id
             self.set_buttons(step)
-        choices = []
-        options = []
-        for monster in monsters:
-            choices.append(ActionButton(
-                width=100, height=100, texture='monsters/' + monster.name + '.png', action=select, action_args={'monster': monster}))
-            options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
-        self.clear_overlay()
-        self.choice_layout = create_choices(title='Select Monster', choices=choices, options=options)
-        self.layout.add(self.choice_layout)
+        else:
+            monsters = [monster for monster in self.hub.location_manager.locations[self.investigator.location]['monsters']] if on_location else self.hub.location_manager.all_monsters
+            def select(monster):
+                self.chosen_monster = monster.monster_id
+                self.set_buttons(step)
+            choices = []
+            options = []
+            for monster in monsters:
+                choices.append(ActionButton(
+                    width=100, height=100, texture='monsters/' + monster.name + '.png', action=select, action_args={'monster': monster}))
+                options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
+            self.clear_overlay()
+            self.choice_layout = create_choices(title='Select Monster', choices=choices, options=options)
+            self.layout.add(self.choice_layout)
 
     def choose_location(self, action, has_token=None, step='finish'):
         def selected(loc):
@@ -725,7 +755,7 @@ class EncounterPane():
         self.set_buttons(step)
 
     def discard(self, kind, step='finish', tag='any', amt='one', name=None, get_owner=False, investigator=None, not_in_rolls=None, voluntary=True):
-        player = self.investigator if investigator == None else self.hub.location_manager.all_investigators[investigator]
+        player = self.investigator if investigator == None else self.hub.location_manager.all_investigators[self.chosen_investigator if investigator == 'chosen' else investigator]
         if get_owner:
             player = next((inv for inv in self.hub.location_manager.all_investigators.values() if name in [pos.name for pos in inv.possessions[kind]]))
         if name != None:
@@ -1411,6 +1441,12 @@ class EncounterPane():
                 self.hub.waiting_panes.append(self)
             self.hub.networker.publish_payload({'message': 'spawn', 'value': 'gates', 'number': 1}, self.investigator.name)
 
+    def spawn_monster(self, location=None, name=None, monster=None, step='finish'):
+        if monster != None:
+            location = self.hub.location_manager.get_map_name(monster.location) + ':' + monster.location
+        self.hub.networker.publish_payload({'message': 'spawn', 'value': 'monsters', 'name': name, 'location': location}, self.investigator.name)
+        self.set_buttons(step)
+
     def spend_clue(self, step='finish', clues=1, condition=None, is_check=False, not_spend=False):
         if condition != None:
             if condition == 'all':
@@ -1576,10 +1612,15 @@ class EncounterPane():
         self.option_button.action_args = None
         self.layout.add(self.option_button)
 
-    def activate_mythos(self):
+    def activate_mythos(self, name=None):
         if (self.encounter.get('lead_only', None) != None and self.investigator.name != self.hub.lead_investigator) or self.investigator.is_dead:
             self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+        elif len(self.monster_spawns):
+            spawn_pane = SmallCardPane(self.hub)
+            spawn_pane.setup(self.monster_spawns, self, False, textures=[trigger['texture'] for trigger in self.monster_spawns], finish_action=self.activate_mythos, force_select=True)
+            self.monster_spawns = []
         else:
+            self.encounter = MYTHOS[self.mythos]
             self.encounter_type.append('mythos')
             self.set_buttons('action')
 

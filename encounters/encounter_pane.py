@@ -83,7 +83,6 @@ class EncounterPane():
             'spawn_monster': self.spawn_monster,
             'spend_clue': self.spend_clue,
             'solve_rumor': self.solve_rumor,
-            'trigger_check': self.trigger_check,
             'trigger_encounter': self.trigger_encounter,
             'update_rumor': self.update_rumor
         }
@@ -437,37 +436,44 @@ class EncounterPane():
         self.gate_close = allow
         self.set_buttons(step)
 
-    def allow_move(self, distance, step='finish', same_loc=True, must_move=False, investigator='self', nightgaunt=None):
+    def allow_move(self, distance, step='finish', same_loc=True, must_move=False, investigator='self', nightgaunt=None, loc_props=[]):
         allowed_locs = self.hub.get_locations_within(distance, self.investigator.location if investigator == 'self' else self.hub.location_manager[self.chosen_investigator].location, same_loc=same_loc) if distance != 99 else []
-        def move(unit, location):
-            self.hub.networker.publish_payload({'message': 'move_investigator', 'value': unit, 'destination': location}, self.investigator.name)
-            if nightgaunt != None:
-                self.hub.networker.publish_payload({'message': 'move_monster', 'value': nightgaunt, 'location': location}, self.investigator.name)
-                self.delay()
-            self.click_action = None
-            self.no_loc_click = None
+        for prop in loc_props:
+            for loc in list(self.hub.location_manager.locations.keys()):
+                if self.hub.location_manager.locations[loc][prop]:
+                    allowed_locs.add(loc)
+        if len(allowed_locs) == 0 and distance != 99:
             self.set_buttons(step)
-        self.proceed_button.action = move
-        self.proceed_button.action_args = {'unit': self.investigator.name if investigator == 'self' else self.chosen_investigator, 'location': ''}
-        self.option_button.text = 'Stay still'
-        self.option_button.action = self.set_buttons
-        self.option_button.action_args = {'key': step}
-        self.hub.click_pane = self
-        def no_click():
-            self.proceed_button.text = 'Select location'
-            self.proceed_button.disable()
-            self.clear_buttons([self.proceed_button] + ([] if must_move else [self.option_button]))
-        def loc_select(loc):
-            if distance == 99 or loc in allowed_locs:
-                self.proceed_button.text = 'Move to ' + human_readable(loc)
-                self.proceed_button.action_args['location'] = loc
-                self.proceed_button.enable()
-                self.clear_buttons([self.proceed_button])
-            else:
-                no_click()
-        self.click_action = loc_select
-        no_click()
-        self.no_loc_click = no_click
+        else:
+            def move(unit, location):
+                self.hub.networker.publish_payload({'message': 'move_investigator', 'value': unit, 'destination': location}, self.investigator.name)
+                if nightgaunt != None:
+                    self.hub.networker.publish_payload({'message': 'move_monster', 'value': nightgaunt, 'location': location}, self.investigator.name)
+                    self.delay()
+                self.click_action = None
+                self.no_loc_click = None
+                self.set_buttons(step)
+            self.proceed_button.action = move
+            self.proceed_button.action_args = {'unit': self.investigator.name if investigator == 'self' else self.chosen_investigator, 'location': ''}
+            self.option_button.text = 'Stay still'
+            self.option_button.action = self.set_buttons
+            self.option_button.action_args = {'key': step}
+            self.hub.click_pane = self
+            def no_click():
+                self.proceed_button.text = 'Select location'
+                self.proceed_button.disable()
+                self.clear_buttons([self.proceed_button] + ([] if must_move else [self.option_button]))
+            def loc_select(loc):
+                if distance == 99 or loc in allowed_locs:
+                    self.proceed_button.text = 'Move to ' + human_readable(loc)
+                    self.proceed_button.action_args['location'] = loc
+                    self.proceed_button.enable()
+                    self.clear_buttons([self.proceed_button])
+                else:
+                    no_click()
+            self.click_action = loc_select
+            no_click()
+            self.no_loc_click = no_click
 
     def ambush(self, name=None, step='finish', fail='finish'):
         self.ambush_steps = (step, fail)
@@ -594,23 +600,22 @@ class EncounterPane():
         self.no_loc_click = no_loc
         no_loc()
 
-    def close_gate(self, step='finish', skip_triggers=False):
+    def close_gate(self, step='finish', skip_triggers=False, is_otherworld=True):
         if self.gate_close:
             self.wait_step = step
             self.hub.waiting_panes.append(self)
-            if not skip_triggers and len(self.hub.triggers['gate_close']) > 0:
-                key = next((key for key in self.encounter if 'close_gate' in self.encounter[key]))
-                index = self.encounter[key].index('close_gate')
-                self.encounter[key[0] + 'args'][index]['skip'] = True
-                self.encounter[key[0] + 'args'][index]['skip_triggers'] = True
-                self.hub.small_card_pane.encounter_type = self.encounter_type
-                self.hub.small_card_pane.setup(self.hub.triggers['gate_close'], self, key, False)
-            else:
+            triggers = [trigger for trigger in self.hub.triggers['gate_close'] if self.hub.trigger_check(trigger, ['otherworld'])]
+            def finish_close(name=None):
                 if self.rumor_not_gate != None:
                     self.hub.networker.publish_payload({'message': 'solve_rumor', 'value': self.rumor_not_gate}, self.investigator.name)
                 else:
                     map_name = self.hub.location_manager.get_map_name(self.investigator.location)
                     self.hub.networker.publish_payload({'message': 'remove_gate', 'value': map_name + ':' + self.investigator.location}, self.investigator.name)
+            if len(triggers) > 0:
+                trigger_pane = SmallCardPane(self.hub)
+                trigger_pane.setup(triggers, self, False, textures=[trigger.get('texture', 'buttons/placeholder.png') for trigger in triggers], finish_action=finish_close, force_select=True)
+            else:
+                finish_close()
         else:
             self.set_buttons(step)
     
@@ -1324,7 +1329,7 @@ class EncounterPane():
                     self.layout.add(buttons[x])
                 if len(self.choice_layout.children) > 0:
                     self.layout.add(self.choice_layout)
-                if 'combat_strength' in self.encounter[key]:
+                if 'combat_strength' in self.encounter.get(key, []):
                     self.layout.add(self.hub.info_panes['location'].layout)
             #self.hub.info_manager.trigger_render()
 
@@ -1583,12 +1588,6 @@ class EncounterPane():
                 y=50, width=100, height=50, texture='buttons/placeholder.png', text='Next', action=resolve_damage)
             self.choice_layout = create_choices(choices=choices, options=options + [next_button], title='Taking Damage', subtitle='Health: ' + str(-self.hp_damage) + '   Sanity: ' + str(-self.san_damage))
             self.layout.add(self.choice_layout)
-
-    def trigger_check(self, kind, match, pass_check, fail):
-        if match in getattr(self, kind, []):
-            self.set_buttons(pass_check)
-        else:
-            self.set_buttons(fail)
 
     def trigger_encounter(self, kind, rumor=None):
         self.rumor_not_gate = rumor
@@ -1991,3 +1990,31 @@ class SmallCardPane(EncounterPane):
             self.hub.info_pane = self.parent
             if self.finish_action != None:
                 self.finish_action(self.encounter_name)
+
+class InvestigatorSkillPane(SmallCardPane):
+    def __init__(self, hub):
+        SmallCardPane.__init__(self, hub)
+        investigator_dict = {
+            'akachi_onyele': self.akachi_onyele
+            }
+        investigator_req = {}
+        self.action_dict = self.action_dict | investigator_dict
+        self.req_dict = self.req_dict | investigator_req
+        self.server_value = None
+
+    def akachi_onyele(self, step='finish', is_first=False):
+        if is_first:
+            args = copy.deepcopy(self.encounter[self.current_key[0] + 'args'])
+            del args[0]['is_first']
+            self.encounter[self.current_key[0] + 'args'] = args
+            self.hub.waiting_panes.append(self)
+            self.wait_step = self.current_key
+            self.hub.networker.publish_payload({'message': 'akachi_onyele', 'value': 'request'}, self.investigator.name)
+        else:
+            choices = []
+            def select(gate):
+                self.hub.networker.publish_payload({'message': 'akachi_onyele', 'value': self.hub.location_manager.get_map_name(gate) + ':' + gate}, self.investigator.name)
+                self.set_buttons(step)
+            for gate in [gate.split(':')[1] for gate in self.server_value]:
+                choices.append(ActionButton(texture='maps/' + human_readable(gate) + '_gate.png', action=select, action_args={'gate': gate}, scale=0.4, text=human_readable(gate), text_position=(0, -20)))
+            self.choice_layout = create_choices('Select Gateto put on the bottom', choices=choices)

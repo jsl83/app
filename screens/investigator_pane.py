@@ -1,5 +1,6 @@
 import arcade, arcade.gui
 from screens.action_button import ActionButton
+from encounters.encounter_pane import InvestigatorSkillPane
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 
@@ -36,7 +37,7 @@ class InvestigatorPane():
         self.clue_button = ActionButton(x=1175, y=452, texture='icons/clue.png', text='x ' + str(len(self.investigator.clues)), text_position=(15,-2))
         self.focus_button = ActionButton(x=1175, y=397, action=self.focus_action, texture='icons/focus.png', text='x ' + str(self.investigator.focus), text_position=(15,-2))
         self.skill_button = ActionButton(x=1040, y=180, width=200, height=135, style={'font_size': 14},
-            text=self.investigator.active, texture='blank.png', align='center', multiline=True)
+            text=self.investigator.active, texture='blank.png', align='center', multiline=True, action=self.skill_action)
         self.passive = arcade.gui.UITextureButton(x=1040, y=25, width=200, height=135, style={'font_size': 14},
             text=self.investigator.passive, texture=self.blank, align='center', multiline=True)
 
@@ -44,6 +45,7 @@ class InvestigatorPane():
             self.layout.add(button)
         self.set_skills()
         self.layout.add(self.details)
+        self.action_pane = InvestigatorSkillPane(self.hub)
 
     def focus_action(self):
         if self.investigator.focus < 2 and not self.hub.actions_taken['focus'] and self.hub.remaining_actions > 0:
@@ -121,7 +123,11 @@ class InvestigatorPane():
     def rest(self):
         if not self.hub.actions_taken['rest']:
             does_something = False
-            if self.investigator.rest():
+            if not ((self.investigator.health == self.investigator.max_health and self.investigator.sanity == self.investigator.max_sanity and len(self.investigator.rest_triggers) == 0) or len(self.investigator.recover_restrictions) != 0):
+                if len(self.investigator.sanity_recover_restrictions) == 0:
+                    self.investigator.sanity += (1 + len([trigger for trigger in self.hub.triggers['rest_san_bonus'] if self.hub.trigger_check(trigger, [])]))
+                if len(self.investigator.health_recover_restrictions) == 0:
+                    self.investigator.health += (1 + len([trigger for trigger in self.hub.triggers['rest_hp_bonus'] if self.hub.trigger_check(trigger, [])]))
                 self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, self.investigator.name)
                 does_something = True
             triggers = []
@@ -145,3 +151,11 @@ class InvestigatorPane():
                 self.hub.small_card_pane.setup(triggers, self, single_pick=False, finish_action=show, textures=['buttons/placeholder.png']*len(self.hub.triggers['rest_actions']))
             elif does_something:
                 self.hub.action_taken('rest')
+
+    def skill_action(self):
+        self.hub.gui_set(False)
+        self.hub.info_pane = self.action_pane
+        def finish(name):
+            self.hub.gui_set()
+            self.hub.action_taken('personal', self.investigator.action.get('action_point', 1))
+        self.action_pane.setup([self.investigator.action], self, force_select=True, finish_action=finish)

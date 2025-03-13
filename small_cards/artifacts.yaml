@@ -77,19 +77,13 @@
       - owner_only: True
         kind: gate_close
         trigger:
+          encounter: otherworld
           action:
-            - trigger_check
-          aargs:
-            - kind: encounter_type
-              match: gate
-              pass_check: clue
-              fail: finish
-              skip: True
-          clue:
             - gain_clue
-          cargs:
+          aargs:
             - text: Gain 1 Clue
-          action_text: Gate Box
+          title: Gate Box
+          texture: artifacts/gate_box.png
   glass_of_mortlan:
     tags:
       - item

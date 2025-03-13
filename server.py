@@ -14,13 +14,13 @@ REFERENCES = { #gates, clues, surge
 }
 with open('small_cards/server_spells.yaml') as stream:
     SPELLS = yaml.safe_load(stream)
-with open('locations/server_locations.yaml') as stream:
+with open('locations/locations.yaml') as stream:
     LOCATIONS = yaml.safe_load(stream)
 with open('small_cards/server_assets.yaml') as stream:
     ASSETS = yaml.safe_load(stream)
 with open('small_cards/server_conditions.yaml') as stream:
     CONDITIONS = yaml.safe_load(stream)
-with open('investigators/server_investigators.yaml') as stream:
+with open('investigators/investigators.yaml') as stream:
     INVESTIGATORS = yaml.safe_load(stream)
 with open('monsters/monsters.yaml') as stream:
     MONSTERS = yaml.safe_load(stream)
@@ -100,11 +100,13 @@ class Networker(threading.Thread, BanyanBase):
         self.dead_investigators = {}
         self.rumors = []
 
-        for map in LOCATIONS.keys():
-            for location in LOCATIONS[map].keys():
-                self.decks['clues'].append(map + ':' + location)
-                if LOCATIONS[map][location] != None:
-                    self.decks['gates']['deck'].append(map + ':' + location)
+        for location in LOCATIONS.keys():
+            self.decks['clues'].append('world:' + location)
+        all_gates = [loc for loc in LOCATIONS.keys() if LOCATIONS[loc].get('gate_color', False)]
+        for x in range(len(all_gates)):
+            gate = random.choice(all_gates)
+            all_gates.remove(gate)
+            self.decks['gates']['deck'].append('world:' + gate)
 
         for key in SPELLS.keys():
             for x in range(int(SPELLS[key]['variants'])):
@@ -174,7 +176,7 @@ class Networker(threading.Thread, BanyanBase):
         self.is_first = True
         self.get_locations = {
             'cultists': lambda: list(set(monster['location'] for monster in self.monsters if monster['name'] == 'cultist')),
-            'gate_omen': lambda: [gate for gate in self.decks['gates']['board'] if LOCATIONS[gate.split(':')[0]][gate.split(':')[1]] == self.omen_cycle[self.omen]],
+            'gate_omen': lambda: [gate for gate in self.decks['gates']['board'] if LOCATIONS[gate.split(':')[1]] == self.omen_cycle[self.omen]],
             'monsters_on_loc': lambda loc: len([monster for monster in self.monsters if monster['location'] == loc])
         }
 
@@ -220,8 +222,8 @@ class Networker(threading.Thread, BanyanBase):
                         'artifacts': [],
                         'unique_assets':[],
                         'spells':[],
-                        'hp': INVESTIGATORS[payload['value']]['hp'],
-                        'san': 12 - INVESTIGATORS[payload['value']]['hp'],
+                        'hp': INVESTIGATORS[payload['value']]['health'],
+                        'san': 12 - INVESTIGATORS[payload['value']]['health'],
                         'clues': [],
                         'tickets': [0,0]
                     }
@@ -266,14 +268,20 @@ class Networker(threading.Thread, BanyanBase):
                             self.spawn(kinds[i], number=self.reference[i])
                         for name in self.selected_investigators:
                             for possession in INVESTIGATORS[name]['possessions']:
-                                kind = possession.split(':')[0]
-                                item_name = possession.split(':')[1]
-                                if kind == 'assets':
-                                    self.asset_request('get', item_name, name)
-                                elif kind in ['conditions', 'spells']:
-                                    self.spell_conditions_request(kind, name, name=item_name)
-                                elif kind == 'artifacts':
-                                    self.artifact_request(name, item_name)
+                                if possession == 'clue':
+                                    clue = random.choice(self.decks['clues'])
+                                    self.decks['clues'].remove(clue)
+                                    self.investigators[name]['clues'].append(clue)
+                                    self.publish_payload({'message': 'receive_clue', 'value': clue, 'owner': name}, 'server_update')
+                                else:
+                                    kind = possession.split(':')[0]
+                                    item_name = possession.split(':')[1]
+                                    if kind == 'assets':
+                                        self.asset_request('get', item_name, name)
+                                    elif kind in ['conditions', 'spells']:
+                                        self.spell_conditions_request(kind, name, name=item_name)
+                                    elif kind == 'artifacts':
+                                        self.artifact_request(name, item_name)
                         self.restock_reserve()
                         self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
                     '''
@@ -321,7 +329,7 @@ class Networker(threading.Thread, BanyanBase):
                             self.publish_payload({'message': 'token_removed', 'value': payload['value'], 'kind': 'clue'}, 'server_update')
                     case 'get_clue':
                         clue = random.choice(self.decks['clues'])
-                        #self.decks['clues'].remove(clue)
+                        self.decks['clues'].remove(clue)
                         self.investigators[topic]['clues'].append(clue)
                         self.publish_payload({'message': 'receive_clue', 'value': clue, 'owner': topic}, 'server_update')
                     case 'spawn':
@@ -501,6 +509,12 @@ class Networker(threading.Thread, BanyanBase):
                         self.publish_payload({'message': 'mythos', 'value': rumor}, 'server_update')
                         topic = self.selected_investigators[self.current_player] + '_server'
                         self.publish_payload({'message': 'player_turn', 'value': self.phases[self.current_phase]}, topic)
+                    case 'akachi_onyele':
+                        if payload['value'] == 'request':
+                            self.publish_payload({'message': 'investigator_skill', 'value': [self.decks['gates']['deck'][0], self.decks['gates']['deck'][1]]}, topic + '_server')
+                        else:
+                            self.decks['gates']['deck'].remove(payload['value'])
+                            self.decks['gates']['deck'].append(payload['value'])
 
     def clear_bodies(self):
         for names in [name for name in self.dead_investigators if not self.dead_investigators[name]['recovered']]:
@@ -696,9 +710,8 @@ class Networker(threading.Thread, BanyanBase):
 
     def monster_surge(self):
         for gates in self.decks['gates']['board']:
-            world = gates.split(':')[0]
             loc = gates.split(':')[1]
-            if LOCATIONS[world][loc] == self.omen_cycle[self.omen]:
+            if LOCATIONS[loc] == self.omen_cycle[self.omen]:
                 self.spawn('monsters', location=gates, number=self.reference[2])
 
     def spawn(self, piece, name=None, location=None, number=1, locations=None):
@@ -706,7 +719,7 @@ class Networker(threading.Thread, BanyanBase):
             case 'gates':
                 for x in range(0, number):
                     if location != None and location in self.decks['gates']['deck']:
-                        #self.decks['gates']['deck'].remove(location)
+                        self.decks['gates']['deck'].remove(location)
                         self.decks['gates']['board'].append(location)
                         self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': location.split(':')[1], 'map': location.split(':')[0]}, 'server_update')
                         self.spawn('monsters', location=location)
@@ -714,10 +727,9 @@ class Networker(threading.Thread, BanyanBase):
                         if len(self.decks['gates']['deck']) > 0:
                             gate = random.choice(self.decks['gates']['deck'])
                             self.decks['gates']['deck'].remove(gate)
-                            #gate = 'world:buenos_aires'
                             self.decks['gates']['board'].append(gate)
                             self.publish_payload({'message': 'spawn', 'value': 'gate', 'location': gate.split(':')[1], 'map': gate.split(':')[0]}, 'server_update')
-                            self.spawn('monsters', location=gate, name='avian_thrall')
+                            self.spawn('monsters', location=gate)
                         elif len(self.decks['gates']['discard']) > 0:
                             self.decks['gates']['deck'].append(item for item in self.decks['gates']['discard'])
                             self.decks['gates']['discard'] = []

@@ -13,9 +13,8 @@ with open('investigators/investigators.yaml') as stream:
 
 class Investigator():
 
-    def __init__(self, name, hub):
+    def __init__(self, name):
         self.name = name
-        self.hub = hub
         self.label = human_readable(name)
         self.subtitle = INVESTIGATORS[name]['subtitle']
         # lore, diplomacy, observation, strength, will
@@ -39,10 +38,12 @@ class Investigator():
         self.rail_tickets = 0
         self.location = INVESTIGATORS[name]['location']
         self.map = 'world'
-        self.initial_items = INVESTIGATORS[name]['possessions']
         self.success = 5
         self.passive = INVESTIGATORS[name]['passive']
         self.active = INVESTIGATORS[name]['active']
+        self.action = INVESTIGATORS[name]['action']
+        if INVESTIGATORS[name].get('triggers', False):
+            self.triggers = INVESTIGATORS[name]['triggers']
         self.delayed = False
 
         self.reroll_items = [[],[],[],[],[]]
@@ -111,13 +112,3 @@ class Investigator():
             return self.sanity
         else:
             return len([card for card in self.possessions[kind] if tag == None or tag in card['tags']])
-        
-    def rest(self):
-        if not ((self.health == self.max_health and self.sanity == self.max_sanity and len(self.rest_triggers) == 0) or len(self.recover_restrictions) != 0):
-            if len(self.sanity_recover_restrictions) == 0:
-                self.sanity += (1 + len([trigger for trigger in self.hub.triggers['rest_san_bonus'] if self.hub.trigger_check(trigger, [])]))
-            if len(self.health_recover_restrictions) == 0:
-                self.health += (1 + len([trigger for trigger in self.hub.triggers['rest_hp_bonus'] if self.hub.trigger_check(trigger, [])]))
-            return True
-        else:
-            return False

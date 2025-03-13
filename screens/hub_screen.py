@@ -107,7 +107,7 @@ class HubScreen(arcade.View):
         self.location_manager = LocationManager(len(all_investigators), self)
         self.all_investigators = all_investigators
         for name in all_investigators:
-            self.location_manager.spawn_investigator(name)
+            self.location_manager.spawn_investigator(name, investigator)
             self.maps['world'].spawn('investigators', self.location_manager, self.location_manager.all_investigators[name].location, name)
 
         self.investigator = self.location_manager.all_investigators[investigator]
@@ -351,7 +351,7 @@ class HubScreen(arcade.View):
                     name = payload.get('name', '')
                     monster_id = None
                     if payload['value'] == 'investigators':
-                        investigator = self.location_manager.spawn_investigator(name)
+                        investigator = self.location_manager.spawn_investigator(name, self.respawn_name)
                         payload['location'] = investigator.location
                         self.all_investigators = [inv_name.replace(payload['replace'], name) for inv_name in self.all_investigators]
                         if investigator.name == self.respawn_name:
@@ -542,6 +542,10 @@ class HubScreen(arcade.View):
                         self.info_panes['reserve'].discard_item(item, True)
                 case 'investigator_died':
                     dead = self.location_manager.all_investigators[payload['value']]
+                    if hasattr(dead, 'triggers'):
+                        for trigger in dead.triggers:
+                            if not trigger.get('self_only', False) or dead.name == self.investigator.name:
+                                self.triggers[trigger['kind']].remove(trigger)
                     if not payload['devoured']:
                         dead.hp_death = payload['kind']
                         self.location_manager.dead_investigators[payload['value']] = dead
@@ -591,6 +595,8 @@ class HubScreen(arcade.View):
                     investigator = self.location_manager.all_investigators[payload['owner']]
                     for key in ['health', 'sanity', 'ship_tickets', 'rail_tickets']:
                         setattr(self.location_manager.all_investigators[payload['owner']], key, payload[key])
+                case 'investigator_skill':
+                    self.waiting_panes[-1].server_value = payload['value']
             if len(self.waiting_panes) > 0 and self.waiting_panes[-1].wait_step != None:
                 if self.waiting_panes[-1].last_value == None or self.waiting_panes[-1].last_value == payload['value']:
                     pane = self.waiting_panes[-1]

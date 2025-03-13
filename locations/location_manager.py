@@ -64,9 +64,13 @@ class LocationManager():
             self.monster_deck.remove(name)
         return monster
 
-    def spawn_investigator(self, name):
-        investigator = Investigator(name, self.hub)
+    def spawn_investigator(self, name, self_name):
+        investigator = Investigator(name)
         self.all_investigators[name] = investigator
+        if hasattr(investigator, 'triggers'):
+            for trigger in investigator.triggers:
+                if not trigger.get('self_only', False) or name == self_name:
+                    self.hub.triggers[trigger['kind']].append(trigger)
         return investigator
 
     def get_location_coord(self, key):

@@ -76,3 +76,6 @@ class ActionButton(arcade.gui.UITextureButton):
         self.action_args = None
         self.text = ''
         self.enable()
+
+    def check_overlap(self, button):
+        return self.rect.x < button.rect.x + button.rect.width and self.rect.x + self.rect.width > button.rect.x and self.rect.y + self.rect.height > button.rect.y and self.rect.y < button.rect.y + button.rect.height

@@ -30,7 +30,7 @@ class SmallCard():
 
     def setup(self):
         self.texture = arcade.load_texture(":resources:eldritch/images/" + self.kind + '/' + self.name.replace('.','') + '.png')
-        for key in CARDS[self.kind][self.name]:
+        for key in [attr for attr in CARDS[self.kind][self.name].keys() if attr != 'texture']:
             setattr(self, key, copy.deepcopy(CARDS[self.kind][self.name][key]))
 
     def discard(self, investigator):

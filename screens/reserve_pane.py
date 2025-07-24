@@ -1,5 +1,6 @@
 import arcade, arcade.gui
 from screens.action_button import ActionButton
+from encounters.encounter_pane import InvestigatorSkillPane
 from small_cards.small_card import *
 from util import *
 
@@ -69,27 +70,39 @@ class ReservePane():
 
     def acquire_assets(self):
         if self.is_shopping:
-            services = [item for item in self.selected if 'service' in item['tags']]
-            for item in self.selected:
-                self.hub.request_card('assets', item['name'], 'acquire')
-                self.reserve = [item for item in self.reserve if item['name'] != item]
-            self.reset()
-            if len(services) > 0:
-                self.hub.gui_set(False)
-                for service in services:
-                    service['title'] = human_readable(service['name'])
-                    self.hub.networker.publish_payload({'message': 'card_discarded', 'value': service['name'], 'kind': 'assets'}, self.hub.investigator.name)
-                def finish(name):
+            def resolve_shop(name=None):
+                services = [item for item in self.selected if 'service' in item['tags']]
+                for item in self.selected:
+                    self.hub.request_card('assets', item['name'], 'acquire')
+                    self.reserve = [item for item in self.reserve if item['name'] != item]
+                self.reset()
+                if len(services) > 0:
+                    self.hub.gui_set(False)
+                    for service in services:
+                        service['title'] = human_readable(service['name'])
+                        self.hub.networker.publish_payload({'message': 'card_discarded', 'value': service['name'], 'kind': 'assets'}, self.hub.investigator.name)
+                    def finish(name):
+                        self.hub.action_taken('shop')
+                        self.hub.gui_set(True)
+                    self.hub.small_card_pane.setup(services, parent=self, single_pick=False, finish_action=finish, force_select=True)
+                else:
                     self.hub.action_taken('shop')
-                    self.hub.gui_set(True)
-                self.hub.small_card_pane.setup(services, parent=self, single_pick=False, finish_action=finish, force_select=True)
+                self.acquire_button.disable()
+            if self.hub.investigator.name == 'charlie_kane' and self.hub.location_manager.player_count > 1:
+                send_pane = InvestigatorSkillPane(self.hub)
+                send_pane.acquire_items = self.selected
+                send_pane.finish_action = resolve_shop
+                send_pane.set_return_gui(self)
+                send_pane.send_items(self)
+                self.hub.info_pane = send_pane
             else:
-                self.hub.action_taken('shop')
-            self.acquire_button.disable()
+                resolve_shop()
         elif not self.hub.actions_taken['shop'] and self.hub.remaining_actions > 0:
             self.is_shopping = True
             self.hub.gui_set(False)
             def finish_test():
+                for button in self.reserve_buttons:
+                    button.enable()
                 self.choice_layout.clear()
                 self.layout.children.remove(self.choice_layout)
                 for x in self.rolls:
@@ -103,6 +116,8 @@ class ReservePane():
             self.layout.add(self.choice_layout)
             self.acquire_button.disable()
             self.discard_button.disable()
+            for button in self.reserve_buttons:
+                button.disable()
 
     def select_item(self, card):
         cost = card['cost']

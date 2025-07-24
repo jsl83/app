@@ -12,6 +12,7 @@ from encounters.encounter_pane import EncounterPane, SmallCardPane
 from locations.location_manager import LocationManager
 from locations.map import Map
 from screens.action_button import ActionButton
+from small_cards.small_card import get_asset
 
 IMAGE_PATH_ROOT = ":resources:eldritch/images/"
 
@@ -71,6 +72,8 @@ class HubScreen(arcade.View):
         self.gui_enabled = True
         self.overlay_showing = False
         self.my_turn = False
+        self.charlie_action = False
+        self.hold_item = None
         
         self.info_manager = arcade.gui.UIManager()
         self.ui_manager = arcade.gui.UIManager()
@@ -200,6 +203,13 @@ class HubScreen(arcade.View):
                     self.ticket_move(self.investigator.name, location[2], tickets[0][0], tickets[0][1], self.original_investigator_location)
             else:
                 self.move_unit(self.investigator.name, self.original_investigator_location)
+        elif getattr(self.holding, 'name', None) == 'charlie_send':
+            inv_buttons = [button for button in self.info_pane.choice_layout.children if getattr(button, 'name', None) in list(self.location_manager.all_investigators.keys()) and self.holding.check_overlap(button)]
+            if len(inv_buttons) > 0:
+                self.holding.action(self.holding.action_args['item'], self.location_manager.all_investigators[inv_buttons[0].name])
+            else:
+                self.holding.reset_position()
+            self.holding = None
         elif x < 1000 and y > 142 and self.click_time <= 10 and (self.gui_enabled or self.click_pane.click_action != None):
             location = self.location_manager.get_closest_location((x,y), self.zoom, self.map.get_location())
             if location != None:
@@ -259,6 +269,10 @@ class HubScreen(arcade.View):
         elif (self.info_pane == self.info_panes['possessions'] or (self.info_pane == self.info_panes['reserve'] and self.info_panes['reserve'].discard_view) or (self.info_pane == self.info_panes['location'] and self.info_panes['location'].is_trading)) and x > 1000:
             self.holding = 'items'
             self.click_time = 0
+        elif getattr(self.info_pane, 'charlie_send', False):
+            item_buttons = [item for item in list(self.info_manager.get_widgets_at((x,y))) if getattr(item, 'name', None) == 'charlie_send']
+            if len(item_buttons) > 0:
+                self.holding = item_buttons[0]
 
     def on_mouse_motion(self, x, y, dx, dy):
         if self.holding == 'map':
@@ -268,6 +282,8 @@ class HubScreen(arcade.View):
             self.info_pane.move(dy)
         elif self.holding == 'investigator':
             self.investigator_token.move(dx, dy)
+        elif self.holding != None:
+            self.holding.move(dx, dy)
 
     def check_map_boundaries(self):
         x, y = self.map.get_location()[0], self.map.get_location()[1]
@@ -344,6 +360,18 @@ class HubScreen(arcade.View):
                     small_card.gui_enabled = self.gui_enabled
                     self.gui_set(False)
                     self.info_pane = small_card
+                case 'charlie_kane':
+                    self.remaining_actions = 1
+                    self.charlie_action = True
+                case 'services':
+                    self.gui_set(False)
+                    service = get_asset(payload['service'])
+                    service['title'] = human_readable(service['name'])
+                    self.networker.publish_payload({'message': 'card_discarded', 'value': service['name'], 'kind': 'assets'}, self.investigator.name)
+                    def service_finish(name):
+                        self.gui_set(True)
+                        self.networker.publish_payload({'message': 'action_done'}, payload['sender'] + '_player')
+                    self.small_card_pane.setup([service], parent=self.info_pane, single_pick=False, finish_action=service_finish, force_select=True)
         else:
             match payload['message']:
                 case 'spawn':
@@ -432,6 +460,7 @@ class HubScreen(arcade.View):
                             case 'action':
                                 if self.investigator.delayed:
                                     self.investigator.delayed = False
+                                    self.networker.publish_payload({'message': 'delay_status', 'value': False, 'investigator': self.investigator.name}, 'server_update')
                                     self.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
                                 else:
                                     self.remaining_actions = 2 if not next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False) else 0
@@ -441,6 +470,8 @@ class HubScreen(arcade.View):
                                     for triggers in self.triggers.values():
                                         for trigger in triggers:
                                             trigger['used'] = False
+                                    for action in self.actions_taken:
+                                        self.actions_taken[action] = False
                                     #'''
                                     #FOR TESTING
                                     #self.remaining_actions = 3
@@ -597,6 +628,8 @@ class HubScreen(arcade.View):
                         setattr(self.location_manager.all_investigators[payload['owner']], key, payload[key])
                 case 'investigator_skill':
                     self.waiting_panes[-1].server_value = payload['value']
+                case 'delay_status':
+                    self.location_manager.all_investigators[payload['investigator']].delayed = payload['value']
             if len(self.waiting_panes) > 0 and self.waiting_panes[-1].wait_step != None:
                 if self.waiting_panes[-1].last_value == None or self.waiting_panes[-1].last_value == payload['value']:
                     pane = self.waiting_panes[-1]
@@ -905,27 +938,30 @@ class HubScreen(arcade.View):
         self.undo_action = None
         self.my_turn = False
         self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-        for action in self.actions_taken:
-            self.actions_taken[action] = False
 
     def action_taken(self, action, action_point=1):
-        def ruby():
-            self.clear_overlay()
-            self.remaining_actions += 1 if next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False) else 0
-            next((trigger for trigger in self.triggers['turn_end'] if trigger['name'] == 'ruby_of_r\'lyeh'))['used'] = True
-            self.encounter_pane.take_damage(0, -1, self.clear_overlay, {})
-        trigger_dict = {'ruby_of_r\'lyeh': ruby}
-        if action != None:
+        if self.charlie_action:
+            self.networker.publish_payload({'message': 'action_done'}, 'charlie_kane_player')
+            self.charlie_action = False
             self.actions_taken[action] = True
-        self.remaining_actions -= action_point
-        if self.remaining_actions == 0:
-            if len([trigger for trigger in self.triggers['turn_end'] if not trigger['used']]) > 0:
-                choices = [ActionButton(width=100, height=50, text=human_readable(trigger['name']), action=trigger_dict[trigger['name']], texture='buttons/placeholder.png') for trigger in self.triggers['turn_end']]
-                choices.append(ActionButton(width=100, height=50, text='End Turn', action=self.end_turn, texture='buttons/placeholder.png'))
-                self.choice_layout = create_choices('End of Turn Actions', choices=choices)
-                self.show_overlay()
-            else:
-                self.end_turn()
+        else:
+            def ruby():
+                self.clear_overlay()
+                self.remaining_actions += 1 if next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False) else 0
+                next((trigger for trigger in self.triggers['turn_end'] if trigger['name'] == 'ruby_of_r\'lyeh'))['used'] = True
+                self.encounter_pane.take_damage(0, -1, self.clear_overlay, {})
+            trigger_dict = {'ruby_of_r\'lyeh': ruby}
+            if action != None:
+                self.actions_taken[action] = True
+            self.remaining_actions -= action_point
+            if self.remaining_actions == 0:
+                if len([trigger for trigger in self.triggers['turn_end'] if not trigger['used']]) > 0:
+                    choices = [ActionButton(width=100, height=50, text=human_readable(trigger['name']), action=trigger_dict[trigger['name']], texture='buttons/placeholder.png') for trigger in self.triggers['turn_end']]
+                    choices.append(ActionButton(width=100, height=50, text='End Turn', action=self.end_turn, texture='buttons/placeholder.png'))
+                    self.choice_layout = create_choices('End of Turn Actions', choices=choices)
+                    self.show_overlay()
+                else:
+                    self.end_turn()
 
     def damage_monster(self, monster, damage, is_ambush=False, is_combat=False):
         choices = []

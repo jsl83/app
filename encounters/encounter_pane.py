@@ -516,7 +516,7 @@ class EncounterPane():
             self.choice_layout = create_choices('Select Investigator', choices=inv_choices)
             self.layout.add(self.choice_layout)
 
-    def choose_investigator(self, action, no_self=False, on_location=False, step='finish', no_bless=False, has_curse=False, none_step=None):
+    def choose_investigator(self, action, no_self=False, on_location=False, step='finish', no_bless=False, has_curse=False, none_step=None, no_delayed=False):
         choices = []
         subtitle = ''
         if action == 'delay':
@@ -544,6 +544,8 @@ class EncounterPane():
             investigators = [inv.name for inv in investigators if not next((card for card in inv.possessions['conditions'] if card.name == 'blessed'), False)]
         elif has_curse:
             investigators = [inv.name for inv in investigators if next((card for card in inv.possessions['conditions'] if card.name == 'cursed'), False)]
+        elif no_delayed:
+            investigators = [inv.name for inv in investigators if not inv.delayed]
         else:
             investigators = [inv.name for inv in investigators]
         if no_self and self.investigator.name in investigators:
@@ -722,6 +724,7 @@ class EncounterPane():
 
     def delay(self, step='finish', bypass=False):
         def get_delayed():
+            self.hub.networker.publish_payload({'message': 'delay_status', 'value': True, 'investigator': self.investigator.name}, 'server_update')
             self.investigator.delayed = True
             self.set_buttons(step)
         if next((item for item in self.investigator.possessions['assets'] if item.name == 'pocket_watch'), False) and not bypass:
@@ -1692,6 +1695,7 @@ class SmallCardPane(EncounterPane):
         self.request_player = None
         self.gui_enabled = True
         self.player_encounters = []
+        self.single_pick = True
 
     def setup(self, encounters, parent, single_pick=True, default_text=None, textures=[], finish_action=None, force_select=False, scale=0.5):
         self.scale = scale
@@ -1995,14 +1999,19 @@ class InvestigatorSkillPane(SmallCardPane):
     def __init__(self, hub):
         SmallCardPane.__init__(self, hub)
         investigator_dict = {
-            'akachi_onyele': self.akachi_onyele
-            }
+            'akachi_onyele': self.akachi_onyele,
+            'charlie_kane': self.charlie_kane,
+            'send_items': self.send_items
+        }
         investigator_req = {}
         self.action_dict = self.action_dict | investigator_dict
         self.req_dict = self.req_dict | investigator_req
         self.server_value = None
+        self.acquire_items = []
+        self.action_array = []
+        self.action_string = ''
 
-    def akachi_onyele(self, step='finish', is_first=False):
+    def akachi_onyele(self, is_first=False):
         if is_first:
             args = copy.deepcopy(self.encounter[self.current_key[0] + 'args'])
             del args[0]['is_first']
@@ -2014,7 +2023,63 @@ class InvestigatorSkillPane(SmallCardPane):
             choices = []
             def select(gate):
                 self.hub.networker.publish_payload({'message': 'akachi_onyele', 'value': self.hub.location_manager.get_map_name(gate) + ':' + gate}, self.investigator.name)
-                self.set_buttons(step)
+                self.set_buttons('finish')
             for gate in [gate.split(':')[1] for gate in self.server_value]:
                 choices.append(ActionButton(texture='maps/' + human_readable(gate) + '_gate.png', action=select, action_args={'gate': gate}, scale=0.4, text=human_readable(gate), text_position=(0, -20)))
-            self.choice_layout = create_choices('Select Gateto put on the bottom', choices=choices)
+            self.choice_layout = create_choices('Select Gate to put on the bottom', choices=choices)
+
+    def charlie_kane(self):
+        self.hub.waiting_panes.append(self)
+        self.player_wait_step = 'set_buttons'
+        self.player_wait_args = {'key': 'finish'}
+        self.proceed_button.text = 'Waiting for other player'
+        self.hub.networker.publish_payload({'message': 'charlie_kane'}, self.chosen_investigator + '_player')
+
+    def send_items(self, reserve_pane):
+        self.hub.overlay_showing = True
+        self.text_button.text = 'You may allow other Investigators to gain any cards you purchase.'
+        self.phase_button.text = 'Charlie Kane - Acquire Assets'
+        self.charlie_send = True
+        def resolve_action():
+            reserve_pane.selected = self.acquire_items
+            self.charlie_send = False
+            self.finish()
+        if len(self.acquire_items) == 0:
+            resolve_action()
+        else:
+            def send(item, inv):
+                is_service = 'service' in item['tags']
+                self.acquire_items = [items for items in self.acquire_items if items != item]
+                self.layout.remove(self.choice_layout)
+                if not is_service:
+                    self.hub.request_card('assets', item['name'], 'acquire', investigator=inv)
+                    self.send_items(reserve_pane)
+                else:
+                    self.hub.networker.publish_payload({'message': 'card_discarded', 'value': item['name'], 'kind': 'assets'}, self.hub.investigator.name)
+                    self.hub.waiting_panes.append(self)
+                    self.player_wait_step = 'send_items'
+                    self.player_wait_args = {'reserve_pane': reserve_pane}
+                    self.text_button.text = 'Waiting for ' + human_readable(inv.name) + ' to resolve ' + human_readable(item['name'])
+                    self.layout.children.remove(self.proceed_button)
+                    self.hub.networker.publish_payload({'message': 'services', 'service': item['name'], 'sender': 'charlie_kane'}, inv.name + '_player')
+            self.choice_layout.clear()
+            choices = []
+            for item in self.acquire_items:
+                choices.append(ActionButton(texture='assets/' + item['name'].replace('.', '') + '.png', scale=0.5, action=send, action_args={'item': item}, name='charlie_send'))
+            options = []
+            for key in [inv for inv in list(self.hub.location_manager.all_investigators.keys()) if inv != self.investigator.name]:
+                options.append(ActionButton(texture='investigators/' + key + '_portrait.png', scale=0.4, name=key))
+            self.choice_layout = create_choices('Drag Items to send', choices=choices, options=options)
+            for button in choices:
+                button.initial_x = button.x
+                button.initial_y = button.y
+            self.layout.add(self.choice_layout)
+            if self.proceed_button not in self.layout:
+                self.layout.add(self.proceed_button)
+            self.proceed_button.text = 'Finish'
+            self.proceed_button.action = resolve_action
+
+    def finish(self):
+        self.action_array = []
+        self.action_string = ''
+        super().finish()

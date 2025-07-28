@@ -314,7 +314,8 @@ class EncounterPane():
                     self.encounter = {'combat': ['combat_strength'], 'cargs':[{'monster': monster, 'player_request': player_request, 'skip': True}]}
                     self.request_card('conditions', 'combat', 'cursed')
                 else:
-                    dmg = successes - monster.horror['san']
+                    horror = 1 if self.investigator.name == 'diana_stanley' else monster.horror['san']
+                    dmg = successes - horror
                     dmg = min(dmg, 0)
                     self.take_damage(0, dmg, self.resolve_combat if (monster.horror.get('skip', False) and successes == 0) or monster.horror.get('damage', False) else self.combat_strength, {'monster': monster, 'player_request': player_request})
             next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_san)
@@ -355,11 +356,21 @@ class EncounterPane():
             self.layout.add(self.choice_layout)
 
     def resolve_combat(self, monster, player_request=None, first_trigger=True):
-        if first_trigger and hasattr(monster, 'on_hp_damage') and self.hp_damage < 0 and (not monster.on_hp_damage.get('check', False) or self.req_dict[monster.on_hp_damage['check']]):
+        trigger = getattr(monster, 'resolve_trigger', None)
+        condition = True
+        if trigger:
+            if trigger.get('check'):
+                condition = self.req_dict[trigger.get('check')]
+            if trigger.get('cond'):
+                if trigger['cond'] == 'hp_damage' and self.hp_damage >= 0:
+                    condition = False
+            if trigger.get('monster_damage'):
+                self.rolls = [6]*trigger['monster_damage']
+        if first_trigger and trigger and condition:
             trigger_pane = SmallCardPane(self.hub)
             def finish_action(name):
                 self.resolve_combat(monster, player_request, False)
-            trigger_pane.setup([monster.on_hp_damage], self, finish_action=finish_action, force_select=True)
+            trigger_pane.setup([trigger], self, finish_action=finish_action, force_select=True)
         else:
             self.hub.info_panes['location'].description_layout.add(self.hub.info_panes['location'].monster_close)
             self.encounter_type.remove('combat')
@@ -375,6 +386,7 @@ class EncounterPane():
                     self.hub.waiting_panes.append(self)
                     self.wait_step = 'combat'
                     self.encounter = {'combat': ['combat'], 'cargs': [{'skip': True}]}
+                    self.last_value = 'monster_damaged'
                     self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
                 else:
                     self.hub.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
@@ -1090,7 +1102,7 @@ class EncounterPane():
                 self.hub.networker.publish_payload({'message': 'move_investigator', 'value': swap, 'destination': old_loc}, swap)
         self.set_buttons(step)
 
-    def move_monster(self, step='finish', encounter=True, move_to='self', optional=False):
+    def move_monster(self, step='finish', encounter=True, move_to='self', optional=False, monster_name=None):
         if len(self.hub.location_manager.get_all('monsters', True)) == 0:
             self.set_buttons(step)
         else:
@@ -1123,13 +1135,22 @@ class EncounterPane():
                     self.clear_overlay()
                     self.choice_layout = create_choices(title='Move Monster(s)', choices=choices, options=options)
                     self.layout.add(self.choice_layout)
-            self.hub.click_pane = self
-            self.click_action = select
-            if optional:
-                self.layout.add(self.option_button)
-                self.option_button.text = 'Pass'
-                self.option_button.action = self.set_buttons
-                self.option_button.action_args = {'key': step}
+            if monster_name != None:
+                monsters = [monster for monster in self.hub.location_manager.locations[self.investigator.location]['monsters'] if monster.name == monster_name]
+                if len(monsters) > 0:
+                    self.clear_overlay()
+                    self.hub.click_pane = self
+                    self.click_action = lambda locat: move(monsters[0], encounter, locat)
+                else:
+                    self.set_buttons(step)
+            else:
+                self.hub.click_pane = self
+                self.click_action = select
+                if optional:
+                    self.layout.add(self.option_button)
+                    self.option_button.text = 'Pass'
+                    self.option_button.action = self.set_buttons
+                    self.option_button.action_args = {'key': step}
 
     def mythos_reckoning(self, number=1, step='finish'):
         self.hub.networker.publish_payload({'message': 'mythos_reckoning', 'value': number}, self.investigator.name)

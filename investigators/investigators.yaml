@@ -84,6 +84,27 @@
       - 'spells:wither'
     passive: Reduce the horror of Monsters you encounter to 1.
     active: If there is a Cultist Monster on your space, discard all Monsters on your space or move the Cultist Monster to any other space.
+    active_font: 12
+    action:
+      action:
+        - set_buttons
+        - damage_monsters
+      aargs:
+        - text: Move Cultist
+          key: move
+        - text: Discard Monsters
+          damage: 99
+          single: False
+          location: self
+          epic: False
+      move:
+        - move_monster
+      margs:
+        - skip: True
+          text: Select location
+          monster_name: cultist
+      action_text: Discard all Monsters on your space or move the Cultist Monster to any other space.
+      title: Diana Stanley
   jacqueline_fine:
     expansion: 0
     health: 4

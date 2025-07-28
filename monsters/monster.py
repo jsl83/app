@@ -4,6 +4,9 @@ from util import *
 with open('monsters/monsters.yaml') as stream:
     MONSTERS = yaml.safe_load(stream)
 
+def set_cultist(cultist):
+    MONSTERS['cultist'] = cultist
+
 class Monster():
     def __init__(self, name, monster_id, inv_number):
         self.name = name

@@ -1,12 +1,13 @@
-import yaml, random, math
+import yaml, random
 from util import *
 import astar
-from monsters.monster import Monster
+from monsters.monster import *
 from investigators.investigator import Investigator
 
 class LocationManager():
     def __init__(self, number, hub):
         self.hub = hub
+        set_cultist(self.hub.ancient_one.cultist)
         self.player_count = number
         self.locations = {}
         self.all_investigators = {}

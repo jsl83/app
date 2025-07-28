@@ -200,8 +200,10 @@ class Networker(threading.Thread, BanyanBase):
                     self.publish_payload({'message': 'number_select' if self.player_count == 0 else
                         'ancient_ones' if not self.ancient_one else 'investigators', 'value': self.screen.investigators}, 'server_update')
                 case "ancient_ones_selected":
-                    with open('ancient_ones/server_ancient_ones.yaml') as stream:
+                    with open('ancient_ones/ancient_ones.yaml') as stream:
                         ancient_one = yaml.safe_load(stream)[payload['value']]
+                        MONSTERS['cultist'] = ancient_one['cultist']
+                        self.decks['monsters'] += ['cultist']*6
                     self.ancient_one = ancient_one
                     self.ancient_one['name'] = payload['value']
                     self.screen.select_ao(payload['value'])

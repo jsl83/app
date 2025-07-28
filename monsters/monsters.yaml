@@ -735,7 +735,8 @@
           increment: -1
       title: Zombie Horde - Reckoning
       action_text: Roll 1 die. On a 1 or 2, advance Doom by 1.
-    on_hp_damage:
+    resolve_trigger:
+      cond: hp_damage
       check: discard
       action:
         - discard

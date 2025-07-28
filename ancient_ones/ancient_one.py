@@ -6,14 +6,8 @@ with open('ancient_ones/ancient_ones.yaml') as stream:
 class AncientOne():
     def __init__(self, name):
         self.name = name
-        self.mysteries = ANCIENTS[name]['mysteries']
-        text = ANCIENTS[name]['text'].split('\\n')
-        self.text = ''
-        self.doom = int(ANCIENTS[name]['doom'])
-        for x in range(len(text)):
-            self.text += text[x]
-            if x != len(text):
-                self.text += '\n\n'
+        for key in ANCIENTS[name]:
+            setattr(self, key, ANCIENTS[name][key])
 
     def awaken(self):
         pass

@@ -40,21 +40,20 @@ class SelectionScreen(arcade.View):
         row = 0
         column = 0
         count = 0
-        for i in range(0, 5):
-            for name in self.selection_options:
-                texture = arcade.load_texture(IMAGE_PATH_ROOT + self.path + '\\' + name + '_portrait.png')
-                scale = 125 / texture.width
-                x = 150 + column * 171
-                y = 515 - row * 200
-                select_button = arcade.gui.UITextureButton(x, y, height=300, texture=texture, scale=scale, text=human_readable(name), text_position=(0,-70))
-                select_button.name = name
-                select_button.enabled = True
-                self.selection_list.add(select_button)
-                column += 1
-                count += 1
-                if column == 6:
-                    row += 1
-                    column = 0
+        for name in self.selection_options:
+            texture = arcade.load_texture(IMAGE_PATH_ROOT + self.path + '\\' + name + '_portrait.png')
+            scale = 125 / texture.width
+            x = 150 + column * 171
+            y = 515 - row * 200
+            select_button = arcade.gui.UITextureButton(x, y, height=300, texture=texture, scale=scale, text=human_readable(name), text_position=(0,-70))
+            select_button.name = name
+            select_button.enabled = True
+            self.selection_list.add(select_button)
+            column += 1
+            count += 1
+            if column == 6:
+                row += 1
+                column = 0
         self.manager.add(self.selection_list, index=1)
 
         if self.path == 'number_select':

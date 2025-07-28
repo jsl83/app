@@ -2,21 +2,37 @@
   azathoth:
     doom: 15
     mysteries: 3
-    setup:
-      action: spawn
-      args:
-        piece: eldritch
-        location: omen:0
+    eldritch: 1
     effects:
-      - "add_trigger omen green": 
-        - "add_token eldritch omen0"
+      - kind: trigger
+        condition: omen0
+        action: strengthen_ao
+        args:
+          amt: 1
     awaken: "flip"
+    mythos:
+      - "0112"
+      - "001112"
+      - "001111"
     cultist:
+      count: 6
+      horror:
+        index: 4
+        mod: 0
+        san: 1
+      strength:
+        index: 3
+        mod: '-'
+        str: N/A
       toughness: 1
-      will_check: "will 0 1"
-      str_check: "str 0 0"
-      effects:
-        - "add_trigger will_check resolve":
-          - "lose_health 1"
-          - "defeat monster"
+      resolve_trigger:
+        action:
+          - hp_san
+        aargs:
+          - hp: -1
+            skip: True
+        action_text: Lose 1 Health and defeat this Monster.
+        monster_damage: 1
+        title: Cultist
+      text: After resolving the Will test, lose 1 Health and defeat this Monster.
     text: When the Omen advances to the green space of the Omen track, advance Doom by 1 for each Eldritch token on that space.\n When 3 Mysteries have been solved, investigators win the game.\nWhen Azathoth awakens, flip this sheet and resolve the "The World is Devoured!" effect on the back.

@@ -1,9 +1,8 @@
-import arcade, arcade.csscolor, arcade.gui
-import math, random, copy
+import arcade
+import math, random
 from util import *
 from ancient_ones.ancient_one import AncientOne
 from screens.ancient_pane import AncientOnePane
-from investigators.investigator import Investigator
 from screens.investigator_pane import InvestigatorPane
 from screens.possessions_pane import PossessionsPane
 from screens.reserve_pane import ReservePane
@@ -478,7 +477,7 @@ class HubScreen(arcade.View):
                                     #if self.is_first:
                                     #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
                                     #if self.investigator.name == 'akachi_onyele':
-                                    self.ticket_move(self.investigator.name, 'arkham', 0, 0, self.investigator.location)
+                                    #self.ticket_move(self.investigator.name, 'arkham', 0, 0, self.investigator.location)
                                     #else:
                                         #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
                                     #self.investigator.focus = 0
@@ -631,7 +630,7 @@ class HubScreen(arcade.View):
                 case 'delay_status':
                     self.location_manager.all_investigators[payload['investigator']].delayed = payload['value']
             if len(self.waiting_panes) > 0 and self.waiting_panes[-1].wait_step != None:
-                if self.waiting_panes[-1].last_value == None or self.waiting_panes[-1].last_value == payload['value']:
+                if self.waiting_panes[-1].last_value == None or self.waiting_panes[-1].last_value == payload.get('message', None):
                     pane = self.waiting_panes[-1]
                     self.waiting_panes = self.waiting_panes[:-1]
                     pane.set_buttons(pane.wait_step)
@@ -925,6 +924,11 @@ class HubScreen(arcade.View):
             self.networker.publish_payload({'message': 'update_tickets', 'ship': self.investigator.ship_tickets, 'rail': self.investigator.rail_tickets}, self.investigator.name)
         self.info_panes['investigator'].set_ticket_counts()
         self.networker.publish_payload({'message': 'move_investigator', 'value': name, 'destination': location}, self.investigator.name)
+        if self.investigator.name == 'diana_stanley':
+            if len([monster for monster in self.location_manager.locations[location]['monsters'] if monster.name == 'cultist']) > 0:
+                self.info_panes['investigator'].skill_button.enable()
+            else:
+                self.info_panes['investigator'].skill_button.disable()
         if overlay:
             self.clear_overlay()
         self.action_taken('move')

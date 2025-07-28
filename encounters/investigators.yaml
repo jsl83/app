@@ -50,3 +50,105 @@
       pass_text: Akachi's mind has left this world and she no longer has interest in material goods. Gain all of her possessions. An Odinani man gives you a bitter drink to help you reach her. After you drink it, you are assaulted by nightmarish visions, but you force yourself to keep searching for her.
       doom_text: You hear Akachi's voice sharing all she's learned.
       ending_text: You curl up in a corner until the drink wears off.
+  charlie_kane:
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: influence
+          skip: True
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 13
+      pass_text: The nurse at the front desk hands you a parcel. Gain all of his possessions. "Mr. Kane said to give you this package, but the doctor insists that no visitors be admitted." You try to convince her to make an exception for you.
+      doom_text: You find that Charlie's health is beyond recovery, but he's still in good spirits and you have a long talk.
+      ending_text: Charlie spends the rest of his days cut off from all human contact.
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: will
+          skip: True
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 12
+      pass_text: The first thing Charlie does when you enter the restaurant is hand you all of his belongings. Gain all of his possessions. He offers you deals, promising to sell you Atlantis and introduce you to Caesar. You negotiate carefully with him.
+      doom_text: He tells you all he knows in exchange for your napkin ring and a salt shaker.
+      ending_text: Charlie gets angry and insists that you'll be sorry when he's President of the world.
+  diana_stanley:
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: lore
+          skip: True
+      lore:
+        - skill
+      iargs:
+        - stat: 0
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 13
+      pass_text: In her hospital, Diana tells you to pick up your things and bids you farewell. Gain all of her possessions. You infer that she is being watched. Using your knowledge of the Silver Twilight, you try to determine which doctors can be trusted.
+      doom_text: You move Diana to a new hospital and she shares her secrets with you.
+      ending_text: Diana remains under the Lodge's watchful eye.
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: influence
+          skip: True
+      influence:
+        - skill
+      wargs:
+        - stat: 1
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 12
+      pass_text: It's obviously Diana, but she claims to be a woman named Iris who has lived in this city her whole life. In her trash, you find Diana's things. Gain all of her possessions. It's clear that she has disassociated from her former life. You share all of your memories of Diana to restore her identity.
+      doom_text: She tells you of the horrors that brought her to this state.
+      ending_text: Diana sternly asks you to leave her alone.

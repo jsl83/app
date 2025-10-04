@@ -371,6 +371,17 @@ class HubScreen(arcade.View):
                         self.gui_set(True)
                         self.networker.publish_payload({'message': 'action_done'}, payload['sender'] + '_player')
                     self.small_card_pane.setup([service], parent=self.info_pane, single_pick=False, finish_action=service_finish, force_select=True)
+                case 'jacqueline_check':
+                    if self.investigator.name == 'jacqueline_fine':
+                        small_card = SmallCardPane(self)
+                        small_card.parent = self.info_pane
+                        small_card.gui_enabled = self.gui_enabled
+                        small_card.jacqueline_check(payload['value'], payload['owner'])
+                        self.gui_set(False)
+                        self.info_pane = small_card
+                        self.info_manager.children = {0:[]}
+                        self.info_manager.add(self.info_pane.layout)
+                        self.info_manager.trigger_render()
         else:
             match payload['message']:
                 case 'spawn':
@@ -414,6 +425,7 @@ class HubScreen(arcade.View):
                     investigator = self.location_manager.all_investigators[payload['owner']]
                     if payload['value'] != None and payload['value'] != '':
                         card = investigator.get_item(payload['kind'], payload['value'])
+                        card.back_seen = payload.get('revealed', False)
                         self.info_panes['possessions'].on_get(card, payload['owner'])
                         if card.name == 'debt' or card.name == 'detained':
                             card.action['pargs'][0]['investigator'] = payload['owner']
@@ -426,8 +438,11 @@ class HubScreen(arcade.View):
                     added = [] if payload['value'] == '' or payload['value'] == None else payload['value'].split(':')
                     self.info_panes['reserve'].restock(removed, added)
                 case 'receive_clue':
-                    self.location_manager.all_investigators[payload['owner']].clues.append(payload['value'])
+                    clues_to_add = payload['value'].split(';')
+                    for clue in clues_to_add:
+                        self.location_manager.all_investigators[payload['owner']].clues.append(clue)
                     self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
+                    self.info_manager.trigger_render()
                 case 'discard':
                     self.info_panes['reserve'].discard_item(payload['value'])
                 case 'unit_moved':
@@ -463,14 +478,13 @@ class HubScreen(arcade.View):
                                     self.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
                                 else:
                                     self.remaining_actions = 2 if not next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False) else 0
+                                    self.info_panes['investigator'].skill_check()
                                     for items in self.investigator.possessions.values():
                                         for item in items:
                                             item.action_used = False
                                     for triggers in self.triggers.values():
                                         for trigger in triggers:
                                             trigger['used'] = False
-                                    for action in self.actions_taken:
-                                        self.actions_taken[action] = False
                                     #'''
                                     #FOR TESTING
                                     #self.remaining_actions = 3
@@ -495,6 +509,8 @@ class HubScreen(arcade.View):
                             case 'mythos':
                                 #FOR TESTING
                                 #if self.is_first:
+                                for action in self.actions_taken:
+                                    self.actions_taken[action] = False
                                 self.clear_overlay()
                                 self.show_encounter_pane()
                                 self.encounter_pane.activate_mythos()
@@ -614,7 +630,9 @@ class HubScreen(arcade.View):
                     self.encounter_pane.mythos_reckonings.append(payload['value'])
                 case 'possession_lost':
                     if payload['kind'] == 'clues':
-                        self.location_manager.all_investigators[payload['owner']].clues.remove(payload['value'])
+                        clues = payload['value'].split(';')
+                        for clue in clues:
+                            self.location_manager.all_investigators[payload['owner']].clues.remove(clue)
                         self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
                     else:
                         items = self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']]
@@ -856,14 +874,15 @@ class HubScreen(arcade.View):
         key = self.location_manager.move_unit(unit, kind, location)
         self.map.move_tokens(kind, key, destination, zoom_destination, location, unit)
 
-    def get_locations_within(self, distance, start_loc, same_loc=True):
+    def get_locations_within(self, distance, start_loc, same_loc=True, kind=None):
         locations = self.location_manager.locations
-        locs = {start_loc}
+        locs = {start_loc} if kind == None or locations[start_loc]['kind'] == kind else {}
         temp = set()
         for x in range(distance):
             for loc in locs:
                 for route in locations[loc]['routes'].keys():
-                    temp.add(route)
+                    if kind == None or locations[route]['kind'] == kind:
+                        temp.add(route)
             locs.update(temp)
             temp = set()
         if not same_loc:
@@ -924,11 +943,6 @@ class HubScreen(arcade.View):
             self.networker.publish_payload({'message': 'update_tickets', 'ship': self.investigator.ship_tickets, 'rail': self.investigator.rail_tickets}, self.investigator.name)
         self.info_panes['investigator'].set_ticket_counts()
         self.networker.publish_payload({'message': 'move_investigator', 'value': name, 'destination': location}, self.investigator.name)
-        if self.investigator.name == 'diana_stanley':
-            if len([monster for monster in self.location_manager.locations[location]['monsters'] if monster.name == 'cultist']) > 0:
-                self.info_panes['investigator'].skill_button.enable()
-            else:
-                self.info_panes['investigator'].skill_button.disable()
         if overlay:
             self.clear_overlay()
         self.action_taken('move')

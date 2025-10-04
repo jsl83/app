@@ -16,10 +16,11 @@ class Investigator():
     def __init__(self, name):
         self.name = name
         self.label = human_readable(name)
-        self.subtitle = INVESTIGATORS[name]['subtitle']
-        # lore, diplomacy, observation, strength, will
-        self.skills = INVESTIGATORS[name]['skills']
-        self.max_health = INVESTIGATORS[name]['health']
+        for key in ['subtitle', 'skills', 'max_health', 'location', 'active', 'passive', 'action']:
+            setattr(self, key, INVESTIGATORS[name][key])
+        for key in ['active_font', 'passive_font']:
+            if INVESTIGATORS[name].get(key):
+                setattr(self, key, INVESTIGATORS[name][key])
         self.max_sanity = 12 - self.max_health
         self.health = self.max_health
         self.sanity = self.max_sanity
@@ -36,12 +37,8 @@ class Investigator():
         self.focus = 0
         self.ship_tickets = 0
         self.rail_tickets = 0
-        self.location = INVESTIGATORS[name]['location']
         self.map = 'world'
         self.success = 5
-        self.passive = INVESTIGATORS[name]['passive']
-        self.active = INVESTIGATORS[name]['active']
-        self.action = INVESTIGATORS[name]['action']
         if INVESTIGATORS[name].get('triggers', False):
             self.triggers = INVESTIGATORS[name]['triggers']
         self.delayed = False

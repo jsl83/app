@@ -448,14 +448,26 @@ class EncounterPane():
         self.gate_close = allow
         self.set_buttons(step)
 
-    def allow_move(self, distance, step='finish', same_loc=True, must_move=False, investigator='self', nightgaunt=None, loc_props=[]):
-        allowed_locs = self.hub.get_locations_within(distance, self.investigator.location if investigator == 'self' else self.hub.location_manager[self.chosen_investigator].location, same_loc=same_loc) if distance != 99 else []
-        for prop in loc_props:
-            for loc in list(self.hub.location_manager.locations.keys()):
-                if self.hub.location_manager.locations[loc][prop]:
-                    allowed_locs.add(loc)
+    def allow_move(self, distance, step='finish', same_loc=True, must_move=False, investigator='self', nightgaunt=None, loc_props=[], nearest=None):
+        investigator_location = self.investigator.location if investigator == 'self' else self.hub.location_manager[self.chosen_investigator].location
+        if nearest == None:
+            allowed_locs = self.hub.get_locations_within(distance, investigator_location, same_loc=same_loc) if distance != 99 else []
+            for prop in loc_props:
+                for loc in list(self.hub.location_manager.locations.keys()):
+                    if self.hub.location_manager.locations[loc][prop]:
+                        allowed_locs.add(loc)
+        else:
+            for x in range(0,5):
+                near_locs = self.hub.get_locations_within(x, self.investigator.location)
+                allowed_locs = [loc for loc in near_locs if self.hub.location_manager.locations[loc]['kind'] == nearest]
+                if len(allowed_locs) > 0:
+                    break
         if len(allowed_locs) == 0 and distance != 99:
             self.set_buttons(step)
+        elif len(allowed_locs) == 1 and must_move and allowed_locs[0] == investigator_location:
+            self.proceed_button.text = 'Next'
+            self.proceed_button.action = self.set_buttons
+            self.proceed_button.action_args = {'key': step}
         else:
             def move(unit, location):
                 self.hub.networker.publish_payload({'message': 'move_investigator', 'value': unit, 'destination': location}, self.investigator.name)
@@ -1717,6 +1729,7 @@ class SmallCardPane(EncounterPane):
         self.gui_enabled = True
         self.player_encounters = []
         self.single_pick = True
+        self.finish_action = None
 
     def setup(self, encounters, parent, single_pick=True, default_text=None, textures=[], finish_action=None, force_select=False, scale=0.5):
         self.scale = scale
@@ -1741,7 +1754,9 @@ class SmallCardPane(EncounterPane):
     def flip_card(self, kind, name, investigator=None):
         if investigator == None:
             investigator = self.investigator.name
-        self.encounter = getattr(next((card for card in self.hub.location_manager.all_investigators[investigator].possessions[kind] if card.name == name)), 'back')
+        card = next((card for card in self.hub.location_manager.all_investigators[investigator].possessions[kind] if card.name == name))
+        card.back_seen = True
+        self.encounter = getattr(card, 'back')
         self.set_buttons('action')
 
     def spell_flip(self, name, take_action=False):
@@ -1991,6 +2006,25 @@ class SmallCardPane(EncounterPane):
         self.choice_layout = create_choices('Choose Effect', choices=choices)
         self.layout.add(self.choice_layout)
 
+    def jacqueline_check(self, item, owner):
+        self.text_button.text = 'Once per round, when another Investigator gains a non-Common Condition, you may look at the back of that card and gain 1 Clue.\n\n' + human_readable(owner) + ' - ' + human_readable(item[:-1])
+        self.phase_button.text = 'Jacqueline Fine - Passive'
+        self.proceed_button.text = 'View Card'
+        self.option_button.text = 'Decline'
+        def respond(item, owner, checked):
+            if checked:
+                self.hub.networker.publish_payload({'message': 'get_clue', 'value': 1}, self.investigator.name)
+            self.hub.networker.publish_payload({'message': 'jacqueline_checked', 'item': item, 'owner': owner, 'revealed': checked}, 'jacqueline_fine')
+            self.hub.gui_set(True)
+            self.finish()
+        self.proceed_button.action = respond
+        self.option_button.action = respond
+        self.proceed_button.action_args = {'item': item, 'owner': owner, 'checked': True}
+        self.option_button.action_args = {'item': item, 'owner': owner, 'checked': False}
+        self.layout.clear()
+        for button in [self.text_button, self.phase_button, self.option_button, self.proceed_button]:
+            self.layout.add(button)
+
     def set_buttons(self, key, return_value=None):
         if key == 'no_use':
             self.encounters.append(self.encounter)
@@ -2022,11 +2056,10 @@ class InvestigatorSkillPane(SmallCardPane):
         investigator_dict = {
             'akachi_onyele': self.akachi_onyele,
             'charlie_kane': self.charlie_kane,
-            'send_items': self.send_items
+            'send_items': self.send_items,
+            'jacqueline_fine': self.jacqueline_fine
         }
-        investigator_req = {}
         self.action_dict = self.action_dict | investigator_dict
-        self.req_dict = self.req_dict | investigator_req
         self.server_value = None
         self.acquire_items = []
         self.action_array = []
@@ -2055,6 +2088,60 @@ class InvestigatorSkillPane(SmallCardPane):
         self.player_wait_args = {'key': 'finish'}
         self.proceed_button.text = 'Waiting for other player'
         self.hub.networker.publish_payload({'message': 'charlie_kane'}, self.chosen_investigator + '_player')
+
+    def jacqueline_fine(self):
+        investigators = list(self.hub.location_manager.all_investigators.values())
+        inv_names = [investigator.name for investigator in investigators if investigator.name != self.hub.investigator.name and (len(self.hub.investigator.clues) > 0 or len(investigator.clues) > 0)]
+        choices = []
+        def trade_clues(name):
+            self.clear_overlay()
+            my_clues = len(self.investigator.clues)
+            their_clues = len(self.hub.location_manager.all_investigators[name].clues)
+            info_button = ActionButton(texture='buttons/placeholder.png', text='Trade Clues')
+            self.action_string = '0'
+            def send():
+                transaction = int(self.action_string)
+                if transaction > 0:
+                    transaction = 0
+                if not abs(transaction - 1) > my_clues:
+                    transaction = transaction - 1
+                    info_button.text = 'Send ' + str(abs(transaction)) + ' Clue' + ('s' if transaction < -1 else '')
+                self.action_string = str(transaction)
+            def take():
+                transaction = int(self.action_string)
+                if transaction < 0:
+                    transaction = 0
+                if not transaction + 1 > their_clues:
+                    transaction = transaction + 1
+                    info_button.text = 'Take ' + str(transaction) + ' Clue' + ('s' if transaction > 1 else '')
+                self.action_string = str(transaction)
+            jacqueline = ActionButton(texture='investigators/jacqueline_fine_portrait.png', text='Clues: ' + str(my_clues), text_position=(0,-70), scale=0.5)
+            other = ActionButton(texture='investigators/' + name + '_portrait.png', text='Clues: ' + str(their_clues), text_position=(0,-70), scale=0.5)
+            send_button = ActionButton(width=30, texture='buttons/placeholder.png', text='>>', action=send)
+            take_button = ActionButton(width=30, texture='buttons/placeholder.png', text='<<', action=take)
+            self.choice_layout = create_choices('Trade Clues - ' + human_readable(name), choices=[jacqueline, take_button, info_button, send_button, other])
+            self.layout.add(self.choice_layout)
+            def finish_trade(name):
+                amt = abs(int(self.action_string))
+                sender = 'jacqueline_fine' if int(self.action_string) < 0 else name
+                taker = 'jacqueline_fine' if sender != 'jacqueline_fine' else name
+                clue_list = [clue for clue in self.hub.location_manager.all_investigators[sender].clues]
+                clues_to_send = []
+                for x in range(amt):
+                    clue = random.choice(clue_list)
+                    clues_to_send.append(clue)
+                    clue_list.remove(clue)
+                self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': ';'.join(clues_to_send)}, sender)
+                self.hub.networker.publish_payload({'message': 'get_clue', 'value': amt}, taker)
+                self.finish()
+            self.proceed_button.action = finish_trade
+            self.proceed_button.action_args = {'name': name}
+            self.proceed_button.text = 'Finish Trade'
+        for name in inv_names:
+            choices.append(ActionButton(texture='investigators/' + name + '_portrait.png', action=trade_clues, action_args={'name': name}, scale=0.4))
+        self.clear_overlay()
+        self.choice_layout = create_choices('Choose Investigator', 'Trade Clues', choices)
+        self.layout.add(self.choice_layout)
 
     def send_items(self, reserve_pane):
         self.hub.overlay_showing = True

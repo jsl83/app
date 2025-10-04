@@ -18,7 +18,7 @@ with open('locations/locations.yaml') as stream:
     LOCATIONS = yaml.safe_load(stream)
 with open('small_cards/server_assets.yaml') as stream:
     ASSETS = yaml.safe_load(stream)
-with open('small_cards/server_conditions.yaml') as stream:
+with open('small_cards/conditions.yaml') as stream:
     CONDITIONS = yaml.safe_load(stream)
 with open('investigators/investigators.yaml') as stream:
     INVESTIGATORS = yaml.safe_load(stream)
@@ -60,6 +60,7 @@ class Networker(threading.Thread, BanyanBase):
         self.solved_mysteries = []
         self.omen = 0
         self.expedition = None
+        self.jacqueline_check = True
 
         self.decks = {
             'conditions': [],
@@ -224,8 +225,8 @@ class Networker(threading.Thread, BanyanBase):
                         'artifacts': [],
                         'unique_assets':[],
                         'spells':[],
-                        'hp': INVESTIGATORS[payload['value']]['health'],
-                        'san': 12 - INVESTIGATORS[payload['value']]['health'],
+                        'hp': INVESTIGATORS[payload['value']]['max_health'],
+                        'san': 12 - INVESTIGATORS[payload['value']]['max_health'],
                         'clues': [],
                         'tickets': [0,0]
                     }
@@ -321,6 +322,11 @@ class Networker(threading.Thread, BanyanBase):
                             self.publish_payload({'message': 'discard', 'value': payload['value']}, 'server_update')
                         elif payload['kind'] == 'artifacts':
                             self.decks['used_artifacts'].append(payload['value'])
+                        elif payload['kind'] == 'clues' and ';' in payload['value']:
+                            for clue in payload['value'].split(';'):
+                                self.decks['clues'].append(clue)
+                                self.investigators[topic]['clues'].remove(clue)
+                            self.publish_payload({'message': 'possession_lost', 'value': payload['value'], 'kind': 'clues', 'owner': topic}, 'server_update')
                         else:
                             self.decks[payload['kind']].append(payload['value'])
                         true_name = payload['value'] if payload['kind'] not in ['conditions', 'spells'] else payload['value'][:-1]
@@ -330,16 +336,21 @@ class Networker(threading.Thread, BanyanBase):
                         elif payload['kind'] == 'clues' and payload.get('from_map', False):
                             self.publish_payload({'message': 'token_removed', 'value': payload['value'], 'kind': 'clue'}, 'server_update')
                     case 'get_clue':
-                        clue = random.choice(self.decks['clues'])
-                        self.decks['clues'].remove(clue)
-                        self.investigators[topic]['clues'].append(clue)
-                        self.publish_payload({'message': 'receive_clue', 'value': clue, 'owner': topic}, 'server_update')
+                        amt = payload.get('value', 1)
+                        clues_to_send = []
+                        for x in range(amt):
+                            clue = random.choice(self.decks['clues'])
+                            self.decks['clues'].remove(clue)
+                            clues_to_send.append(clue)
+                            self.investigators[topic]['clues'].append(clue)
+                        self.publish_payload({'message': 'receive_clue', 'value': ';'.join(clues_to_send), 'owner': topic}, 'server_update')
                     case 'spawn':
                         self.spawn(payload['value'], payload.get('name', None), payload.get('location', None), int(payload.get('number', 1)))
                     case 'move_investigator':
                         if not next((card for card in self.investigators[payload['value']] if 'detained' in card), False):
                             self.publish_payload({'message': 'unit_moved', 'value': payload['value'], 'destination': payload['destination'], 'kind': 'investigators'}, 'server_update')
                     case 'lead_selected':
+                        self.jacqueline_check = False
                         self.lead_investigator = self.selected_investigators.index(payload['value'])
                         self.current_player = self.selected_investigators.index(payload['value'])
                         self.publish_payload({'message': 'lead_selected', 'value': payload['value']}, 'server_update')
@@ -517,6 +528,9 @@ class Networker(threading.Thread, BanyanBase):
                         else:
                             self.decks['gates']['deck'].remove(payload['value'])
                             self.decks['gates']['deck'].append(payload['value'])
+                    case 'jacqueline_checked':
+                        self.jacqueline_check = payload['revealed']
+                        self.publish_payload({'message': 'card_received', 'kind': 'conditions', 'value': payload['item'], 'owner': payload['owner'], 'revealed': payload['revealed']}, 'server_update')
 
     def clear_bodies(self):
         for names in [name for name in self.dead_investigators if not self.dead_investigators[name]['recovered']]:
@@ -669,9 +683,12 @@ class Networker(threading.Thread, BanyanBase):
         items = [card for card in self.decks[kind] if (name == '' or name in card) and (tag == '' or tag in ref[card[:-1]]['tags']) and not has_card and card[:-1] not in self.investigators[investigator][kind]]
         if len(items) > 0:
             item = random.choice(items)
-            #self.decks[kind].remove(item)
-            self.investigators[investigator][kind].append(item[:-1])
-            self.publish_payload({'message': 'card_received', 'kind': kind, 'value': item, 'owner': investigator}, 'server_update')
+            if self.investigators.get('jacqueline_fine') and not self.jacqueline_check and kind == 'conditions' and 'common' not in ref[item[:-1]]['tags']:
+                self.publish_payload({'message': 'jacqueline_check', 'value': item, 'owner': investigator}, 'jacqueline_fine_player')
+            else:
+                #self.decks[kind].remove(item)
+                self.investigators[investigator][kind].append(item[:-1])
+                self.publish_payload({'message': 'card_received', 'kind': kind, 'value': item, 'owner': investigator}, 'server_update')
 
     def asset_request(self, command, name, investigator, tag=''):
         match command:

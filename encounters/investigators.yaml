@@ -110,7 +110,7 @@
           skip: True
       lore:
         - skill
-      iargs:
+      largs:
         - stat: 0
           step: doom
           fail: ending
@@ -135,7 +135,7 @@
           skip: True
       influence:
         - skill
-      wargs:
+      iargs:
         - stat: 1
           step: doom
           fail: ending
@@ -152,3 +152,54 @@
       pass_text: It's obviously Diana, but she claims to be a woman named Iris who has lived in this city her whole life. In her trash, you find Diana's things. Gain all of her possessions. It's clear that she has disassociated from her former life. You share all of your memories of Diana to restore her identity.
       doom_text: She tells you of the horrors that brought her to this state.
       ending_text: Diana sternly asks you to leave her alone.
+  jacqueline_fine:
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: influence
+          skip: True
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 13
+      pass_text: Somehow, Jacqueline knew you would be at this café to receive the parcel. Gain all of her possessions. Strangely, everyone here encountered her sometime after she was injured. You try to convince everyone to share their story.
+      doom_text: You get the whole message Jacqueline hoped to convey.
+      ending_text: The story is incomplete and makes no sense.
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: lore
+          skip: True
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 12
+      pass_text: You visit Jacqueline in the asylum and claim her belongings. Gain all of her possessions. She seems lost in her own world, talking to visions only she sees. You do your best to interpret what she's seeing based on what she says.
+      doom_text: You have a clear idea of what she's experiencing.
+      ending_text: Jacqueline remains trapped in a world only she can see.

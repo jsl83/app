@@ -84,7 +84,7 @@ class ReservePane():
                     def finish(name):
                         self.hub.action_taken('shop')
                         self.hub.gui_set(True)
-                    self.hub.small_card_pane.setup(services, parent=self, single_pick=False, finish_action=finish, force_select=True)
+                    self.hub.small_card_pane.setup(services, parent=self, single_pick=False, finish_action=finish, force_select=True, textures=[service['texture'] for service in services])
                 else:
                     self.hub.action_taken('shop')
                 self.acquire_button.disable()

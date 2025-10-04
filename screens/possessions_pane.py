@@ -19,18 +19,22 @@ class PossessionsPane():
         self.action_button = ActionButton(x=1000, y=300, width=280, height=50, text='Take Action', action=self.card_action)
         self.flip_button = ActionButton(x=1000, y=200, width=280, height=50, text='Flip Card', action=self.flip_action)
         self.back_button = ActionButton(x=1000, y=100, width=280, height=50, text='Back', action=self.back_action)
+        self.card_back_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
+        self.back_text = ActionButton(x=1000, y=200, width=280, height=600, text='', style={'font_size': 13})
+        self.back_back_button = ActionButton(x=1000, y=75, width=280, height=50, text='Back', action=self.back_action)
+        self.card_back_layout.add(self.back_text)
+        self.card_back_layout.add(self.back_back_button)
         self.active_card = None
 
     def setup(self, tags=None, start_pos=800, trade=''):
         self.button_layout.children = []
         self.layout.children = []
         self.overlay_layout.children = []
-        possessions = self.investigator.possessions
         y_pos = start_pos
         self.layout.add(self.texture_pane)
         self.layout.add(self.overlay_layout)
         for card_type in ['assets', 'unique_assets', 'artifacts', 'spells', 'conditions']:
-            item_list = [card for card in possessions[card_type] if tags == None or tags in card.tags]
+            item_list = [card for card in self.investigator.possessions[card_type] if tags == None or tags in card.tags]
             if len(item_list) > 0:
                 y_pos -= 45
                 self.overlay_layout.add(ActionButton(x=1000, y=y_pos, width=280, height=25, text=human_readable(card_type)))
@@ -57,6 +61,7 @@ class PossessionsPane():
         card = next((card for card in self.investigator.possessions[kind] if card.name == name))
         self.action_button.enable()
         self.flip_button.disable()
+        self.flip_button.action_args = {'card': card}
         self.active_card = card
         self.layout.clear()
         self.small_card_layout.clear()
@@ -93,8 +98,10 @@ class PossessionsPane():
         self.hub.action_taken(None, point)
         self.hub.gui_set(True)
 
-    def flip_action(self):
-        pass
+    def flip_action(self, card):
+        self.layout.clear()
+        self.back_text.text = card.generate_back_text()
+        self.layout.add(self.card_back_layout)
 
     def back_action(self):
         self.setup()

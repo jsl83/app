@@ -1,5 +1,6 @@
 ---
   amnesia:
+    variants: 3
     tags:
       - madness
     triggers:
@@ -90,6 +91,7 @@
           skip: True
       action_text: "According to the paperwork written in your own hand, you took out a loan and made unspecified promises of repayment. To your dismay, there is no sign of the money or what you could have spent it on.\n\nGain a Debt Condition, then discard this card."
   back_injury:
+    variants: 3
     tags:
       - injury
     triggers:
@@ -180,6 +182,7 @@
       action_text: "The numbness in your fingers has returned, making it nearly impossible to manipulate objects, and you clumsily drop a valuable beyond recovery.\n\nDiscard 1 Item possession then flip this card."
       back_flavor: 
   blessed:
+    variants: 3
     tags:
       - boon
     reckoning:
@@ -230,6 +233,7 @@
           amt: 2
       action_text: "You feel that you truly have an important role in the events of the world. It is your calling to share the hope and courage you feel with all the others who stand against the darkness.\n\nGain 2 Clues, then flip this card."
   cursed:
+    variants: 3
     tags:
       - bane
     reckoning:
@@ -298,6 +302,7 @@
           skip: True
       action_text: "Each night, you dream of the dark comfort of the ocean's depths. Even during the day, something beckons you to the water.\n\nIf you are on a Sea space, your body begins to change horribly into a fish-like creature, you are devoured.\n\nIf you are not on a Sea space, the change cripples you; lose 3 Health and discard this card."
   dark_pact:
+    variants: 3
     tags:
       - deal
     reckoning:
@@ -361,6 +366,7 @@
           choice: False
       action_text: "The blasphemous power takes hold of you, forcing you to carry out the desires of the Lurker at the Threshold.\n\nSpawn 1 Gate for each Spell you have, then advance the Omen by 1.\n\nThen discard this card."
   debt:
+    variants: 6
     tags:
       - deal
       - common
@@ -475,7 +481,99 @@
       action_text: You see now that it was no ordinary bank you borrowed from. Some armed men confront you and demand that you repay what you owe.
       pass_text: The thugs look scary, but that's all that they are. You fight through them and go about your business.
       fail_text: The men make short work of you, leaving your broken body as an example to any others fools in over their heads.
+    '4':
+      title: Debt - Local Authorities
+      action:
+        - skill
+      aargs:
+        - stat: 2
+      pass:
+        - discard
+      pargs:
+        - kind: conditions
+          name: debt
+          text: Discard this card
+      fail:
+        - allow_move
+        - discard
+      fargs:
+        - must_move: True
+          nearest: city
+          distance: 5
+          step: gain
+          text: Submit to questioning
+        - kind: assets
+          tag: ally
+          text: Use a scapegoat
+          step: discard
+      dargs:
+        - kind: conditions
+          name: debt
+          skip: True
+      discard:
+        - discard
+      gain:
+        - request_card
+      gargs:
+        - kind: conditions
+          name: detained
+          skip: True
+          step: discard
+      action_text: "\"Someone was asking about you,\" says a fellow traveler. \"They said you owe quite a bit of money. Naturally, I said that I didn't know anything, but you may want to find your way to a new town soon.\" You attempt to hide from the police."
+      pass_text: Quick thinking and light feet allow you to leave undetected.
+      fail_text: "The police take you in for questioning.\n\nMove to the nearest City space and gain a Detained Condition unless you discard 1 Ally asset.\n\nThen discard this card."
+      back_text: "\"Someone was asking about you,\" says a fellow traveler. \"They said you owe quite a bit of money. Naturally, I said that I didn't know anything, but you may want to find your way to a new town soon.\" You attempt to hide from the police. Test Observation. If you fail, Move to the nearest City space and gain a Detained Condition unless you discard 1 Ally asset.\n\nThen discard this card."
+    '5':
+      title: Debt - Make a Deal
+      action:
+        - request_card
+        - set_doom
+      aargs:
+        - kind: conditions
+          name: dark_pact
+          text: Gain a Dark Pact Condition
+          step: discard
+        - increment: -1
+          text: Advance Doom by 1
+          step: discard
+      discard:
+        - discard
+      dargs:
+        - skip: True
+          kind: conditions
+          name: debt
+      action_text: Walking into the alley, you hear the distinct ticking of a watch. An intruder dressed in a fine black suit stands in the shadows. He tells you that he'll help you in exchange for an undefined favor.
+      back_text: "Walking into the alley, you hear the distinct ticking of a watch. An intruder dressed in a fine black suit stands in the shadows. He tells you that he'll help you in exchange for an undefined favor.\n\nYou may gain a Dark Pact Condition. If you do not, the ticking noise begins to hypnotize you, advance Doom by 1.\n\nThen discard this card."
+    '6':
+      title: Debt - Unwilling Servant
+      action:
+        - skill
+      aargs:
+        - stat: 0
+      pass:
+        - discard
+      pargs:
+        - skip: True
+          kind: conditions
+          name: debt
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: amnesia
+          text: Gain an Amnesia Condition
+          step: discard
+      discard:
+        - discard
+      dargs:
+        - skip: True
+          kind: conditions
+          name: debt
+      action_text: A sorcerer holds you down and carves a symbol into your forehead. "Time to pay what you owe," he says. You attempt to dispel the darkness that fills your thoughts.
+      fail_text: "You have no recollection of your actions.\n\nDiscard this card."
+      back_text: "A sorcerer holds you down and carves a symbol into your forehead. \"Time to pay what you owe,\" he says. You attempt to dispel the darkness that fills your thoughts; Test Lore.\n\nIf you fail, you have no recollection of your actions; gain an Amnesia Condition.\n\nThen discard this card."
   detained:
+    variants: 3
     tags:
       - restriction
     action:
@@ -614,6 +712,7 @@
       action_text: "Detained - Starvation\n\n\"The food is poison\" a fellow prisoner whispers, \"Don't eat it.\" You will surely starve to death if you do not give your captors the information they're seeking."
       fail_text: "By the time you're released, you're a shadow of your former self.\n\nYou lose 3 Health and gain an Internal Injury Condition, then discard this card."
   hallucinations:
+    variants: 3
     tags:
       - madness
     triggers:
@@ -694,6 +793,7 @@
           skip: True
       action_text: "In the past, you've barely been able to hear the whispering at the edge of your consciousness. Now that the voices are more audible, you can hear the horrible demands they are making of you.\n\nLose 1 Sanity, then flip this card."
   internal_injury:
+    variants: 3
     tags:
       - injury
     triggers:
@@ -772,6 +872,7 @@
         - skip: True
       action_text: "The hacking fit is too excruciating to continue moving, and you begin coughing up blood.\n\nLose 1 Health and become Delayed, then discard this card."
   leg_injury:
+    variants: 3
     tags:
       - injury
     triggers:
@@ -855,6 +956,7 @@
         - text: Become Delayed
       action_text: Your knee hurts and is not strong enough to hold your weight.
   paranoia:
+    variants: 3
     tags:
       - madness
     triggers:

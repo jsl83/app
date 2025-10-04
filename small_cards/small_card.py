@@ -57,6 +57,16 @@ class Spell(SmallCard):
 
     def get_server_name(self):
         return self.name + str(self.variant)
+    
+    def generate_back_text(self):
+        sorted_keys = sorted([key for key in self.back.keys()])
+        text = ''
+        for i in range(len(sorted_keys)):
+            key = sorted_keys[i]
+            flip_text = self.back[key].get('flip_text', False)
+            key_text = str(key) + '+: ' if i == len(sorted_keys) - 1 else str(key) + ' - ' + str(sorted_keys[i + 1]) + ': '
+            text += key_text + self.back[key]['action_text'] + ('' if not flip_text else '\n\n' + flip_text) + ('\n\n' if i != len(sorted_keys) - 1 else '')
+        return text
 
 class Condition(SmallCard):
     def __init__(self, name, investigator):
@@ -70,6 +80,9 @@ class Condition(SmallCard):
 
     def get_server_name(self):
         return self.name + str(self.variant)
+    
+    def generate_back_text(self):
+        return self.back.get('back_text') or self.back['action_text']
 
 class Artifact(SmallCard):
     def __init__(self, name, investigator):

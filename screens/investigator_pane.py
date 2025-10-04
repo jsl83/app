@@ -38,14 +38,18 @@ class InvestigatorPane():
         self.focus_button = ActionButton(x=1175, y=397, action=self.focus_action, texture='icons/focus.png', text='x ' + str(self.investigator.focus), text_position=(15,-2))
         self.skill_button = ActionButton(x=1040, y=180, width=200, height=135, style={'font_size': getattr(self.investigator, 'active_font', 12)},
             text=self.investigator.active, texture='blank.png', align='center', multiline=True, action=self.skill_action)
-        self.passive = arcade.gui.UITextureButton(x=1040, y=25, width=200, height=135, style={'font_size': 14},
+        self.passive = ActionButton(x=1040, y=25, width=200, height=135, style={'font_size': getattr(self.investigator, 'passive_font', 14)},
             text=self.investigator.passive, texture=self.blank, align='center', multiline=True)
-
         for button in [self.ship_button, self.rail_button, self.focus_button, self.clue_button]:
             self.layout.add(button)
         self.set_skills()
         self.layout.add(self.details)
         self.action_pane = InvestigatorSkillPane(self.hub)
+        self.skill_reqs = {
+            'jacqueline_fine': lambda *args: next((inv for inv in list(self.hub.location_manager.all_investigators.values()) if len(inv.clues) > 0), False),
+            'diana_stanley': lambda *args: len([monster for monster in self.location_manager.locations[self.investigator.location]['monsters'] if monster.name == 'cultist']) > 0
+        }
+        self.skill_check()
 
     def focus_action(self):
         if self.investigator.focus < 2 and not self.hub.actions_taken['focus'] and self.hub.remaining_actions > 0:
@@ -118,7 +122,12 @@ class InvestigatorPane():
                 self.details.add(x)
 
     def on_show(self):
-        pass
+        self.skill_check()
+
+    def skill_check(self):
+        self.skill_button.disable()
+        if (self.investigator.name not in self.skill_reqs.keys() or self.skill_reqs[self.investigator.name]()) and self.hub.remaining_actions > 0 and not self.hub.actions_taken['personal']:
+            self.skill_button.enable()
 
     def rest(self):
         if not self.hub.actions_taken['rest']:
@@ -158,4 +167,5 @@ class InvestigatorPane():
         def finish(name):
             self.hub.gui_set()
             self.hub.action_taken('personal', self.investigator.action.get('action_point', 1))
+            self.skill_button.disable()
         self.action_pane.setup([self.investigator.action], self, force_select=True, finish_action=finish)

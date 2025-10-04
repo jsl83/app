@@ -126,6 +126,7 @@
         flip:
           - a
           - a
+        flip_text: Discard this card unless you gain a Paranoia Condition.
       1:
         action:
           - set_buttons
@@ -237,6 +238,7 @@
           - a
           - a
         action_text: You can feel that the spell has not worked the way you hoped.
+        flip_text: Discard this card unless you discard an Item Asset.
       1:
         action:
           - hp_san
@@ -244,6 +246,7 @@
           - san: -1
             skip: True
         action_text: Something unnatural tries to pull the object away from you.
+        flip_text: "Lose 1 Sanity.\n\nThen, flip this card."
       2:
         action:
           - gain_asset
@@ -312,7 +315,8 @@
         fail:
           - a
           - a
-        action_text: "Casting the spell, you open yourself to terrible knowledge. Your mind is filled with gibberish, repeating endlessly.\n\nFlip this card."
+        action_text: "Casting the spell, you open yourself to terrible knowledge. Your mind is filled with gibberish, repeating endlessly."
+        flip_text: "Discard this card unless you lose 2 Sanity."
       3:
         action:
           - send_encounter
@@ -333,7 +337,7 @@
         fargs:
           - key: finish
             skip: True
-        action_text: "You manipulate memories and potential knowledge with a practiced ease.\n\nThe chosen investigator may improve 1 additional skill of his choice.\n\nThen flip this card."
+        action_text: "You manipulate memories and potential knowledge with a practiced ease.\n\nThe chosen investigator may improve 1 additional skill of their choice.\n\nThen flip this card."
     '2':
       0:
         action:
@@ -350,7 +354,8 @@
         aargs:
           - san: -1
             skip: True
-        action_text: "Casting your thought into the ether, your mind returns with strange knowledge. You may not entirely be the same person you were before.\n\nLose 1 Sanity."
+        action_text: "Casting your thought into the ether, your mind returns with strange knowledge. You may not entirely be the same person you were before."
+        flip_text: Lose 1 Sanity.
   flesh_ward:
     tags:
       - incantation
@@ -427,7 +432,8 @@
           - key: finish
             return_value: success
             skip: True
-        action_text: "It is unpleasant to watch this transformation, even when it succeeds.\n\nLose 1 Sanity.\n\nFlip this card."
+        action_text: "It is unpleasant to watch this transformation, even when it succeeds."
+        flip_text: "Lose 1 Sanity. Then, flip this card."
     '2':
       0:
         action:
@@ -785,6 +791,7 @@
           - a
           - a
         action_text: "The ritual echoes in your head until it becomes gibberish."
+        flip_text: Lose 2 Sanity.
       2:
         action:
           - choose_monster
@@ -902,6 +909,7 @@
           - a
           - a
         action_text: "The spell's dark energy turns against you, flooding your mind with madness."
+        flip_text: Discard this card unless you lose 2 Sanity.
       2:
         action:
           - temp_bonus
@@ -917,7 +925,7 @@
         sargs:
           - san: -1
             skip: True
-        action_text: "The incantation takes effect with horrifying success.  Lose 1 Sanity and gain +5 Strength during that encounter instead."
+        action_text: "The incantation takes effect with horrifying success. Lose 1 Sanity and gain +5 Strength during that encounter instead."
     '2':
       0:
         action:
@@ -937,6 +945,7 @@
           - a
           - a
         action_text: "The words must have been wrong. You suffer the damage you had hoped to inflict."
+        flip_text: Discard this card unless you gain an Internal Injury Condition.
       1:
         action:
           - hp_san

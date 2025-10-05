@@ -53,7 +53,8 @@ class HubScreen(arcade.View):
             'rest_hp_bonus': [],
             'all_test': [],
             'preencounter': [],
-            'special_encounters': []
+            'special_encounters': [],
+            'in_combat_test': []
         }
         
         self.item_actions = {}
@@ -382,6 +383,10 @@ class HubScreen(arcade.View):
                         self.info_manager.children = {0:[]}
                         self.info_manager.add(self.info_pane.layout)
                         self.info_manager.trigger_render()
+                case 'recover_hp_san':
+                    self.investigator.health = min(self.investigator.health + payload['hp'], self.investigator.max_health)
+                    self.investigator.sanity = min(self.investigator.sanity + payload['san'], self.investigator.max_sanity)
+                    self.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity})
         else:
             match payload['message']:
                 case 'spawn':
@@ -676,19 +681,20 @@ class HubScreen(arcade.View):
         rolls = []
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
         subtitle = subtitle if subtitle != '' else '' if mod == 0 else 'Mod: ' + str(mod)
-        dice = max(1, self.investigator.skills[skill] + mod + self.investigator.skill_tokens[skill] + self.investigator.calc_max_bonus(skill, pane.encounter_type))
         self.investigator.skill_bonuses[skill] = [bonus for bonus in self.investigator.skill_bonuses[skill] if not (bonus.get('temp', False) and (bonus.get('condition', 'dummy') in pane.encounter_type))]
         double_six = False
         triggers = []
-        for kind in pane.encounter_type + ['all']:
+        for kind in pane.encounter_type + ['all'] + (['in_combat'] if getattr(pane, 'in_combat', False) else []):
             triggers += [add for add in self.triggers.get(kind + '_test', []) if not add.get('reroll', False) and not add.get('add', False)]
-        triggers += self.triggers[titles[skill].lower() + '_test'] 
+        triggers += self.triggers[titles[skill].lower() + '_test']
+        additional_die = 0
         for trigger in triggers:
             if self.trigger_check(trigger, pane.encounter_type + [titles[skill].lower() + '_test']):
                 if trigger.get('double_six', None) != None:
                     double_six = True
                 elif trigger.get('additional_die', False):
-                    dice += 1
+                    additional_die += 1
+        dice = max(1, self.investigator.skills[skill] + mod + self.investigator.skill_tokens[skill] + self.investigator.calc_max_bonus(skill, pane.encounter_type) + additional_die)        
         for x in range(dice):
             roll = random.randint(1, 6) + self.investigator.encounter_impairment
             roll = max(1, roll)
@@ -800,6 +806,8 @@ class HubScreen(arcade.View):
         if trigger.get('exists', False) and not next((loc for loc in self.location_manager.locations.values() if loc[trigger['exists']]), False):
             pass_condition = False
         if trigger.get('monsters_exist', False) and len(self.location_manager.all_monsters) <= 0:
+            pass_condition = False
+        if trigger.get('same_space', False) and self.investigator.location != self.location_manager.all_investigators[trigger['same_space']].location:
             pass_condition = False
         return pass_condition
     

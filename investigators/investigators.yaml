@@ -145,6 +145,17 @@
       - clue
     passive: Investigators on your space roll 1 additional die when resolving tests during Combat Encounters.
     active: Each investigator on your space recovers 1 Sanity.
+    triggers:
+      - kind: in_combat_test
+        additional_die: True
+        same_space: 'jim_culver'
+    action:
+      action:
+        - jim_culver
+      aargs:
+        - skip: True
+      action_text: Each investigator on your space recovers 1 Sanity.
+      title: Jim Culver
   leo_anderson:
     expansion: 0
     max_health: 6

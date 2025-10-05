@@ -134,6 +134,7 @@ class EncounterPane():
         self.chosen_monster = ''
         self.clue_location = None
         self.no_encounter = False
+        self.in_combat = False
 
     def clear_overlay(self):
         if self.choice_layout in self.layout.children:
@@ -282,6 +283,7 @@ class EncounterPane():
                 self.set_buttons('pass')
 
     def combat_will(self, monster, player_request=None, first_trigger=True):
+        self.in_combat = True
         self.layout.clear()
         self.encounter_type.append('combat')
         self.first_fight = False
@@ -378,6 +380,7 @@ class EncounterPane():
             is_ambush = self.ambush_steps != None
             triggers = self.hub.damage_monster(monster, successes, is_ambush, True)
             def finish_combat(name=None):
+                self.in_combat = False
                 self.layout.remove(self.hub.info_panes['location'].layout)
                 damage = successes - 2 if monster.name == 'vampire' and self.hp_damage < 0 and successes + monster.damage < 3 else successes
                 if player_request == None:
@@ -2057,7 +2060,8 @@ class InvestigatorSkillPane(SmallCardPane):
             'akachi_onyele': self.akachi_onyele,
             'charlie_kane': self.charlie_kane,
             'send_items': self.send_items,
-            'jacqueline_fine': self.jacqueline_fine
+            'jacqueline_fine': self.jacqueline_fine,
+            'jim_culver': self.jim_culver
         }
         self.action_dict = self.action_dict | investigator_dict
         self.server_value = None
@@ -2142,6 +2146,13 @@ class InvestigatorSkillPane(SmallCardPane):
         self.clear_overlay()
         self.choice_layout = create_choices('Choose Investigator', 'Trade Clues', choices)
         self.layout.add(self.choice_layout)
+
+    def jim_culver(self):
+        self.investigator.sanity = min(self.investigator.sanity + 1, self.investigator.max_sanity)
+        self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, 'jim_culver')
+        for investigator in [inv.name for inv in self.hub.location_manager.all_investigators.values() if inv.name != 'jim_culver' and inv.location == self.investigator.location]:
+            self.hub.networker.publish_payload({'message': 'recover_hp_san', 'hp': 0, 'san': 1}, investigator + '_player')
+        self.finish()
 
     def send_items(self, reserve_pane):
         self.hub.overlay_showing = True

@@ -203,3 +203,54 @@
       pass_text: You visit Jacqueline in the asylum and claim her belongings. Gain all of her possessions. She seems lost in her own world, talking to visions only she sees. You do your best to interpret what she's seeing based on what she says.
       doom_text: You have a clear idea of what she's experiencing.
       ending_text: Jacqueline remains trapped in a world only she can see.
+  jim_culver:
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: influence
+          skip: True
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 13
+      pass_text: Seeing Jim in this hospital bed is heartbreaking. He hands you a key to a safety deposit box. Gain all of his possessions. The severity of the injuries means that he'll never speak or play music again. You gently try to coax him into writing down everything he's learned.
+      doom_text: Jim fills a dozen sheets of paper with arcane illustrations.
+      ending_text: All Jim wants is to listen to a record of his own music played over and over.
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: lore
+          skip: True
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 12
+      pass_text: At the cemetery's gate, you find Jim's old suitcase and hear wild and erratic music ahead. Gain all of his possessions. Summoning all your nerve, you walk toward the crowd of dancing cadavers that surround Jim.
+      doom_text: You spend the night learning the secrets of the dead.
+      ending_text: You run, and Jim is never seen by a living soul again.

@@ -234,6 +234,12 @@
         - skip: True
       action_text: Spend any number of Improvement tokens, then improve 1 skill of your choice for each token spent (a "+2" token counts as 2 tokens).
       title: Lola Hayes
+    triggers:
+      - kind: all_test
+        additional_die: True
+        single_use: True
+        investigator: 'lola_hayes'
+        name: 'lola_hayes'
   mark_harrigan:
     expansion: 0
     max_health: 8

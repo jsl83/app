@@ -147,6 +147,7 @@ class HubScreen(arcade.View):
 
         self.small_card_pane = SmallCardPane(self)
         if self.investigator.name == 'lola_hayes':
+            self.gui_set(False)
             def lola_ready(encounter):
                 self.networker.publish_payload({'message': 'ready'}, 'login')
             self.small_card_pane.finish_action = lola_ready
@@ -463,6 +464,7 @@ class HubScreen(arcade.View):
                 case 'unit_moved':
                     self.move_unit(payload['value'], payload['destination'], payload['kind'])
                 case 'choose_lead':
+                    self.gui_set(False)
                     self.encounter_pane.finish(True)
                     portraits = []
                     for name in self.location_manager.all_investigators.keys():
@@ -470,7 +472,6 @@ class HubScreen(arcade.View):
                                                     action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
                     self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
                     self.show_overlay()
-                    self.gui_set(False)
                     #FOR TESTING
                     #self.networker.publish_payload({'message': 'lead_selected', 'value': 'akachi_onyele'}, self.investigator.name)
                     #END TESTING
@@ -519,13 +520,13 @@ class HubScreen(arcade.View):
                                     #END TESTING
                                 self.show_encounter_pane()
                                 self.encounter_pane.encounter_phase()
+                                for action in self.actions_taken:
+                                    self.actions_taken[action] = False
                             case 'reckoning':
                                 self.encounter_pane.reckoning(first=True)
                             case 'mythos':
                                 #FOR TESTING
                                 #if self.is_first:
-                                for action in self.actions_taken:
-                                    self.actions_taken[action] = False
                                 self.clear_overlay()
                                 self.show_encounter_pane()
                                 self.encounter_pane.activate_mythos()
@@ -787,6 +788,27 @@ class HubScreen(arcade.View):
                     if trigger.get('used', False) and trigger.get('single_use', False):
                         trigger_button.disable()
                     options.append(trigger_button)
+            lola_trigger = next((trigger for trigger in self.triggers['all_test'] if trigger.get('same_space', False) == 'lola_hayes'), False)
+            if lola_trigger and not lola_trigger['used'] and self.investigator.location == self.location_manager.all_investigators['lola_hayes'].location:
+                def lola_hayes(choices, title, options, subtitle, pane, trigger, button, double):
+                    self.networker.publish_payload({'value': 'lola_hayes:lola_hayes', 'kind': 'all_test', 'message': 'trigger_used'}, 'server_update')
+                    roll = random.randint(1, 6) + self.investigator.encounter_impairment
+                    roll = max(1, roll)
+                    pane.rolls.append(roll)
+                    if double and roll == 6:
+                        pane.rolls.append(6)
+                    if button in options:
+                        options.remove(button)
+                    choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
+                    pane.clear_overlay()
+                    for x in choices + options:
+                        x.move(-x.x, -x.y)
+                    pane.choice_layout = create_choices(title, subtitle, choices, options=options, offset=(0,150))
+                    pane.layout.add(pane.choice_layout)
+                    trigger['used'] = True
+                lola_button = ActionButton(texture='investigators/lola_hayes_portrait.png', text='Add die', text_position=(0,-50), scale=0.25, action=lola_hayes, action_args={})
+                lola_button.action_args = {'choices': choices, 'title':titles[skill] + ' Test', 'options': options, 'subtitle':subtitle, 'pane': pane, 'trigger':lola_trigger, 'button': lola_button, 'double': double_six}
+                options.append(lola_button)
         #FOR TESTING
         def autofail():
             pane.rolls = [1]

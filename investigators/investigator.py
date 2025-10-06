@@ -97,6 +97,8 @@ class Investigator():
         return self.skill[3 if index == 5 else index] + self.skill_tokens[3 if index == 5 else index] + self.skill_bonuses[index]
 
     def improve_skill(self, skill, amt):
+        if amt == 1 and self.name == 'lily_chen':
+            amt = 2
         self.skill_tokens[skill] += amt
         self.skill_tokens[skill] = 2 if self.skill_tokens[skill] > 2 else -2 if self.skill_tokens[skill] < -2 else self.skill_tokens[skill]
 

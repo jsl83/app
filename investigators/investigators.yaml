@@ -205,6 +205,13 @@
       - "assets:lucky_rabbit's_foot"
     passive: When you improve a skill, you may immediately improve that skill again.
     active: Spend any number of Health or Sanity, then recover an equal number of Health or Sanity.
+    action:
+      action:
+        - lily_chen
+      aargs:
+        - skip: True
+      action_text: Spend any number of Health or Sanity, then recover an equal number of Health or Sanity.
+      title: Lily Chen
   lola_hayes:
     expansion: 0
     max_health: 5

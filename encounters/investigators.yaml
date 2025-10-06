@@ -305,3 +305,54 @@
       pass_text: You find Leo's canvas bag in his hotel room. Gain all of his possessions. While you are distracted, Leo attacks you. His face covered with tribal markings, and he speaks a hodgepodge of tribal dialects. You try to subdue him.
       doom_text: You get Leo to an asylum, and the doctors learn some of what happened to him.
       ending_text: Leo is gone when you regain consciousness.
+  lily_chen:
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: strength
+          skip: True
+      strength:
+        - skill
+      sargs:
+        - stat: 3
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 13
+      pass_text: When you reach the hospital, you find Lily's things, but she is not in her bed. Gain all of her possessions. You quickly find that she's been kidnapped by cultists! You fight to free her.
+      doom_text: You interrogate the cultists, and Lily is safely returned to the hospital to begin the slow healing process.
+      ending_text: Lily disappears into the darkness.
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: influence
+          skip: True
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 12
+      pass_text: You barely recognize the small woman huddled in the alleyway, her few belongings scattered next to her. Gain all of her possessions. "It wasn't true," Lily sobs. "I have no destiny. I cannot fight the darkness." You reassure her that she has already done her part and that others will finish the task.
+      doom_text: She chants over you, passing her destiny on to you.
+      ending_text: Lily eventually falls into a catatonic state.

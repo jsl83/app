@@ -47,7 +47,8 @@ class InvestigatorPane():
         self.action_pane = InvestigatorSkillPane(self.hub)
         self.skill_reqs = {
             'diana_stanley': lambda *args: len([monster for monster in self.hub.location_manager.locations[self.investigator.location]['monsters'] if monster.name == 'cultist']) > 0,
-            'jacqueline_fine': lambda *args: next((inv for inv in list(self.hub.location_manager.all_investigators.values()) if len(inv.clues) > 0), False)
+            'jacqueline_fine': lambda *args: next((inv for inv in list(self.hub.location_manager.all_investigators.values()) if len(inv.clues) > 0), False),
+            'lily_chen': lambda *args: self.investigator.health > 1 and self.investigator.sanity > 1
         }
         self.skill_check()
 

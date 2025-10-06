@@ -2062,7 +2062,8 @@ class InvestigatorSkillPane(SmallCardPane):
             'send_items': self.send_items,
             'jacqueline_fine': self.jacqueline_fine,
             'jim_culver': self.jim_culver,
-            'leo_anderson': self.leo_anderson
+            'leo_anderson': self.leo_anderson,
+            'lily_chen': self.lily_chen
         }
         self.action_dict = self.action_dict | investigator_dict
         self.server_value = None
@@ -2163,6 +2164,42 @@ class InvestigatorSkillPane(SmallCardPane):
         discard_buttons = [ActionButton(texture=button.texture, action=select_card, action_args={'name': button.name, 'kind': 'discard'}, scale=0.5) for button in self.hub.info_panes['reserve'].discard_layout.children if button.name and button.name != '']# and 'ally' in self.hub.info_panes['reserve'].retrieve_card(button.name)['tags']]
         self.choice_layout = create_choices('Choose Ally', choices=reserve_buttons + discard_buttons)
         self.layout.add(self.choice_layout)
+
+    def lily_chen(self):
+        self.clear_overlay()
+        health = min(self.investigator.health - 1, self.investigator.max_sanity - self.investigator.sanity)
+        sanity = min(self.investigator.sanity - 1, self.investigator.max_health - self.investigator.health)
+        info_button = ActionButton(texture='buttons/placeholder.png', text='Convert HP/SAN')
+        self.action_string = '0'
+        def send():
+            transaction = int(self.action_string)
+            if transaction > 0:
+                transaction = 0
+            if not abs(transaction - 1) > health:
+                transaction = transaction - 1
+                info_button.text = 'Convert ' + str(abs(transaction)) + ' HP'
+            self.action_string = str(transaction)
+        def take():
+            transaction = int(self.action_string)
+            if transaction < 0:
+                transaction = 0
+            if not transaction + 1 > sanity:
+                transaction = transaction + 1
+                info_button.text = 'Convert ' + str(transaction) + ' SAN'
+            self.action_string = str(transaction)
+        health_button = ActionButton(texture='icons/health.png', text=str(self.investigator.health), scale=2, style={'font_color': arcade.color.BLACK})
+        san_button = ActionButton(texture='icons/sanity.png', text=str(self.investigator.sanity), scale=2, style={'font_color': arcade.color.BLACK})
+        send_button = ActionButton(width=30, texture='buttons/placeholder.png', text='>>', action=send)
+        take_button = ActionButton(width=30, texture='buttons/placeholder.png', text='<<', action=take)
+        self.choice_layout = create_choices('Lily Chen - Action', choices=[health_button, take_button, info_button, send_button, san_button])
+        self.layout.add(self.choice_layout)
+        def finish_trade():
+            self.investigator.health += int(self.action_string)
+            self.investigator.sanity -= int(self.action_string)
+            self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, 'lily_chen')
+            self.finish()
+        self.proceed_button.action = finish_trade
+        self.proceed_button.text = 'Finish'
 
     def send_items(self, reserve_pane):
         self.hub.overlay_showing = True

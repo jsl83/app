@@ -356,3 +356,54 @@
       pass_text: You barely recognize the small woman huddled in the alleyway, her few belongings scattered next to her. Gain all of her possessions. "It wasn't true," Lily sobs. "I have no destiny. I cannot fight the darkness." You reassure her that she has already done her part and that others will finish the task.
       doom_text: She chants over you, passing her destiny on to you.
       ending_text: Lily eventually falls into a catatonic state.
+  lola_hayes:
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: influence
+          skip: True
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 13
+      pass_text: "\"I'm fine darling. Help yourself, by the way.\" Lola nods at the equipment strewn across the hotel room. Gain all of her possessions. As convincing as she is, you know she's in pain. You try to persuade her to visit a hospital"
+      doom_text: She sighs a breath of relief and tells you of all the horrors she's encountered.
+      ending_text: The day after Lola leaves the city, she succumbs to her wounds.
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: influence
+          skip: True
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 12
+      pass_text: The trail of Lola's belongings leads you into a derelict theater. Gain all of her possessions. She's on the stage, wringing her blood-soaked hands and reciting, "Will these hands ne'er be clean?" You try to direct her performance, hoping to better reveal her character.
+      doom_text: She tells you of the Tattered King, indicating a goat she killed.
+      ending_text: Lola's dialogue degenerates into gibberish.

@@ -145,8 +145,15 @@ class HubScreen(arcade.View):
             'args': {}
         }
 
-        self.networker.publish_payload({'message': 'ready'}, 'login')
         self.small_card_pane = SmallCardPane(self)
+        if self.investigator.name == 'lola_hayes':
+            def lola_ready(encounter):
+                self.networker.publish_payload({'message': 'ready'}, 'login')
+            self.small_card_pane.finish_action = lola_ready
+            self.small_card_pane.set_return_gui(self.info_pane)
+            self.small_card_pane.improve_skill('01234')
+        else:
+            self.networker.publish_payload({'message': 'ready'}, 'login')
         self.respawn_name = ''
 
         '''

@@ -2063,7 +2063,8 @@ class InvestigatorSkillPane(SmallCardPane):
             'jacqueline_fine': self.jacqueline_fine,
             'jim_culver': self.jim_culver,
             'leo_anderson': self.leo_anderson,
-            'lily_chen': self.lily_chen
+            'lily_chen': self.lily_chen,
+            'lola_hayes': self.lola_hayes
         }
         self.action_dict = self.action_dict | investigator_dict
         self.server_value = None
@@ -2200,6 +2201,32 @@ class InvestigatorSkillPane(SmallCardPane):
             self.finish()
         self.proceed_button.action = finish_trade
         self.proceed_button.text = 'Finish'
+
+    def lola_hayes(self):
+        skill_tokens = 0
+        for x in self.investigator.skill_tokens:
+            skill_tokens += x
+        self.action_string = int(skill_tokens)
+        self.investigator.skill_tokens = [0,0,0,0,0]
+        choices = []
+        skills = ['lore', 'influence', 'observation', 'strength', 'will']
+        def improve(stat, button):
+            self.investigator.improve_skill(stat, 1)
+            button.text = str(self.investigator.skill_tokens[stat])
+            self.hub.info_panes['investigator'].calc_skill(stat)
+            self.action_string -= 1
+            next((button for button in self.choice_layout.children if getattr(button, 'identifier', False) == 'overlay_subtitle')).text = 'Remaining: ' + str(self.action_string)
+            self.hub.info_manager.trigger_render()
+            if self.action_string == 0:
+                self.hub.info_panes['investigator'].set_skills()
+                self.finish()
+        for skill in skills:
+            index = skills.index(skill)
+            skill_button = ActionButton(width=80, height=80, texture='icons/' + skills[index] + '.png', action=improve, action_args={'stat': index}, text='0', style={'font_color': arcade.color.RED})
+            skill_button.action_args['button'] = skill_button
+            choices.append(skill_button)
+        self.choice_layout = create_choices(choices=choices, title='Distribute skill tokens', subtitle='Remaining: ' + str(self.action_string))
+        self.layout.add(self.choice_layout)
 
     def send_items(self, reserve_pane):
         self.hub.overlay_showing = True

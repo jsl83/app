@@ -85,18 +85,25 @@ class SelectionScreen(arcade.View):
                         text = buttons[0].text
                         if text == 'Select':
                             payload = {'message': self.path + '_selected', 'value': self.selected}
+                            def send_login(encounter):
+                                self.networker.publish_payload(payload, 'login')
+                                self.networker.set_subscriber_topic(self.selected + '_server')
+                                self.networker.set_subscriber_topic(self.selected + '_player')
+                                self.networker.investigator = self.selected
+                                if self.respawn:
+                                    self.networker.game_screen.respawn_name = self.selected
                             if self.respawn:
                                 self.networker.window.show_view(self.networker.game_screen)
                                 payload['replace'] = self.networker.investigator
                             else:
                                 self.manager.children = {0:[]}
                                 self.manager.add(arcade.gui.UITextureButton(width=1280, y=700, text='Waiting for other players', texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons/placeholder.png')))
-                            self.networker.publish_payload(payload, 'login')
-                            self.networker.set_subscriber_topic(self.selected + '_server')
-                            self.networker.set_subscriber_topic(self.selected + '_player')
-                            self.networker.investigator = self.selected
-                            if self.respawn:
-                                self.networker.game_screen.respawn_name = self.selected
+                            if self.selected == 'lola_hayes' and self.respawn:
+                                self.networker.game_screen.small_card_pane.set_return_gui(self.info_pane)
+                                self.networker.game_screen.small_card_pane.improve_skill('01234')
+                                self.networker.game_screen.small_card_pane.finish_action = send_login
+                            else:
+                                send_login('')
                         elif text == 'Back':
                             self.selected = None
                         elif text == 'Flip':

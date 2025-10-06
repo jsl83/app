@@ -68,6 +68,9 @@ class ReservePane():
         if len(self.reserve) == 0:
             self.acquire_button.disable()
 
+    def retrieve_card(self, name):
+        return get_asset(name)
+
     def acquire_assets(self):
         if self.is_shopping:
             def resolve_shop(name=None):
@@ -203,7 +206,9 @@ class ReservePane():
             row = int((len(self.discard) / 2) - 0.5)
             if row > 2:
                 self.boundary = 20 + (row - 3) * 190
-            self.discard_layout.add(ActionButton(1015 + column * 130, 570 - row * 190, width=120, height=185, name=name, texture='assets/' + name.replace('.','') + '.png'))
+            button = ActionButton(1015 + column * 130, 570 - row * 190, width=120, height=185, name=name, texture='assets/' + name.replace('.','') + '.png')
+            button.name = name
+            self.discard_layout.add(button)
     
     def move(self, y):
         if self.position + y < 0:

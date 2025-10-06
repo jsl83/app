@@ -2061,7 +2061,8 @@ class InvestigatorSkillPane(SmallCardPane):
             'charlie_kane': self.charlie_kane,
             'send_items': self.send_items,
             'jacqueline_fine': self.jacqueline_fine,
-            'jim_culver': self.jim_culver
+            'jim_culver': self.jim_culver,
+            'leo_anderson': self.leo_anderson
         }
         self.action_dict = self.action_dict | investigator_dict
         self.server_value = None
@@ -2153,6 +2154,15 @@ class InvestigatorSkillPane(SmallCardPane):
         for investigator in [inv.name for inv in self.hub.location_manager.all_investigators.values() if inv.name != 'jim_culver' and inv.location == self.investigator.location]:
             self.hub.networker.publish_payload({'message': 'recover_hp_san', 'hp': 0, 'san': 1}, investigator + '_player')
         self.finish()
+
+    def leo_anderson(self):
+        def select_card(name, kind):
+            self.hub.request_card('assets', name, 'acquire' if kind == 'reserve' else 'from_discard')
+            self.finish()
+        reserve_buttons = [ActionButton(texture=button.texture, action=select_card, action_args={'name': button.name, 'kind': 'reserve'}, scale=0.5) for button in self.hub.info_panes['reserve'].reserve_buttons]# if 'ally' in self.hub.info_panes['reserve'].retrieve_card(button.name)['tags']]
+        discard_buttons = [ActionButton(texture=button.texture, action=select_card, action_args={'name': button.name, 'kind': 'discard'}, scale=0.5) for button in self.hub.info_panes['reserve'].discard_layout.children if button.name and button.name != '']# and 'ally' in self.hub.info_panes['reserve'].retrieve_card(button.name)['tags']]
+        self.choice_layout = create_choices('Choose Ally', choices=reserve_buttons + discard_buttons)
+        self.layout.add(self.choice_layout)
 
     def send_items(self, reserve_pane):
         self.hub.overlay_showing = True

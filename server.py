@@ -693,7 +693,7 @@ class Networker(threading.Thread, BanyanBase):
     def asset_request(self, command, name, investigator, tag=''):
         match command:
             case 'acquire':
-                self.restock_reserve([name], refill=False)
+                self.restock_reserve([name])
                 self.investigators[investigator]['assets'].append(name)
                 self.publish_payload({'message': 'card_received', 'kind': 'assets', 'value': name, 'owner': investigator}, 'server_update')
                 return name
@@ -714,6 +714,10 @@ class Networker(threading.Thread, BanyanBase):
                 if name != None:
                     self.investigators[investigator]['assets'].append(name)
                 self.publish_payload({'message': 'card_received', 'kind': 'assets', 'value': name, 'owner': investigator}, 'server_update')
+            case 'from_discard':
+                self.assets['discard'].remove(name)
+                self.investigators[investigator]['assets'].append(name)
+                self.publish_payload({'message': 'card_received', 'kind': 'assets', 'value': name, 'owner': investigator, 'from_discard': True}, 'server_update')
         
     def artifact_request(self, investigator, name='', tag=''):
         if name != '' and name not in self.decks['used_artifacts']:
@@ -856,7 +860,7 @@ class Networker(threading.Thread, BanyanBase):
         if refill:
             for i in range(0, min(4 - len(self.assets['reserve']), len(self.assets['deck']))):
                 item = random.choice(self.assets['deck'])
-                #self.assets['deck'].remove(item)
+                self.assets['deck'].remove(item)
                 self.assets['reserve'].append(item)
                 items += item + ':'
         self.publish_payload({'message': 'restock', 'value': items[0:-1], 'removed': removed_items}, 'server_update')

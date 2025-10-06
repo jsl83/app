@@ -171,6 +171,24 @@
       - 'assets:hired_muscle'
     passive: If you are on a Wilderness space, Investigators on your space roll 1 additional die when resolving tests.
     active: Test Influence. If you pass, gain 1 Ally Asset of your choice from the reserve or the discard pile.
+    triggers:
+      - kind: all_test
+        additional_die: True
+        space_type: wilderness
+        same_space: 'leo_anderson'
+    action:
+      action:
+        - skill
+      aargs:
+        - stat: 1
+          step: leo
+          fail: finish
+      leo:
+        - leo_anderson
+      largs:
+        - skip: True
+      action_text: Test Influence. If you pass, gain 1 Ally Asset of your choice from the reserve or the discard pile.
+      title: Leo Anderson
   lily_chen:
     expansion: 0
     max_health: 6

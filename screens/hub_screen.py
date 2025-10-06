@@ -124,6 +124,7 @@ class HubScreen(arcade.View):
             'location': LocationPane(self.location_manager, self),
             'ancient_one': AncientOnePane(self.ancient_one)
         }
+        self.info_panes['investigator'].skill_reqs['leo_anderson'] = lambda *args: len([card for card in self.info_panes['reserve'].reserve if 'ally' in card['tags']] + [card for card in self.info_panes['reserve'].discard if 'ally' in self.info_panes['reserve'].retrieve_card(card)['tags']]) > 0
         self.info_pane = self.info_panes['investigator']
         #self.info_panes['location'].location_select(self.investigator.location)
 
@@ -438,6 +439,8 @@ class HubScreen(arcade.View):
                             if payload['value'][0:-1] == 'debt':
                                 self.info_panes['reserve'].debt_button.disable()
                             self.info_panes['possessions'].setup()
+                        if payload.get('from_discard', False):
+                            self.info_panes['reserve'].discard_item(payload['value'])
                 case 'restock':
                     removed = [] if payload['removed'] == '' or payload['removed'] == None else payload['removed'].split(':')
                     added = [] if payload['value'] == '' or payload['value'] == None else payload['value'].split(':')

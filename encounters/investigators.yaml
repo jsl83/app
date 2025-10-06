@@ -254,3 +254,54 @@
       pass_text: At the cemetery's gate, you find Jim's old suitcase and hear wild and erratic music ahead. Gain all of his possessions. Summoning all your nerve, you walk toward the crowd of dancing cadavers that surround Jim.
       doom_text: You spend the night learning the secrets of the dead.
       ending_text: You run, and Jim is never seen by a living soul again.
+  leo_anderson:
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: influence
+          skip: True
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 13
+      pass_text: "\"It's all in the drawer,\" Leo tells you \"Take it and leave me here to die. I deserve it.\". Gain all of his possessions. Leo's injuries have left him bedridden and in agony in this hotel. Worse, he's lost his will to live. You try to convince him that he hasn't failed his friends."
+      doom_text: He draws you several maps and promises to let you check him into a hospital.
+      ending_text: He never speaks to you again.
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: strength
+          skip: True
+      strength:
+        - skill
+      sargs:
+        - stat: 3
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 12
+      pass_text: You find Leo's canvas bag in his hotel room. Gain all of his possessions. While you are distracted, Leo attacks you. His face covered with tribal markings, and he speaks a hodgepodge of tribal dialects. You try to subdue him.
+      doom_text: You get Leo to an asylum, and the doctors learn some of what happened to him.
+      ending_text: Leo is gone when you regain consciousness.

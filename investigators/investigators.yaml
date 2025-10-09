@@ -256,6 +256,20 @@
       - 'assets:kerosene'
     passive: You cannot become Delayed or gain a Detained Condition unless you choose to.
     active: You and 1 Monster on your space each lose 1 Health.
+    action:
+      action:
+        - hp_san
+      aargs:
+        - skip: True
+          hp: -1
+          step: damage
+      damage:
+        - damage_monsters
+      dargs:
+        - location: self
+          skip: True
+      action_text: You and 1 Monster on your space each lose 1 Health.
+      title: Mark Harrigan
   norman_withers:
     expansion: 0
     max_health: 5

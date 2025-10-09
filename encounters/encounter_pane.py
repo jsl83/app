@@ -754,8 +754,8 @@ class EncounterPane():
             self.hub.networker.publish_payload({'message': 'delay_status', 'value': True, 'investigator': self.investigator.name}, 'server_update')
             self.investigator.delayed = True
             self.set_buttons(step)
-        if next((item for item in self.investigator.possessions['assets'] if item.name == 'pocket_watch'), False) and not bypass:
-            self.phase_button.text = 'Pocket Watch'
+        if (next((item for item in self.investigator.possessions['assets'] if item.name == 'pocket_watch'), False) and not bypass) or self.investigator.name == 'mark_harrigan':
+            self.phase_button.text = 'Pocket Watch' if self.investigator.name != 'mark_harrigan' else 'Mark Harrigan'
             self.text_button.text = 'You cannot become Delayed unless you choose to.'
             self.proceed_button.text = 'Do not become Delayed'
             self.proceed_button.action = self.set_buttons
@@ -2027,6 +2027,19 @@ class SmallCardPane(EncounterPane):
         self.layout.clear()
         for button in [self.text_button, self.phase_button, self.option_button, self.proceed_button]:
             self.layout.add(button)
+
+    def mark_harrigan(self):
+        self.phase_button.text = 'Mark Harrigan'
+        self.text_button.text = 'You cannot gain a Detained Condition unless you choose to.'
+        self.proceed_button.text = 'Become Detained'
+        def accept():
+            self.hub.networker.publish_payload({'message': 'conditions', 'value': 'detained', 'mark_harrigan': True}, 'mark_harrigan')
+            self.finish()
+        self.proceed_button.action = accept
+        self.proceed_button.text = 'Become Detained'
+        self.option_button.action = self.finish
+        self.option_button.text = 'Do not gain'
+        self.clear_buttons([self.proceed_button, self.option_button])
 
     def set_buttons(self, key, return_value=None):
         if key == 'no_use':

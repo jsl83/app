@@ -247,7 +247,7 @@ class Networker(threading.Thread, BanyanBase):
                             if kind == 'assets':
                                 self.asset_request('get', item_name, payload['value'])
                             elif kind in ['conditions', 'spells']:
-                                self.spell_conditions_request(kind, payload['value'], name=item_name)
+                                self.spell_conditions_request(kind, payload['value'], name=item_name, accept=payload.get('accept', True))
                             elif kind == 'artifacts':
                                 self.artifact_request(payload['value'], item_name)
                         self.players_died -= 1
@@ -309,7 +309,7 @@ class Networker(threading.Thread, BanyanBase):
                     '''
         elif topic in self.selected_investigators:
             if payload['message'] in ['spells', 'conditions']:
-                self.spell_conditions_request(payload['message'], topic, payload.get('tag', ''), payload.get('value', ''))
+                self.spell_conditions_request(payload['message'], topic, payload.get('tag', ''), payload.get('value', ''), payload.get('mark_harrigan', False))
             else:
                 match payload['message']:
                     case 'assets':
@@ -530,7 +530,8 @@ class Networker(threading.Thread, BanyanBase):
                             self.decks['gates']['deck'].append(payload['value'])
                     case 'jacqueline_checked':
                         self.jacqueline_check = payload['revealed']
-                        self.publish_payload({'message': 'card_received', 'kind': 'conditions', 'value': payload['item'], 'owner': payload['owner'], 'revealed': payload['revealed']}, 'server_update')
+                        self.decks['conditions'].remove(payload['item'])
+                        self.publish_payload({'message': 'card_received', 'kind': 'conditions', 'value': payload['item'], 'owner': payload['owner'], 'revealed': payload['revealed'], 'bypass_mark': True}, 'server_update')
 
     def clear_bodies(self):
         for names in [name for name in self.dead_investigators if not self.dead_investigators[name]['recovered']]:
@@ -676,19 +677,21 @@ class Networker(threading.Thread, BanyanBase):
             chosen = self.monsters[index]
             do_damage(chosen, amt)
 
-    def spell_conditions_request(self, kind, investigator, tag='', name=''):
+    def spell_conditions_request(self, kind, investigator, tag='', name='', mark_harrigan=False):
         item = None
         ref = SPELLS if kind == 'spells' else CONDITIONS
         has_card = name != '' and next((card for card in self.investigators[investigator][kind] if name in card), None) != None
         items = [card for card in self.decks[kind] if (name == '' or name in card) and (tag == '' or tag in ref[card[:-1]]['tags']) and not has_card and card[:-1] not in self.investigators[investigator][kind]]
         if len(items) > 0:
             item = random.choice(items)
-            if self.investigators.get('jacqueline_fine') and not self.jacqueline_check and kind == 'conditions' and 'common' not in ref[item[:-1]]['tags']:
+            if investigator == 'mark_harrigan' and 'detained' in item and not mark_harrigan:
+                self.publish_payload({'message': 'card_received', 'kind': kind, 'value': item, 'owner': investigator}, 'mark_harrigan_server')
+            elif self.investigators.get('jacqueline_fine') and not self.jacqueline_check and kind == 'conditions' and 'common' not in ref[item[:-1]]['tags']:
                 self.publish_payload({'message': 'jacqueline_check', 'value': item, 'owner': investigator}, 'jacqueline_fine_player')
             else:
-                #self.decks[kind].remove(item)
+                self.decks[kind].remove(item)
                 self.investigators[investigator][kind].append(item[:-1])
-                self.publish_payload({'message': 'card_received', 'kind': kind, 'value': item, 'owner': investigator}, 'server_update')
+                self.publish_payload({'message': 'card_received', 'kind': kind, 'value': item, 'owner': investigator, 'bypass_mark': True}, 'server_update')
 
     def asset_request(self, command, name, investigator, tag=''):
         match command:

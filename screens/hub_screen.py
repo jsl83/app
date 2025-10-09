@@ -437,7 +437,17 @@ class HubScreen(arcade.View):
                         self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name, monster_id)
                 case 'card_received':
                     investigator = self.location_manager.all_investigators[payload['owner']]
-                    if payload['value'] != None and payload['value'] != '':
+                    if payload['owner'] == 'mark_harrigan' and self.investigator.name == 'mark_harrigan' and 'detained' in payload.get('value', '') and not payload.get('bypass_mark', False):
+                        small_card = SmallCardPane(self)
+                        small_card.parent = self.info_pane
+                        small_card.gui_enabled = self.gui_enabled
+                        small_card.mark_harrigan()
+                        self.gui_set(False)
+                        self.info_pane = small_card
+                        self.info_manager.children = {0:[]}
+                        self.info_manager.add(self.info_pane.layout)
+                        self.info_manager.trigger_render()                    
+                    elif payload['value'] != None and payload['value'] != '':
                         card = investigator.get_item(payload['kind'], payload['value'])
                         card.back_seen = payload.get('revealed', False)
                         self.info_panes['possessions'].on_get(card, payload['owner'])
@@ -522,6 +532,7 @@ class HubScreen(arcade.View):
                                 self.encounter_pane.encounter_phase()
                                 for action in self.actions_taken:
                                     self.actions_taken[action] = False
+                                    self.info_panes['reserve'].acquire_button.enable()
                             case 'reckoning':
                                 self.encounter_pane.reckoning(first=True)
                             case 'mythos':

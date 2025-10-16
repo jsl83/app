@@ -42,6 +42,7 @@ class Investigator():
         if INVESTIGATORS[name].get('triggers', False):
             self.triggers = INVESTIGATORS[name]['triggers']
         self.delayed = False
+        self.passive_used = False
 
         self.reroll_items = [[],[],[],[],[]]
         self.max_bonus = [0,0,0,0,0]
@@ -104,7 +105,7 @@ class Investigator():
 
     def get_number(self, kind, tag=None):
         if kind == 'clues':
-            return len(self.clues)
+            return len(self.clues) + (1 if self.name == 'norman_withers' and not self.passive_used else 0)
         elif kind == 'hp':
             return self.health
         elif kind =='san':

@@ -87,7 +87,7 @@ class EncounterPane():
             'update_rumor': self.update_rumor
         }
         self.req_dict = {
-            'damage_monsters': lambda *args: len(self.hub.location_manager.get_all('monsters', True)) > 0 and (args[0].get('location', None) == None or len(self.hub.location_manager.locations[args[0]['location'] if args[0]['location'] != 'self' else self.investigator.location]['monsters']) > 0),
+            'damage_monsters': lambda *args: len(self.hub.location_manager.get_all('monsters', True)) > 0 and (args[0].get('location', None) == None or len(self.hub.location_manager.norman_check()) > 0 if args[0]['location'] == 'gate' else len(self.hub.location_manager.locations[args[0]['location'] if args[0]['location'] != 'self' else self.investigator.location]['monsters']) > 0),
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
             'spend_clue': lambda args: len(self.investigator.clues) >= self.spend_clue(is_check=True, **args),
             'discard': lambda *args: self.discard_check(args[0]['kind'], args[0].get('tag', 'any'), args[0].get('name', None), args[0].get('voluntary', True)),
@@ -720,7 +720,10 @@ class EncounterPane():
                     self.proceed_button.disable()
                     choices = []
                     options = []
-                    monsters = [monster for monster in self.hub.location_manager.locations[loc]['monsters'] if epic or not monster.epic]
+                    if loc == 'gate':
+                        monsters = self.hub.location_manager.norman_check()
+                    else:
+                        monsters = [monster for monster in self.hub.location_manager.locations[loc]['monsters'] if epic or not monster.epic]
                     if len(monsters) > 0:
                         self.proceed_button.text = ''
                         self.proceed_button.action_args = {'loc': loc}
@@ -1030,7 +1033,9 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'monster_damaged', 'value': monster.monster_id, 'damage': amt}, 'server_update')
         self.set_buttons(step)
 
-    def hp_san(self, step='finish', hp=0, san=0, stat='health', kind=None, tag=None, no_damage_step=None, investigator='self'):
+    def hp_san(self, step='finish', hp=0, san=0, stat='health', kind=None, tag=None, no_damage_step=None, investigator='self', is_norman=False):
+        if (is_norman):
+            self.hub.networker.publish_payload({'message': 'passive_used'}, self.investigator.name)
         if investigator == 'select':
             self.choose_investigator('same_action', True)
             self.clear_buttons()
@@ -1491,7 +1496,8 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'spawn', 'value': 'monsters', 'name': name, 'location': location}, self.investigator.name)
         self.set_buttons(step)
 
-    def spend_clue(self, step='finish', clues=1, condition=None, is_check=False, not_spend=False):
+    def spend_clue(self, step='finish', clues=1, condition=None, is_check=False, not_spend=False, skip_norman=False):
+        norman_passive = self.investigator.name == 'norman_withers' and not self.investigator.passive_used
         if condition != None:
             if condition == 'all':
                 clues = len(self.investigator.clues)
@@ -1513,11 +1519,23 @@ class EncounterPane():
                     triggers['used'] = True
                 if clues == 0:
                     break
+        if norman_passive and not skip_norman and not self.investigator.passive_used:
+            clues -= 1
         if not is_check:
-            for x in range(clues):
-                clue = random.choice(self.investigator.clues)
-                self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
-            self.set_buttons(step)
+            if not skip_norman and norman_passive:
+                def finish_action(name):
+                    self.investigator.passive_used = True
+                    next((trigger for trigger in self.hub.triggers['all_test'] if trigger.get('action', {}).get('title') == 'Norman Withers - Passive'))['used'] = True
+                    self.set_buttons(step)
+                norman_pane = SmallCardPane(self.hub)
+                norman_pane.setup([{'action': ['spend_clue', 'spend_clue'], 'aargs': [{'clues': clues+1, 'skip_norman': True, 'text': 'Spend ' + str(clues + 1) + ' Clue(s)'}, {'clues': clues, 'skip_norman': True, 'text': 'Use Passive', 'step': 'dmg'}], 'dmg': ['hp_san'], 'dargs': [{'san': -1, 'skip': True, 'is_norman': True}], 'title': 'Norman Withers - Passive', 'action_text': 'You may spend 1 Sanity in place of spending 1 Clue'}], self, finish_action=finish_action, force_select=True)
+                if len(self.investigator.clues) < clues + 1:
+                    norman_pane.proceed_button.disable()
+            else:
+                for x in range(clues):
+                    clue = random.choice(self.investigator.clues)
+                    self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
+                self.set_buttons(step)
         return clues
 
     def solve_rumor(self, choice=False, step='finish', name=None):

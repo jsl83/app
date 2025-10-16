@@ -490,6 +490,13 @@ class HubScreen(arcade.View):
                     self.lead_investigator = payload['value']
                     if not payload.get('dead_trigger', None) != None:
                         self.clear_overlay()
+                    for action in self.actions_taken:
+                        self.actions_taken[action] = False
+                        self.info_panes['reserve'].acquire_button.enable()
+                        if hasattr(self.investigator, 'passive_used'):
+                            self.investigator.passive_used = False
+                    if hasattr(self.investigator, 'passive_used'):
+                        self.investigator.passive_used = False
                 case 'player_turn':
                     self.my_turn = True
                     if self.investigator.is_dead:
@@ -530,9 +537,6 @@ class HubScreen(arcade.View):
                                     #END TESTING
                                 self.show_encounter_pane()
                                 self.encounter_pane.encounter_phase()
-                                for action in self.actions_taken:
-                                    self.actions_taken[action] = False
-                                    self.info_panes['reserve'].acquire_button.enable()
                             case 'reckoning':
                                 self.encounter_pane.reckoning(first=True)
                             case 'mythos':
@@ -703,7 +707,7 @@ class HubScreen(arcade.View):
         rolls = []
         titles = ['Lore', 'Influence', 'Observation', 'Strength', 'Will']
         subtitle = subtitle if subtitle != '' else '' if mod == 0 else 'Mod: ' + str(mod)
-        self.investigator.skill_bonuses[skill] = [bonus for bonus in self.investigator.skill_bonuses[skill] if not (bonus.get('temp', False) and (bonus.get('condition', 'dummy') in pane.encounter_type))]
+        self.investigator.skill_bonuses[skill] = [bonus for bonus in self.investigator.skill_bonuses[skill] if bonus.get('condition', 'dummy') in pane.encounter_type]
         double_six = False
         triggers = []
         for kind in pane.encounter_type + ['all'] + (['in_combat'] if getattr(pane, 'in_combat', False) else []):
@@ -716,19 +720,37 @@ class HubScreen(arcade.View):
                     double_six = True
                 elif trigger.get('additional_die', False):
                     additional_die += 1
-        dice = max(1, self.investigator.skills[skill] + mod + self.investigator.skill_tokens[skill] + self.investigator.calc_max_bonus(skill, pane.encounter_type) + additional_die)        
+        dice = max(1, self.investigator.skills[skill] + mod + self.investigator.skill_tokens[skill] + self.investigator.calc_max_bonus(skill, pane.encounter_type) + additional_die)
+        self.investigator.skill_bonuses[skill] = [bonus for bonus in self.investigator.skill_bonuses[skill] if bonus.get('temp', 'remove') == 'remove']
         for x in range(dice):
             roll = random.randint(1, 6) + self.investigator.encounter_impairment
             roll = max(1, roll)
             rolls.append(roll)
             choices.append(arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png')))
         if not (len(set(rolls)) == 1 and 6 in rolls):
+            norman_trigger = next((trigger for trigger in self.triggers['all_test'] if trigger.get('action', {}).get('title') == 'Norman Withers - Passive' and not getattr(self.investigator, 'passive_used', True)), False)
             small_card = SmallCardPane(self)
             small_card.dice_number = dice
             small_card.double_six = double_six
             reroll_triggers = []
+            def reroll(dice_rolls, root_pane, root_choices, is_reroll_all=False, spend_clue=False):
+                lowest = min(dice_rolls)
+                sixes = []
+                if (dice_rolls[x] == lowest and not is_reroll_all) or (is_reroll_all and dice_rolls[x] < self.investigator.success):
+                    new_roll = random.randint(1, 6)
+                    dice_rolls[x] = new_roll
+                    root_pane.rolls[x] = new_roll
+                    if new_roll == 6 and double_six:
+                        sixes.append(6)
+                    root_choices[x].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
+                root_pane.rolls += sixes
+                if spend_clue:
+                    if len(self.investigator.clues) == 1 or (len(set(dice_rolls)) == 1 and 6 in dice_rolls):
+                        clue_button = next((button for button in root_pane.choice_layout.children if getattr(button, 'name', '') == 'clue'))
+                        root_pane.choice_layout.children.remove(clue_button)
+                        self.info_manager.trigger_render()
+                    self.encounter_pane.spend_clue('nothing')
             def finish_action(name):
-                lowest = min(rolls)
                 roll_button = next((button for button in pane.choice_layout.children if getattr(button, 'name', '') == name.split(':')[1]))
                 is_reroll = False
                 reroll_all = False
@@ -743,9 +765,18 @@ class HubScreen(arcade.View):
                     is_reroll = True
                     if self.encounter_pane.spend_clue(is_check=True) > len(self.investigator.clues):
                         pane.choice_layout.children.remove(roll_button)
+                elif name == 'norman_withers_test:norman_withers_test':
+                    if len(self.investigator.clues) == 0:
+                        pane.choice_layout.children.remove(roll_button)
+                    else:
+                        roll_button.action = reroll
+                        roll_button.action_args = {'dice_rolls': rolls, 'root_pane': pane, 'root_choices': choices, 'spend_clue': True}
+                        roll_button.name = 'clue'
+                    is_reroll = True
+                    norman_trigger['used'] = True
                 else:
                     kind = small_card.encounter_name.split(':')[0]
-                    roll_trigger = next((trig for trig in self.triggers[kind] if trig['name'] == small_card.encounter_name.split(':')[1]))
+                    roll_trigger = next((trig for trig in self.triggers[kind] if trig['name'] == small_card.encounter_name.split(':')[1]), {})
                     if small_card.item_used:
                         pane.choice_layout.children.remove(roll_button)
                         if roll_trigger.get('temp', False):
@@ -762,17 +793,9 @@ class HubScreen(arcade.View):
                 if small_card.item_used:
                     if is_reroll:
                         for x in range(dice):
-                            sixes = []
-                            if (rolls[x] == lowest and not reroll_all) or (reroll_all and rolls[x] < self.investigator.success):
-                                new_roll = random.randint(1, 6)
-                                rolls[x] = new_roll
-                                pane.rolls[x] = new_roll
-                                if new_roll == 6 and double_six:
-                                    sixes.append(6)
-                                choices[x].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
-                                if not reroll_all:
-                                    break
-                            pane.rolls += sixes
+                            reroll(rolls, pane, choices, reroll_all)
+                        if name == 'norman_withers_test:norman_withers_test' and (len(set(rolls)) == 1 and 6 in rolls):
+                            pane.choice_layout.children.remove(roll_button)
                     else:
                         fails = [roll for roll in rolls if roll < self.investigator.success]
                         die = max(fails) if len(fails) > 0 else min(rolls)
@@ -788,14 +811,14 @@ class HubScreen(arcade.View):
                 self.info_manager.trigger_render()
             small_card.finish_action = finish_action
             if self.investigator.focus > 0:
-                options.append(ActionButton(action=finish_action, action_args={'name': 'focus:focus'}, texture='icons/focus.png', text='Use', text_position=(20,-2), name='focus'))
-            if self.encounter_pane.spend_clue(is_check=True) <= len(self.investigator.clues) and allow_clues:
-                options.append(ActionButton(action=finish_action, action_args={'name':'clue:clue'}, texture='icons/clue.png', text='Use', text_position=(20,-2), name='clue'))
+                options.append(ActionButton(action=finish_action, action_args={'name': 'focus:focus'}, texture='icons/focus.png', name='focus'))
+            if self.encounter_pane.spend_clue(is_check=True) <= len(self.investigator.clues) and allow_clues and not norman_trigger:
+                options.append(ActionButton(action=finish_action, action_args={'name':'clue:clue'}, texture='icons/clue_small.png', name='clue'))
             for kind in pane.encounter_type + [titles[skill].lower()] + ['all']:
                 reroll_triggers += [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('mod_die', False) and (not reroll.get('used', False) or not reroll.get('single_use', False))]
             if len(reroll_triggers) > 0:
                 for trigger in reroll_triggers:
-                    trigger_button = ActionButton(width=100, height=50, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action, 'force_select': True}, texture='buttons/placeholder.png', text=human_readable(trigger['name']), name=trigger['name'])
+                    trigger_button = ActionButton(width=100, height=50, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action, 'force_select': True}, texture=trigger.get('texture', 'buttons/placeholder.png'), text=human_readable(trigger.get('name', '')), name=trigger.get('name', trigger.get('id', '')), scale=trigger.get('scale', 1))
                     if trigger.get('used', False) and trigger.get('single_use', False):
                         trigger_button.disable()
                     options.append(trigger_button)

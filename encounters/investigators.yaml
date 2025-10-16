@@ -458,3 +458,54 @@
       pass_text: You take custody of Mark's belongings and arrange to visit him in the asylum. Gain all of his possessions. To your dismay, Mark is convinced that you are a creature disguising itself as a human. You do your best to convince him that you are telling the truth.
       doom_text: He shows you sketches he made of the horrible monsters that he's been hunting.
       ending_text: Mark screams accusations of murder at you.
+  norman_withers:
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: will
+          skip: True
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 13
+      pass_text: Norman can barely move in his hospital bed and points to his notes and suitcase. Gain all of his possessions. He begs you to use his telescope to record the current locations of the stars. The work is slow and demanding, but you focus as best you can to give him accurate results.
+      doom_text: Norman's insight into the Ancient One proves accurate.
+      ending_text: Norman can make no sense of the night sky.
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: influence
+          skip: True
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 12
+      pass_text: The doctors would like you to look at Norman's notes and belongings. Gain all of his possessions. They are trying to gain some insight into his catatonic state. You try to convince them to move Norman to a room with a view of the night sky.
+      doom_text: Norman becomes slightly responsive, and you are able to question him.
+      ending_text: Norman's condition grows steadily worse.

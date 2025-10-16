@@ -124,3 +124,10 @@ class LocationManager():
     def create_ambush_monster(self, name=None):
         name = name if name != None else random.choice(self.monster_deck)
         return Monster(name, -1, self.player_count)
+    
+    def norman_check(self):
+        monsters = []
+        for loc in self.locations.values():
+            if loc['gate']:
+                monsters += loc['monsters']
+        return monsters

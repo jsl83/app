@@ -285,6 +285,41 @@
       - 'spells:feed_the_mind'
     passive: Once per round, you may spend 1 Sanity in place of spending 1 Clue.
     active: Spend 2 Clues to discard 1 Monster on a space containing a Gate.
+    triggers:
+      - owner_only: True
+        kind: all_test
+        mod_die: reroll
+        texture: 'icons/clue_small.png'
+        id: norman_withers_test
+        single_use: True
+        action:
+          action:
+            - spend_clue
+          aargs:
+            - skip: True
+              step: mod
+          mod:
+            - mod_die
+          margs:
+            - trigger_name: norman_withers_test:norman_withers_test
+              skip: True
+          action_text: You may spend 1 Sanity in place of spending 1 Clue.
+          title: Norman Withers - Passive
+    action:
+      action:
+        - spend_clue
+      aargs:
+        - clues: 2
+          step: damage
+          skip: True
+      damage:
+        - damage_monsters
+      dargs:
+        - location: gate
+          skip: True
+          damage: 99
+      action_text: Spend 2 Clues to discard 1 Monster on a space containing a Gate.
+      title: Norman Withers
   silas_marsh:
     expansion: 0
     max_health: 8

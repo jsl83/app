@@ -61,6 +61,7 @@ class Networker(threading.Thread, BanyanBase):
         self.omen = 0
         self.expedition = None
         self.jacqueline_check = True
+        self.norman_withers_passive = False
 
         self.decks = {
             'conditions': [],
@@ -322,7 +323,7 @@ class Networker(threading.Thread, BanyanBase):
                             self.publish_payload({'message': 'discard', 'value': payload['value']}, 'server_update')
                         elif payload['kind'] == 'artifacts':
                             self.decks['used_artifacts'].append(payload['value'])
-                        elif payload['kind'] == 'clues' and ';' in payload['value']:
+                        elif payload['kind'] == 'clues':
                             for clue in payload['value'].split(';'):
                                 self.decks['clues'].append(clue)
                                 self.investigators[topic]['clues'].remove(clue)
@@ -351,6 +352,7 @@ class Networker(threading.Thread, BanyanBase):
                             self.publish_payload({'message': 'unit_moved', 'value': payload['value'], 'destination': payload['destination'], 'kind': 'investigators'}, 'server_update')
                     case 'lead_selected':
                         self.jacqueline_check = False
+                        self.norman_withers_passive = False
                         self.lead_investigator = self.selected_investigators.index(payload['value'])
                         self.current_player = self.selected_investigators.index(payload['value'])
                         self.publish_payload({'message': 'lead_selected', 'value': payload['value']}, 'server_update')
@@ -532,6 +534,8 @@ class Networker(threading.Thread, BanyanBase):
                         self.jacqueline_check = payload['revealed']
                         self.decks['conditions'].remove(payload['item'])
                         self.publish_payload({'message': 'card_received', 'kind': 'conditions', 'value': payload['item'], 'owner': payload['owner'], 'revealed': payload['revealed'], 'bypass_mark': True}, 'server_update')
+                    case 'passive_used':
+                        setattr(self, topic + '_passive', True)
 
     def clear_bodies(self):
         for names in [name for name in self.dead_investigators if not self.dead_investigators[name]['recovered']]:
@@ -589,7 +593,7 @@ class Networker(threading.Thread, BanyanBase):
         elif kind == 'gates':
             number = len(self.decks['gates']['board'])
         needed = math.ceil(number / divisor)
-        total = 0
+        total = 1 if 'norman_withers' in self.investigators and not self.norman_withers_passive else 0
         for inv in self.investigators:
             if payment == 'clues':
                 total += len(self.investigators[inv]['clues'])
@@ -765,12 +769,12 @@ class Networker(threading.Thread, BanyanBase):
                             pass
             case 'clues':
                 if location != None:
-                    #self.decks[piece].remove(location)
+                    self.decks[piece].remove(location)
                     self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': location.split(':')[1], 'map': location.split(':')[0]}, 'server_update')
                 else:
                     for x in range(number):
                         token = random.choice(self.decks[piece])
-                        #self.decks[piece].remove(token)
+                        self.decks[piece].remove(token)
                         self.publish_payload({'message': 'spawn', 'value': 'clue', 'location': token.split(':')[1], 'map': token.split(':')[0]}, 'server_update')
             case 'monsters':
                 def pull_monster(loc):
@@ -780,12 +784,12 @@ class Networker(threading.Thread, BanyanBase):
                         for deck in [self.decks['monsters'], self.decks['epic_monsters']]:
                             if name in deck:
                                 monster = name
-                                #deck.remove(name)
+                                deck.remove(name)
                                 if deck == self.decks['epic_monsters']:
                                     is_epic = True
                     else:
                         monster = random.choice(self.decks['monsters'])
-                        #self.decks['monsters'].remove(monster)
+                        self.decks['monsters'].remove(monster)
                     if monster != None:
                         loc = loc if not MONSTERS[monster].get('location', False) else MONSTERS[monster]['location']
                         server_monster = {'name': monster, 'location': loc, 'monster_id': self.monster_id, 'damage': 0, 'is_epic': is_epic}

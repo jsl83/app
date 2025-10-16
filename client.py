@@ -54,11 +54,13 @@ class Networker(threading.Thread, BanyanBase):
                             if (message == 'investigators'):
                                 for name in payload['value']:
                                     self.select_screen.remove_option(name)
+                            self.window.pop_handlers()
                             self.window.show_view(self.select_screen)
                         case 'investigator_selected':
                             self.select_screen.remove_option(payload['value'])
                         case 'start_game':
                             self.game_screen = HubScreen(self, self.investigator, payload['value'], payload['investigators'])
+                            self.window.pop_handlers()
                             self.window.show_view(self.game_screen)
             #'''
             #self.window.show_view(HubScreen(self, 'akachi_onyele', 'azathoth'))

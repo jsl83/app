@@ -236,20 +236,20 @@ class HubScreen(arcade.View):
                 self.click_pane.no_loc_click()
             buttons = list(self.ui_manager.get_widgets_at((x,y))) + list(self.info_manager.get_widgets_at((x,y)))
             if len(buttons) > 0:
-                button = next((button for button in buttons if type(button) == ActionButton and button.enabled), False)
-                if button:
-                    button.click_action()
+                menu_button = next((button for button in buttons if type(button) == ActionButton and button.enabled), False)
+                if menu_button:
+                    menu_button.click_action()
         else:
             ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y))) + list(self.choice_manager.get_widgets_at((x,y)))
             if len(ui_buttons) > 0:
-                for button in ui_buttons:
-                    if type(button) == ActionButton and button.enabled:
-                        button.click_action()
-                        buttons = self.get_ui_buttons()
-                        if button in buttons:
-                            for x in buttons:
+                for ui_button in ui_buttons:
+                    if type(ui_button) == ActionButton and ui_button.enabled:
+                        ui_button.click_action()
+                        pane_buttons = self.get_ui_buttons()
+                        if ui_button in pane_buttons:
+                            for x in pane_buttons:
                                 x.select(False)
-                            button.select(True)
+                            ui_button.select(True)
         self.holding = None
 
     def on_mouse_press(self, x, y, button, modifiers):
@@ -499,6 +499,9 @@ class HubScreen(arcade.View):
                         self.investigator.passive_used = False
                 case 'player_turn':
                     self.my_turn = True
+                    for pane in ['investigator', 'reserve']:
+                        self.info_panes[pane].on_show()
+                    self.info_manager.trigger_render()
                     if self.investigator.is_dead:
                         self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                         self.my_turn = False
@@ -736,13 +739,16 @@ class HubScreen(arcade.View):
             def reroll(dice_rolls, root_pane, root_choices, is_reroll_all=False, spend_clue=False):
                 lowest = min(dice_rolls)
                 sixes = []
-                if (dice_rolls[x] == lowest and not is_reroll_all) or (is_reroll_all and dice_rolls[x] < self.investigator.success):
-                    new_roll = random.randint(1, 6)
-                    dice_rolls[x] = new_roll
-                    root_pane.rolls[x] = new_roll
-                    if new_roll == 6 and double_six:
-                        sixes.append(6)
-                    root_choices[x].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
+                for x in range(len(dice_rolls)):
+                    if (dice_rolls[x] == lowest and not is_reroll_all) or (is_reroll_all and dice_rolls[x] < self.investigator.success):
+                        new_roll = random.randint(1, 6)
+                        dice_rolls[x] = new_roll
+                        root_pane.rolls[x] = new_roll
+                        if new_roll == 6 and double_six:
+                            sixes.append(6)
+                        root_choices[x].texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(new_roll) + '.png')
+                        if not is_reroll_all:
+                            break
                 root_pane.rolls += sixes
                 if spend_clue:
                     if len(self.investigator.clues) == 1 or (len(set(dice_rolls)) == 1 and 6 in dice_rolls):
@@ -754,6 +760,7 @@ class HubScreen(arcade.View):
                 roll_button = next((button for button in pane.choice_layout.children if getattr(button, 'name', '') == name.split(':')[1]))
                 is_reroll = False
                 reroll_all = False
+                is_clue = False
                 if name == 'focus:focus':
                     self.investigator.focus -= 1
                     self.info_panes['investigator'].focus_button.text = 'x ' + str(self.investigator.focus)
@@ -761,10 +768,11 @@ class HubScreen(arcade.View):
                     if self.investigator.focus == 0:
                         pane.choice_layout.children.remove(roll_button)
                 elif name == 'clue:clue':
-                    self.encounter_pane.spend_clue('nothing')
                     is_reroll = True
-                    if self.encounter_pane.spend_clue(is_check=True) > len(self.investigator.clues):
+                    is_clue = True
+                    if self.encounter_pane.spend_clue(is_check=True) == 1:
                         pane.choice_layout.children.remove(roll_button)
+                    self.encounter_pane.spend_clue('nothing')
                 elif name == 'norman_withers_test:norman_withers_test':
                     if len(self.investigator.clues) == 0:
                         pane.choice_layout.children.remove(roll_button)
@@ -773,6 +781,7 @@ class HubScreen(arcade.View):
                         roll_button.action_args = {'dice_rolls': rolls, 'root_pane': pane, 'root_choices': choices, 'spend_clue': True}
                         roll_button.name = 'clue'
                     is_reroll = True
+                    is_clue = True
                     norman_trigger['used'] = True
                 else:
                     kind = small_card.encounter_name.split(':')[0]
@@ -792,7 +801,8 @@ class HubScreen(arcade.View):
                     subtitle_button.text = 'Health: ' + str(self.investigator.health) + '   Sanity: ' + str(self.investigator.sanity)
                 if small_card.item_used:
                     if is_reroll:
-                        for x in range(dice):
+                        reroll(rolls, pane, choices, reroll_all)
+                        if is_clue and ('trish_scarborough' in self.location_manager.all_investigators and self.location_manager.all_investigators['trish_scarborough'].location == self.investigator.location):
                             reroll(rolls, pane, choices, reroll_all)
                         if name == 'norman_withers_test:norman_withers_test' and (len(set(rolls)) == 1 and 6 in rolls):
                             pane.choice_layout.children.remove(roll_button)

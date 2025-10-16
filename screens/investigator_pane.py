@@ -51,7 +51,8 @@ class InvestigatorPane():
             'lily_chen': lambda *args: self.investigator.health > 1 and self.investigator.sanity > 1 and not (self.investigator.health == self.investigator.max_health and self.investigator.sanity == self.investigator.max_sanity),
             'mark_harrigan': lambda *args: len(self.hub.location_manager.locations[self.investigator.location]['monsters']) > 0,
             'norman_withers': lambda *args: len(self.hub.location_manager.norman_check()) > 0 and self.hub.encounter_pane.spend_clue(clues=2, is_check=True),
-            'silas_marsh': lambda *args: len([key for key in self.hub.location_manager.locations[self.investigator.location]['routes'].keys() if self.hub.location_manager.locations[self.investigator.location]['routes'][key] == 'ship']) > 0
+            'silas_marsh': lambda *args: len([key for key in self.hub.location_manager.locations[self.investigator.location]['routes'].keys() if self.hub.location_manager.locations[self.investigator.location]['routes'][key] == 'ship']) > 0,
+            'trish_scarborough': lambda *args: len(self.investigator.clues) == 0
         }
         self.skill_check()
 

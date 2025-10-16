@@ -114,7 +114,7 @@
       - 3
       - 1
       - 3
-    location: space_5
+    location: space_16
     possessions:
       - 'spells:flesh_ward'
       - clue
@@ -366,3 +366,10 @@
       - 'assets:.45_automatic'
     passive: If an investigator on your space spends a Clue to reroll a die, he may reroll up to 2 dice instead.
     active: If you do not have any Clues, gain 1 Clue.
+    action:
+      action:
+        - gain_clue
+      aargs:
+        - skip: True
+      action_text: If you do not have any Clues, gain 1 Clue.
+      title: Trish Scarborough

@@ -1535,10 +1535,11 @@ class EncounterPane():
                 if len(self.investigator.clues) < clues + 1:
                     norman_pane.proceed_button.disable()
             else:
+                self.wait_step = step
+                self.hub.waiting_panes.append(self)
                 for x in range(clues):
                     clue = random.choice(self.investigator.clues)
                     self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
-                self.set_buttons(step)
         return clues
 
     def solve_rumor(self, choice=False, step='finish', name=None):

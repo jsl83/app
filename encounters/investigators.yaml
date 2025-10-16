@@ -519,7 +519,7 @@
       observation:
         - skill
       oargs:
-        - stat: 4
+        - stat: 2
           step: doom
           fail: ending
       doom:
@@ -560,3 +560,54 @@
       pass_text: You find Silas and gain all of his possessions. He has grown pale, and his breath has become a loud wheeze. He tells you, "I'm a Marsh. It's in my blood. Not long now, I'll join my family down in the deep." You ask a doctor to watch him overnight.
       doom_text: The sailor shares all he's learned before dying peacefully in his sleep.
       ending_text: Silas surrenders his humanity and disappears into the sea.
+  trish_scarborough:
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: influence
+          skip: True
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 13
+      pass_text: Trish falls in and out of consciousness when you visit her in the hospital, but she happily turns over her equipment. Gain all of her possessions. Unfortunately, her journal has been sized by the police. You'll have to convince the local authorities to turn the book over to you.
+      doom_text: You can read through all of Trish's notes.
+      ending_text: The knowledge is lost.
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: observation
+          skip: True
+      observation:
+        - skill
+      iargs:
+        - stat: 2
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 12
+      pass_text: The doctor grimly hands you the items Trish had when she was brought in. Gain all of her possessions. "It's not good," he warns. Inside her padded cell, she's written on every surface with a thick black pen. The text is a mix of dozens of codes. You start searching for anything you recognize.
+      doom_text: You spot a hidden message in a familiar code.
+      ending_text: Trish's message remains locked away.

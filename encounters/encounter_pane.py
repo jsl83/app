@@ -35,6 +35,7 @@ class EncounterPane():
             'allow_gate_close': self.allow_gate_close,
             'allow_move': self.allow_move,
             'ambush': self.ambush,
+            'ao_action': self.ao_action,
             'attract_investigator': self.attract_investigator,
             'choose_investigator': self.choose_investigator,
             'choose_location': self.choose_location,
@@ -87,7 +88,7 @@ class EncounterPane():
             'update_rumor': self.update_rumor
         }
         self.req_dict = {
-            'damage_monsters': lambda *args: len(self.hub.location_manager.get_all('monsters', True)) > 0 and (args[0].get('location', None) == None or len(self.hub.location_manager.norman_check()) > 0 if args[0]['location'] == 'gate' else len(self.hub.location_manager.locations[args[0]['location'] if args[0]['location'] != 'self' else self.investigator.location]['monsters']) > 0),
+            'damage_monsters': lambda *args: len(self.hub.location_manager.get_all('monsters', True)) > 0 and (args[0].get('location', None) == None or len(self.hub.location_manager.norman_check()) > 0 if args[0]['location'] == 'gate' else len(self.hub.location_manager.locations[args[0].get('location', None) if args[0].get('location', None) != 'self' else self.investigator.location]['monsters']) > 0),
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
             'spend_clue': lambda args: len(self.investigator.clues) >= self.spend_clue(is_check=True, **args),
             'discard': lambda *args: self.discard_check(args[0]['kind'], args[0].get('tag', 'any'), args[0].get('name', None), args[0].get('voluntary', True)),
@@ -135,6 +136,9 @@ class EncounterPane():
         self.clue_location = None
         self.no_encounter = False
         self.in_combat = False
+
+    def load_clues(self, encounters):
+        ENCOUNTERS['clue'] = encounters
 
     def clear_overlay(self):
         if self.choice_layout in self.layout.children:
@@ -270,7 +274,8 @@ class EncounterPane():
                 loc = 'gate' if choice[0] == 'gate' else location if (location.find('space') == -1 and choice[0] != 'generic') else self.hub.location_manager.locations[location]['kind']
             if choice[0] == 'clue':
                 self.clue_location = loc if loc != None else self.investigator.location
-                loc = self.hub.ancient_one.name
+                loc = 'sea'
+                choice[1] = 3
             self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
             self.encounter_type.append(choice[0])
             if loc == 'gate':
@@ -508,6 +513,10 @@ class EncounterPane():
     def ambush(self, name=None, step='finish', fail='finish'):
         self.ambush_steps = (step, fail)
         self.combat_will(self.hub.location_manager.create_ambush_monster(name))
+
+    def ao_action(self, key, step='finish', args={}):
+        self.hub.networker.publish_payload({'message': 'ao_action', 'value': key, 'args': args}, self.investigator.name)
+        self.set_buttons(step)
 
     def attract_investigator(self, distance=1, location='', step='finish', monster=None):
         if monster != None:
@@ -934,17 +943,18 @@ class EncounterPane():
             self.hub.request_card('assets', name, tag=tag)
             return True
 
-    def gain_clue(self, step='finish', amt=1, rolls=False):
+    def gain_clue(self, step='finish', amt=1, rolls=False, from_board=False):
         if rolls:
             amt = len([roll for roll in self.rolls if roll >= self.investigator.success])
         if amt == 0:
             self.set_buttons(step)
         else:
+            loc = 'world:' + self.investigator.location if from_board == 'self' else False
             for x in range(amt):
                 if x == amt - 1:
                     self.wait_step = step
                     self.hub.waiting_panes.append(self)
-                self.hub.networker.publish_payload({'message': 'get_clue', 'value': amt}, self.investigator.name)
+                self.hub.networker.publish_payload({'message': 'get_clue', 'value': amt, 'from_board': loc}, self.investigator.name)
 
     def group_pay(self, kind, name, step='finish', player_request=None, is_check=False):
         total_payment = self.group_payments[name]['group_total']
@@ -1101,11 +1111,14 @@ class EncounterPane():
 
     def loss_per_condition(self, lose, per, step='finish'):
         amt = self.discard_check('conditions', per)
-        if lose == 'clues':
-            amt = amt if amt <= len(self.investigator.clues) else len(self.investigator.clues)
-            self.spend_clue(step, amt)
+        if amt == 0:
+            self.set_buttons(step)
         else:
-            self.hp_san(step, -amt if lose == 'health' else 0, -amt if lose == 'sanity' else 0)
+            if lose == 'clues':
+                amt = amt if amt <= len(self.investigator.clues) else len(self.investigator.clues)
+                self.spend_clue(step, amt)
+            else:
+                self.hp_san(step, -amt if lose == 'health' else 0, -amt if lose == 'sanity' else 0)
 
     def monster_heal(self, amt, step='finish'):
         for location in self.hub.location_manager.locations:
@@ -1401,8 +1414,8 @@ class EncounterPane():
             self.hub.networker.publish_payload({'message': 'set_omen', 'pos': omen}, self.investigator.name)
             self.set_buttons(step)
 
-    def shuffle_mystery(self, step='finish'):
-        self.hub.networker.publish_payload({'message': 'shuffle_mystery'}, self.investigator.name)
+    def shuffle_mystery(self, step='finish', doom=True):
+        self.hub.networker.publish_payload({'message': 'shuffle_mystery', 'doom': doom}, self.investigator.name)
         self.set_buttons(step)
 
     def single_roll(self, effects, other_action=None):

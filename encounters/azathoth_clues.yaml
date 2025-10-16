@@ -1,0 +1,495 @@
+---
+  city:
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          mod: -1
+          fail: no_effect
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain Clues
+          from_board: self
+          step: clue
+      clue:
+        - gain_clue
+      cargs:
+        - skip: True
+      test_text: Inside a warehouse, you hear a clanging sound and discover a creature that resembles a metallic crate walking around on several legs. You try to follow the thing back to the cult's lair.
+      pass_text: Gain this Clue and 1 additional Clue
+    - test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+      fail:
+        - ao_action
+      fargs:
+        - key: add_eldritch
+          text: Finish
+      test_text: A few hours before the performance of the opera Massa di Requiem per Shuggay you have a chance to examine the libretto.
+      pass_text: You recognize that it's a ritual that honors Azathoth and stop the performance.
+      fail_text: "The performance calls to Azathoth.\n\nPlace 1 Eldritch token on the Green space of the Omen track."
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+      fail:
+        - hp_san
+      fargs:
+        - san: -1
+          skip: True
+      test_text: Scientists report that their sample of radium was stolen! Your investigation indicates a connection to worshippers of Azathoth.
+      pass_text: You discover signs of cult activity.
+      fail_text: The scientists tell you what horrors the thieves might unleash using the radium.
+    - test:
+        - skill
+      targs:
+        - stat: 3
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: internal_injury
+          text: Gain an Internal Injury
+      test_text: A team of geologists have disappeared after studying a chunk of rock that was retrieved from a nearby crater. You visit their lab and feel waves of strange energy emanating from the stone, eroding your body from the inside.
+      pass_text: You safely examine the green stone.
+      fail_text: You are forced to leave the area.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain Clues
+          from_board: self
+          step: clue
+      clue:
+        - gain_clue
+      cargs:
+        - skip: True
+      fail:
+        - shuffle_mystery
+      fargs:
+        - text: Finish
+          doom: False
+      test_text: Doctors ask you to observe a trephination. They pull away a piece of his skull, and you examine the brain.
+      pass_text: "You spot an insect-like creature.\n\nGain this Clue and 1 additional Clue."
+      fail_text: "You don't see the shan, and it overpowers your mind.\n\nShuffle a solved Mystery at random into the deck."
+    - test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+      fail:
+        - set_omen
+      fargs:
+        - choice: False
+          text: Advance Omen
+      test_text: You attend a reading by Edward Pickman Derby of his book Azathoth and Other Horrors and ask him about the occult.
+      fail_text: He feigns innocence, but later reports the questions to the Cult of the Skull.
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: amnesia
+          step: Gain an Amnesia Condition
+      test_text: Something in your brain is manipulating your memories, trying to control you.
+      pass_text: A partially insubstantial insect flies out of your head, leaving knowledge of an alien planet.
+      fail_text: You can't tell which of your memories are real.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          mod: -1
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain Clues
+          from_board: self
+          step: clue
+      clue:
+        - gain_clue
+      cargs:
+        - skip: True
+      fail:
+        - delayed
+      fargs:
+        - text: Become Delayed
+      test_text: The university allows you to use its telescope to search for signs of a green comet.
+      pass_text: Gain this Clue and 1 additional Clue.
+      fail_text: You find nothing, looking through the endless depths of space.
+  wilderness:
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          mod: -1
+      pass:
+        - gain_clue
+      pargs:
+        - skip: True
+          from_board: self
+          step: omen
+      omen:
+        - set_omen
+      oargs:
+        - skip: True
+      fail:
+        - hp_san
+      fargs:
+        - hp: -1
+          skip: True
+      test_text: A meteor exploded in the air, scattering a glowing green powder. You try to find a sufficient amount of the compound.
+      pass_text: Gain this Clue and move the Omen token to any space on the track without advancing Doom.
+      fail_text: Your are exposed to the terrible energy emanating from the substance.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain Clues
+          from_board: self
+          step: clue
+      clue:
+        - gain_clue
+      cargs:
+        - skip: True
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: amnesia
+          text: Gain an Amnesia Condition
+      test_text: Mi-go have dug up the meteor that you were seeking. Curious, you attempt to spy on them.
+      pass_text: "You see them use the stones as a power source\n\nGain this Clue and 1 additional Clue."
+      fail_text: They shoot you with a weapon that leaves you unconscious for hours.
+    - test: None
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+          step: will
+      will:
+        - skill
+      wargs:
+        - stat: 4
+          step: omen
+          fail: san
+      omen:
+        - ao_action
+      oargs:
+        - args:
+            amt: -1
+          text: Finish
+          key: add_eldritch
+      san:
+        - hp_san
+      sargs:
+        - san: -6
+          skip: True
+      pass_text: An eerie mist surrounds you, and you find yourself in the court of Azathoth!
+      omen_text: "You return to Earth with your mind intact.\n\nDiscard 1 Eldrtich token from the Omen track."
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          fail: no_effect
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+          step: spawn
+      spawn:
+        - spawn_clue
+      sargs:
+        - skip: True
+      test_text: This far away from city lights, you get an unparalleled view of the night sky. You comb the sky, hoping to catch sight of a meteor shower.
+      pass_text: Gain this Clue and spawn 1 Clue.
+    - test: None
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+          step: lore
+      lore:
+        - skill
+      largs:
+        - stat: 0
+          mod: -1
+          step: omen
+          fail: no_effect
+      omen:
+        - ao_action
+      oargs:
+        - args:
+            amt: -1
+          text: Finish
+          key: add_eldritch
+      pass_text: You discover a twenty-foot tall, gray metallic cone!
+      lore_text: You try to make sense of the alien technology inside.
+      omen_text: "You manage to operate the shan technology.\n\nDiscard 1 Eldritch token from the Omen track."
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+      fail:
+        - set_omen
+      fargs:
+        - text: Advance Omen by 1
+          advance_doom: True
+      test_text: You examine an odd cave painting by torchlight. It depicts Azathoth sitting on throne in the center of a starry spiral. You search for any signs of the painting's source.
+      pass_text: You quickly find pottery shards.
+      fail_text: Your torch eventually goes out, and you begin to hear the sound of a flute.
+    - test:
+        - skill
+      targs:
+        - stat: 1
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+      fail:
+        - hp_san
+      fargs:
+        - san: -1
+          skip: True
+      test_text: You ask the villagers about their peculiar folklore.
+      pass_text: You recognize references to cannibalistic rituals in honor of Azathoth.
+      fail_text: Something about the food they offer you is disturbing.
+    - test: None
+      pass:
+        - hp_san
+      pargs:
+        - skip: True
+          hp: -1
+          step: observation
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          step: clue
+          fail: injury
+      clue:
+        - gain_clue
+      cargs:
+        - text: Gain Clues
+          from_board: self
+          step: additional
+      additional:
+        - gain_clue
+      aargs:
+        - skip: True
+      injury:
+        - request_card
+      iargs:
+        - kind: conditions
+          name: back_injury
+          text: Gain a Back Injury
+      pass_text: Something attacks you in the dark.
+      observation_text: To your eyes, there's nothing around you but trees.
+      clue_text: "You discover a metallic gray tree with evenly spaced branches and identity a strange alien from the planet Xicloti.\n\nGain this Clue and 1 additional Clue."
+      injury_text: It strikes you again.
+  sea:
+    - test:
+        - skill
+      targs:
+        - stat: 0
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain Clues
+          from_board: self
+          step: additional
+      additional:
+        - gain_clue
+      aargs:
+        - skip: True
+      fail:
+        - delayed
+      fargs:
+        - text: Become Delayed
+      test_text: You overhear the navigator say that the stars are not as they should be. The ship is utterly lost. You believe you understand the significance of the new alignment of stars.
+      pass_text: Gain this Clue and 1 additional Clue.
+      fail_text: The stars remain an enigma.
+    - test: None
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+          step: strength
+      strength:
+        - skill
+      sargs:
+        - stat: 3
+          step: no_effect
+          fail: health
+      health:
+        - hp_san
+      hargs:
+        - hp: -2
+          skip: True
+      pass_text: Your ship is destroyed by a glowing rock that fell from the sky!.
+      strength_text: You struggle to reach wreckage that can keep you afloat.
+      health_text: The undertow pulls you underwater.
+    - test:
+        - skill
+      targs:
+        - stat: 2
+          fail: no_effect
+      pass:
+        - gain_clue
+      pargs:
+        - skip: True
+          from_board: self
+          step: omen
+      omen:
+        - set_omen
+      oargs:
+        - skip: True
+      test_text: You dream of floating through space, watching stars disappear. You try to recognize constellations so you'll remember which stars disappeared.
+      pass_text: Gain this Clue and move the Omen to any space of the track without advancing Doom.
+    - test: None
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain this Clue
+          from_board: self
+          step: ancient
+      ancient:
+        - ao_action
+      aargs:
+        - skip: True
+          key: add_eldritch
+      pass_text: "The Nemesis Moon, Ghroth, looms in the sky. You don't know why it's here, but you know that it is the harbinger of doom.\n\nGain this Clue and place 1 Eldritch token on the green space of the Omen track."
+    - test: None
+      pass:
+        - gain_clue
+        - set_buttons
+      pargs:
+        - text: Accept
+          from_board: self
+          step: artifact
+        - text: Decline
+          key: finish
+      artifact:
+        - request_card
+      aargs:
+        - skip: True
+          kind: artifacts
+          name: t'tka_halot
+          step: dark
+      dark:
+        - request_card
+      dargs:
+        - skip: True
+          kind: conditions
+          name: dark_pact
+      pass_text: "You wake up to find a large, winged creature in your cabin. It offers you an object to use in your fight against Azathoth.\n\nYou may gain a Dark Pact Condition to gain this Clue and the T'tka Halot Artifact."
+    - test:
+        - skill
+      targs:
+        - stat: 2
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain Clues
+          from_board: self
+          step: clue
+      clue:
+        - gain_clue
+      cargs:
+        - skip: True
+      fail:
+        - set_omen
+      fargs:
+        - choice: False
+          advance_doom: True
+          text: Advance Omen
+      test_text: You watch a meteor shower streak across the night sky.
+      pass_text: "You see their source is a large, dark moon that's getting closer.\n\nGain this Clue and 1 additional Clue."
+      fail_text: Advance the Omen by 1.
+    - test:
+        - skill
+      targs:
+        - stat: 4
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain Clues
+          from_board: self
+          step: clue
+      clue:
+        - gain_clue
+      cargs:
+        - skip: True
+      fail:
+        - request_card
+      fargs:
+        - kind: conditions
+          name: internal_injury
+          text: Gain an Internal Injury
+      test_text: A volcano throws smoke and burning ash into the air. Despite the toxic fumes, you force yourself to continue watching.
+      pass_text: "You watch a new island form.\n\nGain this Clue and 1 additional Clue."
+      fail_text: The fumes overwhelm you, and you retreat gasping for air.
+    - test: None
+      pass:
+        - gain_clue
+      pargs:
+        - text: Gain Clues
+          from_board: self
+          step: observation
+      observation:
+        - skill
+      oargs:
+        - stat: 2
+          fail: no_effect
+          step: set
+      set:
+        - set_omen
+      sargs:
+        - skip: True
+      pass_text: "A pale, blubbery-looking sailor tells you of a dream he's been having about a green stone at the bottom of the ocean."
+      observation_text: You try to use his description to determine the actual location.
+      set_text: Move the Omen token to any space of the track without advancing Doom.

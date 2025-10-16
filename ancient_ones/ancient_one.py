@@ -1,13 +1,13 @@
 import yaml
 
-with open('ancient_ones/ancient_ones.yaml') as stream:
-    ANCIENTS = yaml.safe_load(stream)
-
 class AncientOne():
     def __init__(self, name):
         self.name = name
-        for key in ANCIENTS[name]:
-            setattr(self, key, ANCIENTS[name][key])
+        with open('ancient_ones/ancient_ones.yaml') as stream:
+            all_ancients = yaml.safe_load(stream)
+            for key in all_ancients[name]:
+                setattr(self, key, all_ancients[name][key])
 
-    def awaken(self):
-        pass
+    def add_eldritch(self, amt=1):
+        self.eldritch += amt
+        self.eldritch = max(0, self.eldritch)

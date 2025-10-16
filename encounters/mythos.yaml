@@ -276,7 +276,7 @@
       - lose: health
         per: injury
         step: sanity
-        text: Lose Clues
+        text: Next
     sanity:
       - loss_per_condition
     sargs:

@@ -1,5 +1,5 @@
 import arcade
-import math, random
+import math, random, yaml
 from util import *
 from ancient_ones.ancient_one import AncientOne
 from screens.ancient_pane import AncientOnePane
@@ -22,7 +22,6 @@ class HubScreen(arcade.View):
         self.background = None
         self.networker = networker
         self.networker.external_message_processor = self.set_listener
-
         self.ancient_one = AncientOne(ancient_one)
 
         self.doom = 0
@@ -115,6 +114,8 @@ class HubScreen(arcade.View):
 
         self.investigator = self.location_manager.all_investigators[investigator]
         self.encounter_pane = EncounterPane(self)
+        with open('encounters/' + ancient_one + '_clues.yaml') as stream:
+            self.encounter_pane.load_clues(yaml.safe_load(stream))
         self.click_pane = self.encounter_pane
 
         self.info_panes = {
@@ -616,7 +617,7 @@ class HubScreen(arcade.View):
                 case 'group_pay_update':
                     self.encounter_pane.group_payments[payload['name']] = {'group_total': payload['total'], 'needed': payload['needed'], 'my_payment': 0}
                 case 'mystery_count':
-                    self.info_panes['ancient_one'].mystery_count.text = str(int(self.ancient_one.mysteries) - int(payload['value']))
+                    self.info_panes['ancient_one'].mystery_count.text = str(int(self.ancient_one.mysteries_needed) - int(payload['value']))
                 case 'exile_from_discard':
                     for item in payload['value'].split(':'):
                         self.info_panes['reserve'].discard_item(item, True)

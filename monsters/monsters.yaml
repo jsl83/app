@@ -261,7 +261,7 @@
       mod: -2
       str: 3
     toughness: 4
-    text: "Reckoning\n\nMove this Monster to the nearest space containing an investigator. Then an investigator on that space immediately encounters it."
+    text: "Reckoning\n\nEach Investigator on this space or an adjacent space loses 1 Health and 1 Sanity."
     reckoning:
       is_required: True
       action:

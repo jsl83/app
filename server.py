@@ -323,7 +323,7 @@ class Networker(threading.Thread, BanyanBase):
                             self.publish_payload({'message': 'discard', 'value': payload['value']}, 'server_update')
                         elif payload['kind'] == 'artifacts':
                             self.decks['used_artifacts'].append(payload['value'])
-                        elif payload['kind'] == 'clues':
+                        elif payload['kind'] == 'clues' and not payload.get('from_map', False):
                             for clue in payload['value'].split(';'):
                                 self.decks['clues'].append(clue)
                                 self.investigators[topic]['clues'].remove(clue)

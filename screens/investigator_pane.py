@@ -50,7 +50,8 @@ class InvestigatorPane():
             'jacqueline_fine': lambda *args: next((inv for inv in list(self.hub.location_manager.all_investigators.values()) if len(inv.clues) > 0), False),
             'lily_chen': lambda *args: self.investigator.health > 1 and self.investigator.sanity > 1 and not (self.investigator.health == self.investigator.max_health and self.investigator.sanity == self.investigator.max_sanity),
             'mark_harrigan': lambda *args: len(self.hub.location_manager.locations[self.investigator.location]['monsters']) > 0,
-            'norman_withers': lambda *args: len(self.hub.location_manager.norman_check()) > 0 and self.hub.encounter_pane.spend_clue(clues=2, is_check=True)
+            'norman_withers': lambda *args: len(self.hub.location_manager.norman_check()) > 0 and self.hub.encounter_pane.spend_clue(clues=2, is_check=True),
+            'silas_marsh': lambda *args: len([key for key in self.hub.location_manager.locations[self.investigator.location]['routes'].keys() if self.hub.location_manager.locations[self.investigator.location]['routes'][key] == 'ship']) > 0
         }
         self.skill_check()
 
@@ -71,7 +72,7 @@ class InvestigatorPane():
         self.focus_button.text = 'x ' + str(self.investigator.focus)
 
     def ticket_action(self, kind):
-        if (not ((kind == 'ship' and self.investigator.ship_tickets >= 2) or (kind == 'rail' and self.investigator.rail_tickets >= 2))) and not self.hub.actions_taken['ticket'] and self.hub.remaining_actions > 0:
+        if (not ((kind == 'ship' and self.investigator.ship_tickets >= 2) or (kind == 'rail' and self.investigator.rail_tickets >= 2))) and not self.hub.actions_taken['ticket'] and self.hub.remaining_actions > 0 and kind in self.hub.location_manager.locations[self.investigator.location]['routes'].values():
             tickets = self.investigator.get_ticket(kind)
             self.set_ticket_counts()
             self.hub.action_taken('ticket')

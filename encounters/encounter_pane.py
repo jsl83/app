@@ -459,6 +459,9 @@ class EncounterPane():
                 for loc in list(self.hub.location_manager.locations.keys()):
                     if self.hub.location_manager.locations[loc][prop]:
                         allowed_locs.add(loc)
+        elif nearest == 'silas_marsh':
+            routes = self.hub.location_manager.locations[self.investigator.location]['routes']
+            allowed_locs = [key for key in routes.keys() if routes[key] == 'ship']
         else:
             for x in range(0,5):
                 near_locs = self.hub.get_locations_within(x, self.investigator.location)

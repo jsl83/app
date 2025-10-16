@@ -335,6 +335,22 @@
       - 'assets:fishing_net'
     passive: If you are on a Sea space, investigators on your space roll 1 additional die when resolving tests.
     active: Move 1 space along a Ship path, then perform 1 additional action.
+    triggers:
+      - kind: all_test
+        additional_die: True
+        space_type: sea
+        same_space: 'silas_marsh'
+    action:
+      action:
+        - allow_move
+      aargs:
+        - skip: True
+          nearest: silas_marsh
+          must_move: True
+          distance: 1
+      action_text: Move 1 space along a Ship path, then perform 1 additional action.
+      title: Silas Marsh
+      action_point: 0
   trish_scarborough:
     expansion: 0
     max_health: 7

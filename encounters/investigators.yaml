@@ -509,3 +509,54 @@
       pass_text: The doctors would like you to look at Norman's notes and belongings. Gain all of his possessions. They are trying to gain some insight into his catatonic state. You try to convince them to move Norman to a room with a view of the night sky.
       doom_text: Norman becomes slightly responsive, and you are able to question him.
       ending_text: Norman's condition grows steadily worse.
+  silas_marsh:
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: observation
+          skip: True
+      observation:
+        - skill
+      oargs:
+        - stat: 4
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 13
+      pass_text: Silas had hidden his belongings in the prearranged cache, but the man itself is nowhere to be found. Gain all of his possessions. You search local hospitals filled with the unidentified dead or dying.
+      doom_text: You find Silas alive but incapacitated, and you arrange a private nurse to watch over him.
+      ending_text: Silas dies alone and unrecognized.
+    - test: None
+      pass:
+        - recover
+      pargs:
+        - step: influence
+          skip: True
+      influence:
+        - skill
+      iargs:
+        - stat: 1
+          step: doom
+          fail: ending
+      doom:
+        - set_doom
+      dargs:
+        - text: Retreat Doom by 1
+      ending:
+        - set_buttons
+      eargs:
+        - key: finish
+          text: End Turn
+      font_size: 12
+      pass_text: You find Silas and gain all of his possessions. He has grown pale, and his breath has become a loud wheeze. He tells you, "I'm a Marsh. It's in my blood. Not long now, I'll join my family down in the deep." You ask a doctor to watch him overnight.
+      doom_text: The sailor shares all he's learned before dying peacefully in his sleep.
+      ending_text: Silas surrenders his humanity and disappears into the sea.

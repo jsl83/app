@@ -265,7 +265,7 @@ class HubScreen(arcade.View):
             self.holding = 'map'
             self.initial_click = (x, y)
             self.click_time = 0
-            if self.remaining_actions > 0 and not self.actions_taken['move']:
+            if self.remaining_actions > 0 and not self.actions_taken['move'] and self.gui_enabled:
                 location = self.location_manager.get_closest_location((x, y), self.zoom, self.map.get_location(), 40)
                 if location != None:
                     key = location[2]
@@ -1020,7 +1020,9 @@ class HubScreen(arcade.View):
         if overlay:
             self.clear_overlay()
         self.action_taken('move')
-    
+        if (self.investigator.name == 'silas_marsh' and not self.info_panes['investigator'].skill_check()):
+            self.info_panes['investigator'].skill_button.disable()
+
     def undo(self):
         if self.undo_action != None:
             self.undo_action['action'](**self.undo_action['args'])

@@ -24,7 +24,9 @@ class AncientOnePane():
         self.toggle_attributes.select(True)
         self.layout.add(self.toggle_attributes)
         self.layout.add(self.toggle_skills)
-        self.mystery = arcade.gui.UITextureButton(x=1020, y=25, width=240, height=415, style={'font_size': 14},
+        self.mystery_counter = arcade.gui.UITextureButton(x=1020, y=385, width=240, height=70, style={'font_size': 14},
+            text='', texture=self.blank, align='center')
+        self.mystery = arcade.gui.UITextureButton(x=1020, y=25, width=240, height=360, style={'font_size': 12},
             text='', texture=self.blank, align='center', multiline=True)
         self.stats = arcade.gui.UITextureButton(x=1020, y=25, width=240, height=415, style={'font_size': 14},
             text=str(ancient.text), texture=self.blank, align='center', multiline=True)
@@ -35,6 +37,7 @@ class AncientOnePane():
         self.details.clear()
         if flag:
             self.details.add(self.mystery)
+            self.details.add(self.mystery_counter)
             self.toggle_skills.select(True)
             self.toggle_attributes.select(False)
         else:

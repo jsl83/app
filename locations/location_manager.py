@@ -24,6 +24,7 @@ class LocationManager():
                     self.locations[name]['expedition'] = False
                     self.locations[name]['eldritch'] = False
                     self.locations[name]['rumor'] = False
+                    self.locations[name]['mystery'] = False
         except:
             self.locations = {}
         self.rumors = {}
@@ -95,7 +96,7 @@ class LocationManager():
         encounters = ['generic']
         if self.locations[location].get('color', None) != None:
             encounters.append(self.locations[location].get('color'))
-        for kind in ['gate', 'eldritch', 'clue']:
+        for kind in ['gate', 'clue']:
             if self.locations[location][kind]:
                 encounters.append(kind)
         if self.locations[location]['expedition'] and self.expeditions_enabled:

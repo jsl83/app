@@ -278,6 +278,7 @@ class Networker(threading.Thread, BanyanBase):
                                     elif kind == 'artifacts':
                                         self.artifact_request(name, item_name)
                         self.restock_reserve()
+                        self.select_mystery()
                         self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
                     '''
                     #FOR TESTING
@@ -319,10 +320,12 @@ class Networker(threading.Thread, BanyanBase):
                                 self.decks['clues'].append(clue)
                                 self.investigators[topic]['clues'].remove(clue)
                             self.publish_payload({'message': 'possession_lost', 'value': payload['value'], 'kind': 'clues', 'owner': topic}, 'server_update')
+                        elif payload['kind'] == 'eldritchs':
+                            self.publish_payload({'message': 'token_removed', 'value': payload['value'], 'kind': 'eldritch'}, 'server_update')
                         else:
                             self.decks[payload['kind']].append(payload['value'])
                         true_name = payload['value'] if payload['kind'] not in ['conditions', 'spells'] else payload['value'][:-1]
-                        if true_name in self.investigators.get(topic, {payload['kind']: []})[payload['kind']]:
+                        if payload['kind'] != 'eldritchs' and true_name in self.investigators.get(topic, {payload['kind']: []})[payload['kind']]:
                             self.investigators[topic][payload['kind']].remove(true_name)
                             self.publish_payload({'message': 'possession_lost', 'value': payload['value'], 'kind': payload['kind'], 'owner': topic}, 'server_update')
                         elif payload['kind'] == 'clues' and payload.get('from_map', False):
@@ -526,6 +529,9 @@ class Networker(threading.Thread, BanyanBase):
                     case 'ao_action':
                         if hasattr(self.ancient_one, payload['value']):
                             getattr(self.ancient_one, payload['value'])(**payload.get('args', {}))
+                    case 'advance_mystery':
+                        self.ancient_one.mystery_tracker += 1
+                        self.publish_payload({'message': 'mystery_advanced', 'value': payload['value']}, 'server_update')
 
     def clear_bodies(self):
         for names in [name for name in self.dead_investigators if not self.dead_investigators[name]['recovered']]:
@@ -544,6 +550,9 @@ class Networker(threading.Thread, BanyanBase):
         }, 'server_update')
 
     def end_mythos(self):
+        if (self.ancient_one.mystery_tracker >= self.ancient_one.mystery_required):
+            self.solved_mysteries.append(self.ancient_one.current_mystery)
+            self.select_mystery()
         for actions in self.end_of_mythos_actions:
             action = actions.get('action', None)
             if action != None:
@@ -906,6 +915,22 @@ class Networker(threading.Thread, BanyanBase):
             self.publish_payload({'message': 'mystery_count', 'value': str(len(self.solved_mysteries))}, 'server_update')
         elif move_doom:
             self.move_doom()
+
+    def select_mystery(self):
+        mysteries = [key for key in self.ancient_one.mysteries.keys() if key not in self.solved_mysteries]
+        self.ancient_one.current_mystery = random.choice(mysteries)
+        self.ancient_one.mystery_tracker = 0
+        mystery = self.ancient_one.mysteries[self.ancient_one.current_mystery]
+        if mystery['required'] == 'investigators':
+            self.ancient_one.mystery_required = self.player_count
+        elif mystery['required'] == 'half':
+            self.ancient_one.mystery_required = math.ceil(self.player_count / 2)
+        self.publish_payload({'message': 'mystery_selected', 'value': self.ancient_one.current_mystery}, 'server_update')
+        if mystery.get('spawn', False):
+            if mystery['spawn'] == 'random':
+                locs = random.sample(list(LOCATIONS.keys()), self.ancient_one.mystery_required)
+                for loc in locs:
+                    self.publish_payload({'message': 'spawn', 'value': 'eldritch', 'location': loc, 'map': 'world'}, 'server_update')
 
 def set_up_network(screen):
     parser = argparse.ArgumentParser()

@@ -32,6 +32,7 @@ class EncounterPane():
         self.action_dict = {
             'additional_action': self.additional_action,
             'adjust_triggers': self.adjust_triggers,
+            'advance_mystery': self.advance_mystery,
             'allow_gate_close': self.allow_gate_close,
             'allow_move': self.allow_move,
             'ambush': self.ambush,
@@ -88,7 +89,7 @@ class EncounterPane():
             'update_rumor': self.update_rumor
         }
         self.req_dict = {
-            'damage_monsters': lambda *args: len(self.hub.location_manager.get_all('monsters', True)) > 0 and (args[0].get('location', None) == None or len(self.hub.location_manager.norman_check()) > 0 if args[0]['location'] == 'gate' else len(self.hub.location_manager.locations[args[0].get('location', None) if args[0].get('location', None) != 'self' else self.investigator.location]['monsters']) > 0),
+            'damage_monsters': lambda *args: len(self.hub.location_manager.get_all('monsters', True)) > 0 and (args[0].get('location', None) == None or len(self.hub.location_manager.norman_check()) > 0 if args[0].get('location', None) == 'gate' else len(self.hub.location_manager.locations[args[0].get('location', None) if args[0].get('location', None) != 'self' else self.investigator.location]['monsters']) > 0),
             'request_card': lambda *args: not args[0].get('check', False) or next((item for item in self.investigator.possessions[args[0]['kind']] if item.name == args[0]['name']), None) == None,
             'spend_clue': lambda args: len(self.investigator.clues) >= self.spend_clue(is_check=True, **args),
             'discard': lambda *args: self.discard_check(args[0]['kind'], args[0].get('tag', 'any'), args[0].get('name', None), args[0].get('voluntary', True)),
@@ -246,7 +247,7 @@ class EncounterPane():
                 elif encounter[:-2] in self.hub.location_manager.dead_investigators.keys():
                     path = 'investigators/' + encounter[:-2] + '_portrait.png'
                     args = {'value': 'investigators:' + '0' if self.hub.location_manager.dead_investigators[encounter[:-2]].hp_death else '1', 'loc': encounter[:-2]}
-                else:
+                elif encounter != 'eldritch':
                     path = 'encounters/rumor.png'
                     args = {'value': 'rumor:0', 'loc': encounter}
                 button = ActionButton(texture=path, scale=0.3)
@@ -254,8 +255,10 @@ class EncounterPane():
                 button.action_args = args           
                 choices.append(button)
             for x in range(len(self.hub.triggers['special_encounters'])):
-                button = ActionButton(texture=self.hub.triggers['special_encounters'][x]['texture'], width=75, height=75, action=self.start_encounter, action_args={'value': 'special:' + str(x)})
-                choices.append(button)
+                trigger = self.hub.triggers['special_encounters'][x]
+                if not trigger.get('location', False) or (trigger['location'] == self.investigator.location or (trigger['location'] == 'eldritch' and self.hub.location_manager.locations[self.investigator.location]['eldritch'])):
+                    button = ActionButton(texture=trigger['texture'], width=75, height=75, action=self.start_encounter, action_args={'value': 'special:' + str(x)})
+                    choices.append(button)
         if remote_clue:
             choices.append(ActionButton(texture='encounters/clue.png', action=self.hub.networker.publish_payload, action_args={'topic': self.investigator.name, 'payload':{'message': 'get_encounter', 'value': 'clue', 'location': remote_clue}}, scale=0.3, text=human_readable(remote_clue)))
         self.choice_layout = create_choices('Choose Encounter', choices=choices, options=options)
@@ -271,11 +274,9 @@ class EncounterPane():
         else:
             if loc == None:
                 location = self.investigator.location
-                loc = 'gate' if choice[0] == 'gate' else location if (location.find('space') == -1 and choice[0] != 'generic') else self.hub.location_manager.locations[location]['kind']
+                loc = 'gate' if choice[0] == 'gate' else location if (location.find('space') == -1 and choice[0] not in ['generic', 'clue']) else self.hub.location_manager.locations[location]['kind']
             if choice[0] == 'clue':
                 self.clue_location = loc if loc != None else self.investigator.location
-                loc = 'sea'
-                choice[1] = 3
             self.encounter = ENCOUNTERS[choice[0]][loc][int(choice[1])]
             self.encounter_type.append(choice[0])
             if loc == 'gate':
@@ -450,6 +451,10 @@ class EncounterPane():
 
     def adjust_triggers(self, kind, args, step='finish'):
         self.hub.triggers[kind].append(args)
+        self.set_buttons(step)
+
+    def advance_mystery(self, step='finish', amt=1):
+        self.hub.networker.publish_payload({'message': 'advance_mystery', 'value': amt}, self.investigator.name)
         self.set_buttons(step)
 
     def allow_gate_close(self, allow=True, step='finish'):
@@ -641,11 +646,11 @@ class EncounterPane():
         self.no_loc_click = no_loc
         no_loc()
 
-    def close_gate(self, step='finish', skip_triggers=False, is_otherworld=True):
+    def close_gate(self, step='finish'):
         if self.gate_close:
             self.wait_step = step
             self.hub.waiting_panes.append(self)
-            triggers = [trigger for trigger in self.hub.triggers['gate_close'] if self.hub.trigger_check(trigger, ['otherworld'])]
+            triggers = [trigger for trigger in self.hub.triggers['gate_close'] if self.hub.trigger_check(trigger, ['otherworld']) and (not trigger.get('match_omen', False) or ['green', 'blue', 'red', 'blue'][self.hub.omen] == self.hub.location_manager.locations[self.investigator.location]['gate_color'])]
             def finish_close(name=None):
                 if self.rumor_not_gate != None:
                     self.hub.networker.publish_payload({'message': 'solve_rumor', 'value': self.rumor_not_gate}, self.investigator.name)
@@ -781,8 +786,8 @@ class EncounterPane():
         else:
             get_delayed()            
 
-    def despawn_clues(self, location, player=False, lead_only=False, step='finish'):
-        location = location if location != 'chosen' else self.chosen_location
+    def despawn_clues(self, location, player=False, lead_only=False, step='finish', kind='clue'):
+        location = location if location not in ['chosen', 'self'] else self.chosen_location if location != 'self' else self.investigator.location
         if player:
             for clue in self.investigator.clues:
                 self.investigator.clues.remove(clue)
@@ -794,10 +799,10 @@ class EncounterPane():
                     if stats['clue']:
                         stats['clue'] = False
                         self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': stats['map'] + ':' + loc, 'from_map': True}, self.investigator.name)
-            elif self.hub.location_manager.locations[location]['clue']:
+            elif self.hub.location_manager.locations[location][kind]:
                 stats = self.hub.location_manager.locations[location]
-                stats['clue'] = False
-                self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': stats['map'] + ':' + location, 'from_map': True}, self.investigator.name)
+                stats[kind] = False
+                self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': kind + 's', 'value': stats['map'] + ':' + location, 'from_map': True}, self.investigator.name)
         self.set_buttons(step)
 
     def disable_expeditions(self, enabled, step='finish'):
@@ -950,11 +955,16 @@ class EncounterPane():
             self.set_buttons(step)
         else:
             loc = 'world:' + self.investigator.location if from_board == 'self' else False
-            for x in range(amt):
-                if x == amt - 1:
-                    self.wait_step = step
-                    self.hub.waiting_panes.append(self)
-                self.hub.networker.publish_payload({'message': 'get_clue', 'value': amt, 'from_board': loc}, self.investigator.name)
+            if not (len(self.hub.triggers['research_trigger']) > 0 and 'clue' in self.encounter_type):
+                self.wait_step = step
+                self.hub.waiting_panes.append(self)
+            self.hub.networker.publish_payload({'message': 'get_clue', 'value': amt, 'from_board': loc}, self.investigator.name)
+            if len(self.hub.triggers['research_trigger']) > 0 and 'clue' in self.encounter_type:
+                trigger_card = SmallCardPane(self.hub)
+                def finish_action(name):
+                    self.set_buttons(step)
+                trigger_card.setup([trigger['encounter'] for trigger in self.hub.triggers['research_trigger']], self, False, finish_action=finish_action, force_select=True)
+
 
     def group_pay(self, kind, name, step='finish', player_request=None, is_check=False):
         total_payment = self.group_payments[name]['group_total']
@@ -1731,7 +1741,7 @@ class EncounterPane():
         elif len(self.reckonings[kind]) > 0 and (not self.investigator.is_dead or kind != 'item'):
             def finish_action(name):
                 self.reckoning(kinds[index], step=step)
-            small_card.setup([reckon[0] for reckon in self.reckonings[kind]], self, False, 'Resolving ' + human_readable(kind) + ' Reckoning Effects', [reckon[1] for reckon in self.reckonings[kind]], finish_action, scale=scales[index-1])
+            small_card.setup([reckon[0] for reckon in self.reckonings[kind]], self, False, 'Resolving ' + human_readable(kind) + ' Reckoning Effects', [reckon[1] for reckon in self.reckonings[kind]], finish_action, True, scale=scales[index-1])
             small_card.phase_button.text = 'Reckoning Phase'
         else:
             self.reckoning(kinds[index], step=step)

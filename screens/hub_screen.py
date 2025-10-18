@@ -53,7 +53,8 @@ class HubScreen(arcade.View):
             'all_test': [],
             'preencounter': [],
             'special_encounters': [],
-            'in_combat_test': []
+            'in_combat_test': [],
+            'research_trigger': []
         }
         
         self.item_actions = {}
@@ -426,7 +427,7 @@ class HubScreen(arcade.View):
                         if payload['location'] == 'no_spawn':
                             no_token = True
                         self.location_manager.rumors[payload['name']] = self.encounter_pane.get_rumor(payload['name'])
-                        self.location_manager.rumors[payload['name']]['location'] = payload.get('location', '')
+                        self.location_manager.rumors[payload['name']]['location'] = payload.get('location', 'no_location')
                     elif payload['value'] == 'expedition':
                         loc = next((loc for loc in self.location_manager.locations.keys() if self.location_manager.locations[loc]['expedition']), None)
                         if loc != None:
@@ -682,6 +683,29 @@ class HubScreen(arcade.View):
                     self.waiting_panes[-1].server_value = payload['value']
                 case 'delay_status':
                     self.location_manager.all_investigators[payload['investigator']].delayed = payload['value']
+                case 'mystery_selected':
+                    self.ancient_one.current_mystery = payload['value']
+                    self.ancient_one.mystery_tracker = 0
+                    mystery = self.ancient_one.mysteries[payload['value']]
+                    if mystery['required'] == 'investigators':
+                        self.ancient_one.mystery_required = len(self.all_investigators)
+                    elif mystery['required'] == 'half':
+                        self.ancient_one.mystery_required = math.ceil(len(self.all_investigators) / 2)
+                    self.info_panes['ancient_one'].mystery_counter.text = human_readable(payload['value']) + '\n\n' + human_readable(mystery['kind']) + ': 0 / ' + str(self.ancient_one.mystery_required)
+                    self.info_panes['ancient_one'].mystery.text = mystery['text']
+                    if mystery.get('font_size', False):
+                        self.info_panes['ancient_one'].mystery.style['font_size'] = mystery['font_size']
+                    if mystery.get('triggers', False):
+                        for trigger in mystery['triggers']:
+                            trigger['name'] = payload['value']
+                            self.triggers[trigger['kind']].append(trigger)
+                    if mystery.get('mystery_token', False):
+                        self.map.spawn('mystery', self.location_manager, mystery['mystery_token'])
+                        self.location_manager.locations[mystery['mystery_token']]['mystery'] = True
+                case 'mystery_advanced':
+                    self.ancient_one.mystery_tracker += payload['value']
+                    mystery = self.ancient_one.mysteries[self.ancient_one.current_mystery]
+                    self.info_panes['ancient_one'].mystery_counter.text = human_readable(self.ancient_one.current_mystery) + '\n\n' + human_readable(mystery['kind']) + ': ' + str(self.ancient_one.mystery_tracker) + ' / ' + str(self.ancient_one.mystery_required)
             if len(self.waiting_panes) > 0 and self.waiting_panes[-1].wait_step != None:
                 if self.waiting_panes[-1].last_value == None or self.waiting_panes[-1].last_value == payload.get('message', None):
                     pane = self.waiting_panes[-1]

@@ -10,6 +10,7 @@ class AncientOne():
         self.current_mystery = ''
         self.mystery_tracker = 0
         self.mystery_required = 0
+        self.is_awakened = False
 
     def add_eldritch(self, amt=1):
         self.eldritch += amt

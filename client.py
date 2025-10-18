@@ -71,6 +71,9 @@ class Networker(threading.Thread, BanyanBase):
             self.select_screen.remove_option(name)
         self.window.show_view(self.select_screen)
 
+    def restart(self):
+        pass
+
 def set_up_network():
     parser = argparse.ArgumentParser()
     # allow user to bypass the IP address auto-discovery.

@@ -265,7 +265,7 @@
     text: A Rumor has spawned on Space 2.
     manager_object:
       location: space_2
-      solve: Resolve an Other World Encounter; if an effect would close a Gate, solve this Rumor instead.
+      solve: Resolve an Other World Encounter on Space 2; if an effect would close a Gate, solve this Rumor instead.
       reckoning: Discard 1 Eldritch token from this card.
       unsolved: Advance Doom by 1 for each Gate on the game Board.
       eldritch: 4

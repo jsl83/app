@@ -53,6 +53,7 @@ class EncounterPane():
             'end_mythos': self.end_mythos,
             'gain_asset': self.gain_asset,
             'gain_clue': self.gain_clue,
+            'game_over': self.game_over,
             'group_pay': self.group_pay,
             'group_pay_reckoning': self.group_pay_reckoning,
             'heal_monster': self.heal_monster,
@@ -965,6 +966,8 @@ class EncounterPane():
                     self.set_buttons(step)
                 trigger_card.setup([trigger['encounter'] for trigger in self.hub.triggers['research_trigger']], self, False, finish_action=finish_action, force_select=True)
 
+    def game_over(self, victory=False, step='finish'):
+        self.hub.networker.restart()
 
     def group_pay(self, kind, name, step='finish', player_request=None, is_check=False):
         total_payment = self.group_payments[name]['group_total']

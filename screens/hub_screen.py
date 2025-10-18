@@ -74,6 +74,8 @@ class HubScreen(arcade.View):
         self.my_turn = False
         self.charlie_action = False
         self.hold_item = None
+        self.awakened_queue = []
+        self.queue_actions_wakening = False
         
         self.info_manager = arcade.gui.UIManager()
         self.ui_manager = arcade.gui.UIManager()
@@ -256,14 +258,14 @@ class HubScreen(arcade.View):
 
     def on_mouse_press(self, x, y, button, modifiers):
         if x < 1000 and y > 142 and not self.overlay_showing:
-            if self.click_time < 25 and get_distance((x,y), self.initial_click) < 50:
-                if self.zoom == 1:
-                    self.map.zoom(2, 500 - (x * 2), 471 - (y * 2))
-                    self.zoom = 2
-                else:
-                    self.map.zoom(0.5)
-                    self.zoom = 1
-                self.check_map_boundaries()
+            #if self.click_time < 25 and get_distance((x,y), self.initial_click) < 50:
+            #    if self.zoom == 1:
+            #        self.map.zoom(2, 500 - (x * 2), 471 - (y * 2))
+            #        self.zoom = 2
+            #    else:
+            #        self.map.zoom(0.5)
+            #        self.zoom = 1
+            #    self.check_map_boundaries()
             self.holding = 'map'
             self.initial_click = (x, y)
             self.click_time = 0
@@ -399,323 +401,326 @@ class HubScreen(arcade.View):
                     self.investigator.sanity = min(self.investigator.sanity + payload['san'], self.investigator.max_sanity)
                     self.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity})
         else:
-            match payload['message']:
-                case 'spawn':
-                    no_token = False
-                    name = payload.get('name', '')
-                    monster_id = None
-                    if payload['value'] == 'investigators':
-                        investigator = self.location_manager.spawn_investigator(name, self.respawn_name)
-                        payload['location'] = investigator.location
-                        self.all_investigators = [inv_name.replace(payload['replace'], name) for inv_name in self.all_investigators]
-                        if investigator.name == self.respawn_name:
-                            self.investigator = investigator
-                            self.encounter_pane.finish(True)
-                            self.info_panes['investigator'] = InvestigatorPane(self.investigator, self)
-                            self.info_panes['possessions'] = PossessionsPane(self.investigator, self)
-                            self.info_panes['possessions'].setup()
-                            self.encounter_pane.investigator = self.investigator
-                            self.small_card_pane.investigator = self.investigator
-                            self.info_panes['location'].possession_screen.investigator = self.investigator
-                    elif payload['value'] == 'monsters':
-                        monster = self.location_manager.spawn_monster(name, payload['location'], payload['map'], int(payload['monster_id']))
-                        monster_id = str(monster.monster_id)
-                        if hasattr(monster, 'on_spawn') and (not monster.on_spawn.get('lead_only', False) or self.investigator.name == self.lead_investigator):
-                            if monster.on_spawn.get('action', False):
-                                self.encounter_pane.monster_spawns.append(monster.on_spawn['action'])
-                    elif payload['value'] == 'rumor':
-                        if payload['location'] == 'no_spawn':
-                            no_token = True
-                        self.location_manager.rumors[payload['name']] = self.encounter_pane.get_rumor(payload['name'])
-                        self.location_manager.rumors[payload['name']]['location'] = payload.get('location', 'no_location')
-                    elif payload['value'] == 'expedition':
-                        loc = next((loc for loc in self.location_manager.locations.keys() if self.location_manager.locations[loc]['expedition']), None)
-                        if loc != None:
-                            self.location_manager.locations[loc]['expedition'] = False
-                            self.map.remove_tokens('expedition', loc, 'expedition')
-                    if payload['location'] == self.info_panes['location'].selected:
-                        self.info_panes['location'].update_all()
-                    if not no_token:
-                        self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name, monster_id)
-                case 'card_received':
-                    investigator = self.location_manager.all_investigators[payload['owner']]
-                    if payload['owner'] == 'mark_harrigan' and self.investigator.name == 'mark_harrigan' and 'detained' in payload.get('value', '') and not payload.get('bypass_mark', False):
-                        small_card = SmallCardPane(self)
-                        small_card.parent = self.info_pane
-                        small_card.gui_enabled = self.gui_enabled
-                        small_card.mark_harrigan()
+            if self.queue_actions_wakening:
+                self.awakened_queue.append(payload)
+            else:
+                match payload['message']:
+                    case 'spawn':
+                        no_token = False
+                        name = payload.get('name', '')
+                        monster_id = None
+                        if payload['value'] == 'investigators':
+                            investigator = self.location_manager.spawn_investigator(name, self.respawn_name)
+                            payload['location'] = investigator.location
+                            self.all_investigators = [inv_name.replace(payload['replace'], name) for inv_name in self.all_investigators]
+                            if investigator.name == self.respawn_name:
+                                self.investigator = investigator
+                                self.encounter_pane.finish(True)
+                                self.info_panes['investigator'] = InvestigatorPane(self.investigator, self)
+                                self.info_panes['possessions'] = PossessionsPane(self.investigator, self)
+                                self.info_panes['possessions'].setup()
+                                self.encounter_pane.investigator = self.investigator
+                                self.small_card_pane.investigator = self.investigator
+                                self.info_panes['location'].possession_screen.investigator = self.investigator
+                        elif payload['value'] == 'monsters':
+                            monster = self.location_manager.spawn_monster(name, payload['location'], payload['map'], int(payload['monster_id']))
+                            monster_id = str(monster.monster_id)
+                            if hasattr(monster, 'on_spawn') and (not monster.on_spawn.get('lead_only', False) or self.investigator.name == self.lead_investigator):
+                                if monster.on_spawn.get('action', False):
+                                    self.encounter_pane.monster_spawns.append(monster.on_spawn['action'])
+                        elif payload['value'] == 'rumor':
+                            if payload['location'] == 'no_spawn':
+                                no_token = True
+                            self.location_manager.rumors[payload['name']] = self.encounter_pane.get_rumor(payload['name'])
+                            self.location_manager.rumors[payload['name']]['location'] = payload.get('location', 'no_location')
+                        elif payload['value'] == 'expedition':
+                            loc = next((loc for loc in self.location_manager.locations.keys() if self.location_manager.locations[loc]['expedition']), None)
+                            if loc != None:
+                                self.location_manager.locations[loc]['expedition'] = False
+                                self.map.remove_tokens('expedition', loc, 'expedition')
+                        if payload['location'] == self.info_panes['location'].selected:
+                            self.info_panes['location'].update_all()
+                        if not no_token:
+                            self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name, monster_id)
+                    case 'card_received':
+                        investigator = self.location_manager.all_investigators[payload['owner']]
+                        if payload['owner'] == 'mark_harrigan' and self.investigator.name == 'mark_harrigan' and 'detained' in payload.get('value', '') and not payload.get('bypass_mark', False):
+                            small_card = SmallCardPane(self)
+                            small_card.parent = self.info_pane
+                            small_card.gui_enabled = self.gui_enabled
+                            small_card.mark_harrigan()
+                            self.gui_set(False)
+                            self.info_pane = small_card
+                            self.info_manager.children = {0:[]}
+                            self.info_manager.add(self.info_pane.layout)
+                            self.info_manager.trigger_render()                    
+                        elif payload['value'] != None and payload['value'] != '':
+                            card = investigator.get_item(payload['kind'], payload['value'])
+                            card.back_seen = payload.get('revealed', False)
+                            self.info_panes['possessions'].on_get(card, payload['owner'])
+                            if card.name == 'debt' or card.name == 'detained':
+                                card.action['pargs'][0]['investigator'] = payload['owner']
+                            if payload['owner'] == self.investigator.name:
+                                if payload['value'][0:-1] == 'debt':
+                                    self.info_panes['reserve'].debt_button.disable()
+                                self.info_panes['possessions'].setup()
+                            if payload.get('from_discard', False):
+                                self.info_panes['reserve'].discard_item(payload['value'])
+                    case 'restock':
+                        removed = [] if payload['removed'] == '' or payload['removed'] == None else payload['removed'].split(':')
+                        added = [] if payload['value'] == '' or payload['value'] == None else payload['value'].split(':')
+                        self.info_panes['reserve'].restock(removed, added)
+                    case 'receive_clue':
+                        clues_to_add = payload['value'].split(';')
+                        for clue in clues_to_add:
+                            self.location_manager.all_investigators[payload['owner']].clues.append(clue)
+                        self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
+                        self.info_manager.trigger_render()
+                    case 'discard':
+                        self.info_panes['reserve'].discard_item(payload['value'])
+                    case 'unit_moved':
+                        self.move_unit(payload['value'], payload['destination'], payload['kind'])
+                    case 'choose_lead':
                         self.gui_set(False)
-                        self.info_pane = small_card
-                        self.info_manager.children = {0:[]}
-                        self.info_manager.add(self.info_pane.layout)
-                        self.info_manager.trigger_render()                    
-                    elif payload['value'] != None and payload['value'] != '':
-                        card = investigator.get_item(payload['kind'], payload['value'])
-                        card.back_seen = payload.get('revealed', False)
-                        self.info_panes['possessions'].on_get(card, payload['owner'])
-                        if card.name == 'debt' or card.name == 'detained':
-                            card.action['pargs'][0]['investigator'] = payload['owner']
-                        if payload['owner'] == self.investigator.name:
-                            if payload['value'][0:-1] == 'debt':
-                                self.info_panes['reserve'].debt_button.disable()
-                            self.info_panes['possessions'].setup()
-                        if payload.get('from_discard', False):
-                            self.info_panes['reserve'].discard_item(payload['value'])
-                case 'restock':
-                    removed = [] if payload['removed'] == '' or payload['removed'] == None else payload['removed'].split(':')
-                    added = [] if payload['value'] == '' or payload['value'] == None else payload['value'].split(':')
-                    self.info_panes['reserve'].restock(removed, added)
-                case 'receive_clue':
-                    clues_to_add = payload['value'].split(';')
-                    for clue in clues_to_add:
-                        self.location_manager.all_investigators[payload['owner']].clues.append(clue)
-                    self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
-                    self.info_manager.trigger_render()
-                case 'discard':
-                    self.info_panes['reserve'].discard_item(payload['value'])
-                case 'unit_moved':
-                    self.move_unit(payload['value'], payload['destination'], payload['kind'])
-                case 'choose_lead':
-                    self.gui_set(False)
-                    self.encounter_pane.finish(True)
-                    portraits = []
-                    for name in self.location_manager.all_investigators.keys():
-                        portraits.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.4, action=self.networker.publish_payload,
-                                                    action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
-                    self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
-                    self.show_overlay()
-                    #FOR TESTING
-                    #self.networker.publish_payload({'message': 'lead_selected', 'value': 'akachi_onyele'}, self.investigator.name)
-                    #END TESTING
-                case 'lead_selected':
-                    self.gui_set(True)
-                    self.lead_investigator = payload['value']
-                    if not payload.get('dead_trigger', None) != None:
-                        self.clear_overlay()
-                    for action in self.actions_taken:
-                        self.actions_taken[action] = False
-                        self.info_panes['reserve'].acquire_button.enable()
+                        self.encounter_pane.finish(True)
+                        portraits = []
+                        for name in self.location_manager.all_investigators.keys():
+                            portraits.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.4, action=self.networker.publish_payload,
+                                                        action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
+                        self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
+                        self.show_overlay()
+                        #FOR TESTING
+                        #self.networker.publish_payload({'message': 'lead_selected', 'value': 'akachi_onyele'}, self.investigator.name)
+                        #END TESTING
+                    case 'lead_selected':
+                        self.gui_set(True)
+                        self.lead_investigator = payload['value']
+                        if not payload.get('dead_trigger', None) != None:
+                            self.clear_overlay()
+                        for action in self.actions_taken:
+                            self.actions_taken[action] = False
+                            self.info_panes['reserve'].acquire_button.enable()
+                            if hasattr(self.investigator, 'passive_used'):
+                                self.investigator.passive_used = False
                         if hasattr(self.investigator, 'passive_used'):
                             self.investigator.passive_used = False
-                    if hasattr(self.investigator, 'passive_used'):
-                        self.investigator.passive_used = False
-                case 'player_turn':
-                    self.my_turn = True
-                    for pane in ['investigator', 'reserve']:
-                        self.info_panes[pane].on_show()
-                    self.info_manager.trigger_render()
-                    if self.investigator.is_dead:
-                        self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                        self.my_turn = False
-                    else:
-                        match payload['value']:
-                            case 'action':
-                                if self.investigator.delayed:
-                                    self.investigator.delayed = False
-                                    self.networker.publish_payload({'message': 'delay_status', 'value': False, 'investigator': self.investigator.name}, 'server_update')
-                                    self.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
-                                else:
-                                    self.remaining_actions = 2 if not next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False) else 0
-                                    self.info_panes['investigator'].skill_check()
-                                    for items in self.investigator.possessions.values():
-                                        for item in items:
-                                            item.action_used = False
-                                    for triggers in self.triggers.values():
-                                        for trigger in triggers:
-                                            trigger['used'] = False
-                                    #'''
+                    case 'player_turn':
+                        self.my_turn = True
+                        for pane in ['investigator', 'reserve']:
+                            self.info_panes[pane].on_show()
+                        self.info_manager.trigger_render()
+                        if self.investigator.is_dead:
+                            self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                            self.my_turn = False
+                        else:
+                            match payload['value']:
+                                case 'action':
+                                    if self.investigator.delayed:
+                                        self.investigator.delayed = False
+                                        self.networker.publish_payload({'message': 'delay_status', 'value': False, 'investigator': self.investigator.name}, 'server_update')
+                                        self.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
+                                    else:
+                                        self.remaining_actions = 2 if not next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False) else 0
+                                        self.info_panes['investigator'].skill_check()
+                                        for items in self.investigator.possessions.values():
+                                            for item in items:
+                                                item.action_used = False
+                                        for triggers in self.triggers.values():
+                                            for trigger in triggers:
+                                                trigger['used'] = False
+                                        #'''
+                                        #FOR TESTING
+                                        #self.remaining_actions = 3
+                                        #if self.is_first:
+                                        #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
+                                        #if self.investigator.name == 'akachi_onyele':
+                                        #self.ticket_move(self.investigator.name, 'arkham', 0, 0, self.investigator.location)
+                                        #else:
+                                            #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
+                                        #self.investigator.focus = 0
+                                        #self.info_panes['investigator'].focus_action()
+                                        #END TESTING
+                                        #'''
+                                case 'encounter':
+                                        #FOR TESTING
+                                    #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+                                        #END TESTING
+                                    self.show_encounter_pane()
+                                    self.encounter_pane.encounter_phase()
+                                case 'reckoning':
+                                    self.encounter_pane.reckoning(first=True)
+                                case 'mythos':
                                     #FOR TESTING
-                                    #self.remaining_actions = 3
                                     #if self.is_first:
-                                    #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
-                                    #if self.investigator.name == 'akachi_onyele':
-                                    #self.ticket_move(self.investigator.name, 'arkham', 0, 0, self.investigator.location)
+                                    self.clear_overlay()
+                                    self.show_encounter_pane()
+                                    self.encounter_pane.activate_mythos()
+                                    self.is_first = False
                                     #else:
-                                        #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
-                                    #self.investigator.focus = 0
-                                    #self.info_panes['investigator'].focus_action()
+                                    #    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
                                     #END TESTING
-                                    #'''
-                            case 'encounter':
-                                    #FOR TESTING
-                                #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                                    #END TESTING
-                                self.show_encounter_pane()
-                                self.encounter_pane.encounter_phase()
-                            case 'reckoning':
-                                self.encounter_pane.reckoning(first=True)
-                            case 'mythos':
-                                #FOR TESTING
-                                #if self.is_first:
-                                self.clear_overlay()
-                                self.show_encounter_pane()
-                                self.encounter_pane.activate_mythos()
-                                self.is_first = False
-                                #else:
-                                #    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                                #END TESTING
-                case 'encounter_choice':
-                    self.clear_overlay()
-                    self.show_encounter_pane()
-                    self.encounter_pane.start_encounter(payload['value'])
-                case 'mythos':
-                    #FOR TESTING
-                    #if self.is_first:
-                    self.clear_overlay()
-                    self.show_encounter_pane()
-                    self.encounter_pane.load_mythos(payload['value'])
-                    #END TESTING
-                case 'mythos_switch':
-                    self.encounter_pane.mythos_switch = True
-                case 'omen':
-                    self.set_omen(int(payload['value']))
-                case 'doom':
-                    self.set_doom(int(payload['value']))
-                case 'token_removed':
-                    kind = payload['kind']
-                    loc = payload['value'].split(':')
-                    self.location_manager.locations[loc[1]][kind] = False
-                    self.maps[loc[0]].remove_tokens(kind, loc[1])
-                    self.map.token_manager.trigger_render()
-                case 'monster_damaged':
-                    monster_id = int(payload['value'])
-                    damage = int(payload['damage'])
-                    def damage_monster(monster, damage):
-                        dead = monster.on_damage(damage)
-                        if dead:
-                            if hasattr(monster, 'death'):
-                                if hasattr(monster, 'dargs'):
-                                    self.encounter_pane.action_dict[monster.death](**monster.dargs)
-                                else:
-                                    self.encounter_pane.action_dict[monster.death]()
-                            self.location_manager.locations[monster.location]['monsters'].remove(monster)
-                            self.location_manager.all_monsters.remove(monster)
-                            if not hasattr(monster, 'epic'):
-                                self.location_manager.monster_deck.append(monster.name)
-                            self.map.remove_tokens('monsters', monster.location, str(payload['value']))
-                            self.map.token_manager.trigger_render()
-                    if monster_id < 0:
-                        for monster in self.location_manager.all_monsters:
-                            damage_monster(monster, damage)
-                    else:
-                        monster = next((monster for monster in self.location_manager.all_monsters if monster.monster_id == int(payload['value'])))
-                        damage_monster(monster, damage)
-                case 'rumor_solved':
-                    rumor = self.location_manager.rumors[payload['value']]
-                    if rumor['location'] != 'no_spawn':
-                        self.location_manager.locations[rumor['location']]['rumor'] = False
-                        self.maps['world'].remove_tokens('rumor', rumor['location'], payload['value'])
-                    if not payload['solved'] and rumor.get('unsolve_encounter', None) != None:
-                        rumor['unsolve_encounter']['title'] = human_readable(payload['value']) + ' - Reckoning'
-                        self.encounter_pane.mythos_reckonings.append(rumor['unsolve_encounter'])
-                    elif payload['solved'] and rumor.get('trigger', False):
-                        self.triggers[rumor['trigger']] = [trig for trig in self.triggers[rumor['trigger']] if trig['name'] != payload['value']]
-                    del self.location_manager.rumors[payload['value']]
-                case 'update_rumor':
-                    if self.location_manager.rumors.get(payload['name'], False):
-                        is_solve = self.location_manager.rumors[payload['name']].get('is_solve', False)
-                        self.location_manager.rumors[payload['name']]['eldritch'] = payload['value'] if not is_solve else payload.get('solve', self.location_manager.rumors[payload['name']]['eldritch'])
-                case 'group_pay_update':
-                    self.encounter_pane.group_payments[payload['name']] = {'group_total': payload['total'], 'needed': payload['needed'], 'my_payment': 0}
-                case 'mystery_count':
-                    self.info_panes['ancient_one'].mystery_count.text = str(int(self.ancient_one.mysteries_needed) - int(payload['value']))
-                case 'exile_from_discard':
-                    for item in payload['value'].split(':'):
-                        self.info_panes['reserve'].discard_item(item, True)
-                case 'investigator_died':
-                    dead = self.location_manager.all_investigators[payload['value']]
-                    if hasattr(dead, 'triggers'):
-                        for trigger in dead.triggers:
-                            if not trigger.get('self_only', False) or dead.name == self.investigator.name:
-                                self.triggers[trigger['kind']].remove(trigger)
-                    if not payload['devoured']:
-                        dead.hp_death = payload['kind']
-                        self.location_manager.dead_investigators[payload['value']] = dead
-                    world = self.location_manager.get_map_name(dead.location)
-                    del self.location_manager.all_investigators[payload['value']]
-                    self.maps[world].remove_tokens('investigators', dead.location, payload['value'])
-                    self.maps[world].token_manager.trigger_render()
-                    if payload['value'] == self.investigator.name:
-                        self.encounter_pane.death_screen()
+                    case 'encounter_choice':
+                        self.clear_overlay()
                         self.show_encounter_pane()
-                    for key in self.triggers.keys():
-                        self.triggers[key] = [trigger for trigger in self.triggers[key] if trigger.get('investigator', '') != payload['value']]
-                case 'trade':
-                    del payload['message']
-                    names = list(payload.keys())
-                    self.info_panes['location'].possession_screen.swap_items(payload[names[0]], payload[names[1]], names[0], names[1])
-                case 'choose_new':
-                    if self.investigator.is_dead:
-                        self.networker.show_select(payload['names'])
-                case 'body_recovered':
-                    dead = self.location_manager.dead_investigators[payload['value']]
-                    recover = self.location_manager.dead_investigators[payload['owner']]
-                    for ticket in ['rail_tickets', 'ship_tickets']:
-                        setattr(recover, ticket, getattr(recover, ticket) + getattr(dead, ticket))
-                    for kind in ['assets', 'unique_assets', 'artifacts', 'spells']:
-                        for item in dead.possessions[kind]:
-                            recover.possessions[kind].append(item)
-                            self.info_pane['possessions'].on_get(item, self.investigator.name)
-                    del self.location_manager.dead_investigators[payload['value']]
-                    self.hub.info_panes['possessions'].setup()
-                    self.hub.info_panes['investigator'].set_ticket_counts()
-                case 'become_delayed':
-                    self.show_encounter_pane()
-                    self.encounter_pane.delay('nothing')
-                case 'player_mythos_reckoning':
-                    self.encounter_pane.mythos_reckonings.append(payload['value'])
-                case 'possession_lost':
-                    if payload['kind'] == 'clues':
-                        clues = payload['value'].split(';')
-                        for clue in clues:
-                            self.location_manager.all_investigators[payload['owner']].clues.remove(clue)
-                        self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
-                    else:
-                        items = self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']]
-                        item = next((item for item in items if item.get_server_name() == payload['value']))
-                        self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']].remove(item)
-                        self.info_panes['possessions'].on_discard(item, payload['owner'] == self.investigator.name)
-                case 'player_update':
-                    investigator = self.location_manager.all_investigators[payload['owner']]
-                    for key in ['health', 'sanity', 'ship_tickets', 'rail_tickets']:
-                        setattr(self.location_manager.all_investigators[payload['owner']], key, payload[key])
-                case 'investigator_skill':
-                    self.waiting_panes[-1].server_value = payload['value']
-                case 'delay_status':
-                    self.location_manager.all_investigators[payload['investigator']].delayed = payload['value']
-                case 'mystery_selected':
-                    self.ancient_one.current_mystery = payload['value']
-                    self.ancient_one.mystery_tracker = 0
-                    mystery = self.ancient_one.mysteries[payload['value']]
-                    if mystery['required'] == 'investigators':
-                        self.ancient_one.mystery_required = len(self.all_investigators)
-                    elif mystery['required'] == 'half':
-                        self.ancient_one.mystery_required = math.ceil(len(self.all_investigators) / 2)
-                    self.info_panes['ancient_one'].mystery_counter.text = human_readable(payload['value']) + '\n\n' + human_readable(mystery['kind']) + ': 0 / ' + str(self.ancient_one.mystery_required)
-                    self.info_panes['ancient_one'].mystery.text = mystery['text']
-                    if mystery.get('font_size', False):
-                        self.info_panes['ancient_one'].mystery.style['font_size'] = mystery['font_size']
-                    if mystery.get('triggers', False):
-                        for trigger in mystery['triggers']:
-                            trigger['name'] = payload['value']
-                            self.triggers[trigger['kind']].append(trigger)
-                    if mystery.get('mystery_token', False):
-                        self.map.spawn('mystery', self.location_manager, mystery['mystery_token'])
-                        self.location_manager.locations[mystery['mystery_token']]['mystery'] = True
-                case 'mystery_advanced':
-                    self.ancient_one.mystery_tracker += payload['value']
-                    mystery = self.ancient_one.mysteries[self.ancient_one.current_mystery]
-                    self.info_panes['ancient_one'].mystery_counter.text = human_readable(self.ancient_one.current_mystery) + '\n\n' + human_readable(mystery['kind']) + ': ' + str(self.ancient_one.mystery_tracker) + ' / ' + str(self.ancient_one.mystery_required)
-            if len(self.waiting_panes) > 0 and self.waiting_panes[-1].wait_step != None:
-                if self.waiting_panes[-1].last_value == None or self.waiting_panes[-1].last_value == payload.get('message', None):
-                    pane = self.waiting_panes[-1]
-                    self.waiting_panes = self.waiting_panes[:-1]
-                    pane.set_buttons(pane.wait_step)
-            if payload['message'] == 'trigger_used':
-                ident = payload['value'].split(':')
-                used_trigger = next((trigger for trigger in self.triggers[payload['kind']] if trigger['investigator'] == ident[0] and trigger['name'] == ident[1]), False)
-                if used_trigger:
-                    used_trigger['used'] = True
+                        self.encounter_pane.start_encounter(payload['value'])
+                    case 'mythos':
+                        #FOR TESTING
+                        #if self.is_first:
+                        self.clear_overlay()
+                        self.show_encounter_pane()
+                        self.encounter_pane.load_mythos(payload['value'])
+                        #END TESTING
+                    case 'mythos_switch':
+                        self.encounter_pane.mythos_switch = True
+                    case 'omen':
+                        self.set_omen(int(payload['value']))
+                    case 'doom':
+                        self.set_doom(int(payload['value']))
+                    case 'token_removed':
+                        kind = payload['kind']
+                        loc = payload['value'].split(':')
+                        self.location_manager.locations[loc[1]][kind] = False
+                        self.maps[loc[0]].remove_tokens(kind, loc[1])
+                        self.map.token_manager.trigger_render()
+                    case 'monster_damaged':
+                        monster_id = int(payload['value'])
+                        damage = int(payload['damage'])
+                        def damage_monster(monster, damage):
+                            dead = monster.on_damage(damage)
+                            if dead:
+                                if hasattr(monster, 'death'):
+                                    if hasattr(monster, 'dargs'):
+                                        self.encounter_pane.action_dict[monster.death](**monster.dargs)
+                                    else:
+                                        self.encounter_pane.action_dict[monster.death]()
+                                self.location_manager.locations[monster.location]['monsters'].remove(monster)
+                                self.location_manager.all_monsters.remove(monster)
+                                if not hasattr(monster, 'epic'):
+                                    self.location_manager.monster_deck.append(monster.name)
+                                self.map.remove_tokens('monsters', monster.location, str(payload['value']))
+                                self.map.token_manager.trigger_render()
+                        if monster_id < 0:
+                            for monster in self.location_manager.all_monsters:
+                                damage_monster(monster, damage)
+                        else:
+                            monster = next((monster for monster in self.location_manager.all_monsters if monster.monster_id == int(payload['value'])))
+                            damage_monster(monster, damage)
+                    case 'rumor_solved':
+                        rumor = self.location_manager.rumors[payload['value']]
+                        if rumor['location'] != 'no_spawn':
+                            self.location_manager.locations[rumor['location']]['rumor'] = False
+                            self.maps['world'].remove_tokens('rumor', rumor['location'], payload['value'])
+                        if not payload['solved'] and rumor.get('unsolve_encounter', None) != None:
+                            rumor['unsolve_encounter']['title'] = human_readable(payload['value']) + ' - Reckoning'
+                            self.encounter_pane.mythos_reckonings.append(rumor['unsolve_encounter'])
+                        elif payload['solved'] and rumor.get('trigger', False):
+                            self.triggers[rumor['trigger']] = [trig for trig in self.triggers[rumor['trigger']] if trig['name'] != payload['value']]
+                        del self.location_manager.rumors[payload['value']]
+                    case 'update_rumor':
+                        if self.location_manager.rumors.get(payload['name'], False):
+                            is_solve = self.location_manager.rumors[payload['name']].get('is_solve', False)
+                            self.location_manager.rumors[payload['name']]['eldritch'] = payload['value'] if not is_solve else payload.get('solve', self.location_manager.rumors[payload['name']]['eldritch'])
+                    case 'group_pay_update':
+                        self.encounter_pane.group_payments[payload['name']] = {'group_total': payload['total'], 'needed': payload['needed'], 'my_payment': 0}
+                    case 'mystery_count':
+                        self.info_panes['ancient_one'].mystery_count.text = str(int(self.ancient_one.mysteries_needed) - int(payload['value']))
+                    case 'exile_from_discard':
+                        for item in payload['value'].split(':'):
+                            self.info_panes['reserve'].discard_item(item, True)
+                    case 'investigator_died':
+                        dead = self.location_manager.all_investigators[payload['value']]
+                        if hasattr(dead, 'triggers'):
+                            for trigger in dead.triggers:
+                                if not trigger.get('self_only', False) or dead.name == self.investigator.name:
+                                    self.triggers[trigger['kind']].remove(trigger)
+                        if not payload['devoured']:
+                            dead.hp_death = payload['kind']
+                            self.location_manager.dead_investigators[payload['value']] = dead
+                        world = self.location_manager.get_map_name(dead.location)
+                        del self.location_manager.all_investigators[payload['value']]
+                        self.maps[world].remove_tokens('investigators', dead.location, payload['value'])
+                        self.maps[world].token_manager.trigger_render()
+                        if payload['value'] == self.investigator.name:
+                            self.encounter_pane.death_screen()
+                            self.show_encounter_pane()
+                        for key in self.triggers.keys():
+                            self.triggers[key] = [trigger for trigger in self.triggers[key] if trigger.get('investigator', '') != payload['value']]
+                    case 'trade':
+                        del payload['message']
+                        names = list(payload.keys())
+                        self.info_panes['location'].possession_screen.swap_items(payload[names[0]], payload[names[1]], names[0], names[1])
+                    case 'choose_new':
+                        if self.investigator.is_dead:
+                            self.networker.show_select(payload['names'])
+                    case 'body_recovered':
+                        dead = self.location_manager.dead_investigators[payload['value']]
+                        recover = self.location_manager.dead_investigators[payload['owner']]
+                        for ticket in ['rail_tickets', 'ship_tickets']:
+                            setattr(recover, ticket, getattr(recover, ticket) + getattr(dead, ticket))
+                        for kind in ['assets', 'unique_assets', 'artifacts', 'spells']:
+                            for item in dead.possessions[kind]:
+                                recover.possessions[kind].append(item)
+                                self.info_pane['possessions'].on_get(item, self.investigator.name)
+                        del self.location_manager.dead_investigators[payload['value']]
+                        self.hub.info_panes['possessions'].setup()
+                        self.hub.info_panes['investigator'].set_ticket_counts()
+                    case 'become_delayed':
+                        self.show_encounter_pane()
+                        self.encounter_pane.delay('nothing')
+                    case 'player_mythos_reckoning':
+                        self.encounter_pane.mythos_reckonings.append(payload['value'])
+                    case 'possession_lost':
+                        if payload['kind'] == 'clues':
+                            clues = payload['value'].split(';')
+                            for clue in clues:
+                                self.location_manager.all_investigators[payload['owner']].clues.remove(clue)
+                            self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
+                        else:
+                            items = self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']]
+                            item = next((item for item in items if item.get_server_name() == payload['value']))
+                            self.location_manager.all_investigators[payload['owner']].possessions[payload['kind']].remove(item)
+                            self.info_panes['possessions'].on_discard(item, payload['owner'] == self.investigator.name)
+                    case 'player_update':
+                        investigator = self.location_manager.all_investigators[payload['owner']]
+                        for key in ['health', 'sanity', 'ship_tickets', 'rail_tickets']:
+                            setattr(self.location_manager.all_investigators[payload['owner']], key, payload[key])
+                    case 'investigator_skill':
+                        self.waiting_panes[-1].server_value = payload['value']
+                    case 'delay_status':
+                        self.location_manager.all_investigators[payload['investigator']].delayed = payload['value']
+                    case 'mystery_selected':
+                        self.ancient_one.current_mystery = payload['value']
+                        self.ancient_one.mystery_tracker = 0
+                        mystery = self.ancient_one.mysteries[payload['value']]
+                        if mystery['required'] == 'investigators':
+                            self.ancient_one.mystery_required = len(self.all_investigators)
+                        elif mystery['required'] == 'half':
+                            self.ancient_one.mystery_required = math.ceil(len(self.all_investigators) / 2)
+                        self.info_panes['ancient_one'].mystery_counter.text = human_readable(payload['value']) + '\n\n' + human_readable(mystery['kind']) + ': 0 / ' + str(self.ancient_one.mystery_required)
+                        self.info_panes['ancient_one'].mystery.text = mystery['text']
+                        if mystery.get('font_size', False):
+                            self.info_panes['ancient_one'].mystery.style['font_size'] = mystery['font_size']
+                        if mystery.get('triggers', False):
+                            for trigger in mystery['triggers']:
+                                trigger['name'] = payload['value']
+                                self.triggers[trigger['kind']].append(trigger)
+                        if mystery.get('mystery_token', False):
+                            self.map.spawn('mystery', self.location_manager, mystery['mystery_token'])
+                            self.location_manager.locations[mystery['mystery_token']]['mystery'] = True
+                    case 'mystery_advanced':
+                        self.ancient_one.mystery_tracker += payload['value']
+                        mystery = self.ancient_one.mysteries[self.ancient_one.current_mystery]
+                        self.info_panes['ancient_one'].mystery_counter.text = human_readable(self.ancient_one.current_mystery) + '\n\n' + human_readable(mystery['kind']) + ': ' + str(self.ancient_one.mystery_tracker) + ' / ' + str(self.ancient_one.mystery_required)
+                if len(self.waiting_panes) > 0 and self.waiting_panes[-1].wait_step != None:
+                    if self.waiting_panes[-1].last_value == None or self.waiting_panes[-1].last_value == payload.get('message', None):
+                        pane = self.waiting_panes[-1]
+                        self.waiting_panes = self.waiting_panes[:-1]
+                        pane.set_buttons(pane.wait_step)
+                if payload['message'] == 'trigger_used':
+                    ident = payload['value'].split(':')
+                    used_trigger = next((trigger for trigger in self.triggers[payload['kind']] if trigger['investigator'] == ident[0] and trigger['name'] == ident[1]), False)
+                    if used_trigger:
+                        used_trigger['used'] = True
 
     def draw_point_meters(self, max, current, pos, color):
         degrees = 360 / max
@@ -960,7 +965,14 @@ class HubScreen(arcade.View):
         self.doom_counter.move(10 + (20 - number) * 42.3 - self.doom_counter.x, 0)
         self.doom = number
         if number == 0:
-            self.ancient_one.awaken()
+            self.ancient_one.is_awakened = True
+            self.queue_actions_wakening = True
+            def restart_queue():
+                self.queue_actions_wakening = False
+                for payload in self.awakened_queue:
+                    self.networker.publish_payload(payload, self.investigator.name + '_server')
+            awakening = SmallCardPane(self)
+            awakening.setup([self.ancient_one.awakening], self, finish_action=restart_queue, force_select=True)
 
     def set_omen(self, index):
         positions = [(921, 757), (956, 737), (937, 703), (904, 724)]

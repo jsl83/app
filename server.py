@@ -1,12 +1,7 @@
-import arcade, threading, sys, subprocess, signal, argparse, yaml, random, math, copy
+import threading, sys, subprocess, yaml, random, math, copy
 from python_banyan.banyan_base import BanyanBase
-from screens.server_loading import ServerLoadingScreen
 from ancient_ones.ancient_one import AncientOne
 
-# Screen title and size
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 800
-SCREEN_TITLE = "ELDRITCH HORROR"
 REFERENCES = { #gates, clues, surge
     1: [1, 1, 1],
     2: [1, 2, 2],
@@ -30,8 +25,8 @@ with open('small_cards/server_artifacts.yaml') as stream:
 with open('ancient_ones/server_mythos.yaml') as stream:
     MYTHOS = yaml.safe_load(stream)
 
-class Networker(threading.Thread, BanyanBase):
-    def __init__(self, back_plane_ip_address=None, process_name=None, player=0, screen=None):
+class Server(threading.Thread, BanyanBase):
+    def __init__(self, back_plane_ip_address=None, process_name=None, player=None):
         threading.Thread.__init__(self)
         self.the_lock = threading.Lock()
         self.daemon = True
@@ -42,8 +37,6 @@ class Networker(threading.Thread, BanyanBase):
             process_name=process_name, loop_time=.0001)
         self.set_subscriber_topic('login')
         self.start()
-
-        self.screen = screen
 
         self.player_count = 0
         self.selected_investigators = []
@@ -197,17 +190,14 @@ class Networker(threading.Thread, BanyanBase):
     def incoming_message_processing(self, topic, payload):
         if topic == 'login':
             match payload['message']:
-                case 'get_login_state':
-                    self.publish_payload({'message': 'number_select' if self.player_count == 0 else
-                        'ancient_ones' if not self.ancient_one else 'investigators', 'value': self.screen.investigators}, 'server_update')
                 case "ancient_ones_selected":
                     self.ancient_one = AncientOne(payload['value'])
                     MONSTERS['cultist'] = self.ancient_one.cultist
                     self.decks['monsters'] += ['cultist']*6
                     self.encounters['clue'] = [self.ancient_one.clues, list(range(self.ancient_one.clues))]
-                    self.screen.select_ao(payload['value'])
                     self.mythos_setup()
-                    self.publish_payload({'message': 'investigators', 'value': payload['value']}, 'server_update')
+                case 'get_investigators':
+                    self.publish_payload({'message': 'chosen_investigators', 'value': self.selected_investigators, 'ancient_one': self.ancient_one.name if self.ancient_one else None}, 'server_update')
                 case 'investigators_selected':
                     if self.players_died < 0:
                         self.selected_investigators.append(payload['value'])
@@ -223,8 +213,7 @@ class Networker(threading.Thread, BanyanBase):
                         'tickets': [0,0]
                     }
                     self.set_subscriber_topic(payload['value'])
-                    self.screen.add_investigator(payload['value'])
-                    self.publish_payload({'message': 'investigator_selected', 'value': payload['value']}, 'server_update')
+                    self.publish_payload({'message': 'chosen_investigators', 'value': [payload['value']]}, 'server_update')
                     if self.players_died > 0:
                         self.publish_payload({
                             'message': 'spawn',
@@ -248,10 +237,11 @@ class Networker(threading.Thread, BanyanBase):
                     elif len(self.selected_investigators) == self.player_count:
                         self.publish_payload({'message': 'start_game', 'value': self.ancient_one.name, 'investigators': self.selected_investigators}, 'server_update')
                         self.players_died = 0
-                case 'number_selected':
-                    self.player_count = payload['value']
-                    self.reference = REFERENCES[int((int(payload['value']) + 1) / 2)]
-                    self.publish_payload({'message': 'ancient_ones', 'value': None}, 'server_update')
+                case 'start_game':
+                    self.player_count = len(self.selected_investigators)
+                    self.publish_payload({'message': 'start_game', 'value': self.ancient_one.name, 'investigators': self.selected_investigators}, 'server_update')
+                    self.players_died = 0
+                    self.reference = REFERENCES[int((self.player_count + 1) / 2)]
                 case 'ready':
                     self.current_player += 1
                     if self.current_player == self.player_count:
@@ -280,26 +270,6 @@ class Networker(threading.Thread, BanyanBase):
                         self.restock_reserve()
                         self.select_mystery()
                         self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
-                    '''
-                    #FOR TESTING
-                    self.lead_investigator = 0
-                    self.current_player = 0
-                    self.current_phase = 0
-                    self.ancient_one['mythos'] = [{},{},{}]
-                    self.mythos_setup()
-                    self.ancient_one['doom'] = 15
-                    self.decks['gates']['board'] = []
-                    self.is_first = True
-                    self.assets = {
-                        'deck': self.assets['deck'],
-                        'discard': self.assets['discard'],
-                        'reserve': []
-                    }
-                    self.investigators['akachi_onyele'] = {'tickets': (0,0), 'assets':[], 'conditions': [], 'artifacts': [], 'unique_assets':[], 'spells':[], 'hp': 0, 'san': 0, 'clues': ['world:arkham']}
-                    self.initiate_gameboard()
-                    self.publish_payload({'message': 'choose_lead', 'value': None}, 'server_update')
-                    #END TESTING
-                    '''
         elif topic in self.selected_investigators:
             if payload['message'] in ['spells', 'conditions']:
                 self.spell_conditions_request(payload['message'], topic, payload.get('tag', ''), payload.get('value', ''), payload.get('mark_harrigan', False))
@@ -931,48 +901,3 @@ class Networker(threading.Thread, BanyanBase):
                 locs = random.sample(list(LOCATIONS.keys()), self.ancient_one.mystery_required)
                 for loc in locs:
                     self.publish_payload({'message': 'spawn', 'value': 'eldritch', 'location': loc, 'map': 'world'}, 'server_update')
-
-def set_up_network(screen):
-    parser = argparse.ArgumentParser()
-    # allow user to bypass the IP address auto-discovery.
-    # This is necessary if the component resides on a computer
-    # other than the computing running the backplane.
-    parser.add_argument("-b", dest="back_plane_ip_address", default="None",
-                        help="None or Common Backplane IP address")
-    parser.add_argument("-n", dest="process_name", default="Arcade p2p",
-                        help="Banyan Process Name Header Entry")
-    parser.add_argument("-p", dest="player", default="0",
-                        help="Select player 0 or 1")
-
-    args = parser.parse_args()
-
-    if args.back_plane_ip_address == 'None':
-        args.back_plane_ip_address = None
-    kw_options = {'back_plane_ip_address': args.back_plane_ip_address,
-                'process_name': args.process_name + ' player' + str(args.player),
-                'player': int(args.player),
-                'screen': screen
-                }
-    # instantiate MyGame and pass in the options
-    return Networker(**kw_options)
-
-# signal handler function called when Control-C occurs
-# noinspection PyUnusedLocal,PyUnusedLocal
-def signal_handler(sig, frame):
-    print('Exiting Through Signal Handler')
-    raise KeyboardInterrupt
-
-# listen for SIGINT
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
-
-def main():
-    window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-    loading_screen = ServerLoadingScreen()
-    window.show_view(loading_screen)
-    set_up_network(loading_screen)
-
-    arcade.run()
-
-if __name__ == '__main__':
-    main()

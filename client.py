@@ -5,6 +5,8 @@ import argparse
 from python_banyan.banyan_base import BanyanBase
 from screens.hub_screen import HubScreen
 from screens.select_screen import SelectionScreen
+from screens.home_screen import HomeScreen
+from server import Server
 
 # Screen title and size
 SCREEN_WIDTH = 1280
@@ -12,9 +14,9 @@ SCREEN_HEIGHT = 800
 SCREEN_TITLE = "ELDRITCH HORROR"
 
 class Networker(threading.Thread, BanyanBase):
-    def __init__(self, back_plane_ip_address=None, process_name=None, player=0):
+    def __init__(self, back_plane_ip_address=None, process_name=None, player=0, window=None):
         threading.Thread.__init__(self)
-        self.window = None
+        self.window = window
         self.the_lock = threading.Lock()
         self.daemon = True
         self.run_the_thread = threading.Event()
@@ -22,10 +24,16 @@ class Networker(threading.Thread, BanyanBase):
         self.select_screen = None
         self.game_screen = None
         self.investigator = None
+        self.ancient_one = None
         BanyanBase.__init__(self, back_plane_ip_address=back_plane_ip_address,
             process_name=process_name, loop_time=.0001)
-        #self.set_subscriber_topic('akachi_onyele_server')
         self.start()
+        self.window.pop_handlers()
+        self.select_screen = SelectionScreen('ancient_ones' if int(player) == 0 else 'investigators', self)
+        self.window.show_view(self.select_screen)
+        self.set_subscriber_topic('server_update')
+        if (int(player) != 0):
+            self.publish_payload({'message': 'get_investigators'}, 'login')
 
     # Process banyan subscribed messages
     def run(self):
@@ -44,46 +52,37 @@ class Networker(threading.Thread, BanyanBase):
         if self.external_message_processor:
             self.external_message_processor(topic, payload)
         else:
-            #'''
             message = payload['message']
-            match topic:
-                case 'server_update':
-                    match message:
-                        case 'ancient_ones' | 'investigators' | 'number_select':
-                            self.select_screen = SelectionScreen(message, self)
-                            if (message == 'investigators'):
-                                for name in payload['value']:
-                                    self.select_screen.remove_option(name)
-                            self.window.pop_handlers()
-                            self.window.show_view(self.select_screen)
-                        case 'investigator_selected':
-                            self.select_screen.remove_option(payload['value'])
-                        case 'start_game':
-                            self.game_screen = HubScreen(self, self.investigator, payload['value'], payload['investigators'])
-                            self.window.pop_handlers()
-                            self.window.show_view(self.game_screen)
-            #'''
-            #self.window.show_view(HubScreen(self, 'akachi_onyele', 'azathoth'))
+            if message == 'chosen_investigators':
+                if payload.get('ancient_one', False):
+                    self.select_screen.select_ao(payload['ancient_one'])
+                for investigator in payload['value']:
+                    self.select_screen.investigator_selected(investigator)
+            elif message == 'start_game':
+                self.game_screen = HubScreen(self, self.investigator, payload['value'], payload['investigators'])
+                self.window.pop_handlers()
+                self.window.show_view(self.game_screen)
 
     def show_select(self, names):
         self.select_screen = SelectionScreen('investigators', self, True)
         for name in names:
-            self.select_screen.remove_option(name)
+            self.select_screen.investigator_selected(name)
+        self.window.pop_handlers()
         self.window.show_view(self.select_screen)
 
     def restart(self):
         pass
 
-def set_up_network():
+def set_up_network(ip_address="None", player="1"):
     parser = argparse.ArgumentParser()
     # allow user to bypass the IP address auto-discovery.
     # This is necessary if the component resides on a computer
     # other than the computing running the backplane.
-    parser.add_argument("-b", dest="back_plane_ip_address", default="None",
+    parser.add_argument("-b", dest="back_plane_ip_address", default=ip_address,
                         help="None or Common Backplane IP address")
     parser.add_argument("-n", dest="process_name", default="Arcade p2p",
                         help="Banyan Process Name Header Entry")
-    parser.add_argument("-p", dest="player", default="0",
+    parser.add_argument("-p", dest="player", default=player,
                         help="Select player 0 or 1")
 
     args = parser.parse_args()
@@ -94,7 +93,7 @@ def set_up_network():
                 'process_name': args.process_name + ' player' + str(args.player),
                 'player': int(args.player)}
 
-    return Networker(**kw_options)
+    return kw_options
 
 # signal handler function called when Control-C occurs
 # noinspection PyUnusedLocal,PyUnusedLocal
@@ -106,12 +105,18 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
+def start_server(window):
+    args = set_up_network(player="0")
+    Server(**args)
+    Networker(**args, window=window)
+
+def join_game(ip_address, window):
+    args = set_up_network(ip_address)
+    Networker(**args, window=window)
+
 def main():
-    networker = set_up_network()
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-    networker.window = window
-    networker.set_subscriber_topic('server_update')
-    networker.publish_payload({'message': 'get_login_state', 'value': None}, 'login')
+    window.show_view(HomeScreen(start_server, join_game, window))
     arcade.run()
 
 if __name__ == '__main__':

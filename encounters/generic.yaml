@@ -624,5 +624,6 @@
         - text: Discard 1 Item
           kind: assets
           tag: item
+          voluntary: False
       test_text: A large wave washes across the deck, and a prized possession slips from your fingers. You dive into the water, holding your breath as long as you can to recover the object before it sinks out of reach.
       fail_text: The item disappears into the depths.

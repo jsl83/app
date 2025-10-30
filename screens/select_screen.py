@@ -31,6 +31,7 @@ class SelectionScreen(arcade.View):
         self.max_height = 800 if len(self.selection_options) * 3 < 18 else 650 + (math.ceil(len(self.selection_options) * 5 / 6) - 3) * 200
         self.selection_list = arcade.gui.UILayout(width=1280, height=self.max_height)
         self.detail_list = arcade.gui.UILayout(width=1280, height=800)
+        self.detail_card = None
 
         self.setup()
 
@@ -50,7 +51,7 @@ class SelectionScreen(arcade.View):
             scale = 125 / texture.width
             x = 150 + column * 171
             y = 515 - row * 200
-            select_button = arcade.gui.UITextureButton(x, y, height=300, texture=texture, scale=scale, text=human_readable(name), text_position=(0,-70))
+            select_button = arcade.gui.UITextureButton(x, y, height=300, texture=texture, scale=scale)
             select_button.name = name
             select_button.enabled = True
             self.selection_list.add(select_button)
@@ -66,6 +67,34 @@ class SelectionScreen(arcade.View):
             button = arcade.gui.UITextureButton(1050, 300 + i * 100, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons\\placeholder.png'))
             button.text = detail_buttons[i]
             self.detail_list.add(button)
+        ###
+        self.selected = 'akachi_onyele' if self.path == 'investigators' else 'azathoth'
+        self.networker.publish_payload({'message': self.path + '_selected', 'value': self.selected}, 'login')
+        if self.path == 'investigators':
+            self.networker.set_subscriber_topic(self.selected + '_server')
+            self.networker.set_subscriber_topic(self.selected + '_player')
+            self.networker.investigator = self.selected
+            if self.respawn:
+                self.networker.game_screen.respawn_name = self.selected
+            self.networker.window.pop_handlers()
+            loading_screen = ServerLoadingScreen(self.networker)
+            for name in [button.name for button in self.selection_list.children if not button.enabled]:
+                loading_screen.investigator_selected(name)
+            if self.ancient_one:
+                loading_screen.select_ao(self.ancient_one)
+                loading_screen.investigator_selected(self.selected)
+            self.networker.select_screen = loading_screen
+            self.networker.window.show_view(loading_screen)
+            self.networker.publish_payload({'message': 'start_game'}, 'login')
+        else:
+            self.selection_list.clear()
+            self.ancient_one = self.selected
+            self.selected = None
+            self.path = 'investigators'
+            self.load_options()
+            self.setup()
+            self.networker.publish_payload({'message': 'get_investigators'}, 'login')
+        ###
 
     def on_draw(self):
         self.clear()        
@@ -130,12 +159,14 @@ class SelectionScreen(arcade.View):
                         self.manager.add(self.selection_list)
                         self.detail_list.remove(self.detail_list.children[-1])
                 elif buttons[0].enabled:
+                    if self.detail_card and self.detail_card in self.detail_list:
+                        self.detail_list.children.remove(self.detail_card)
                     name = buttons[0].name
                     texture = arcade.load_texture(IMAGE_PATH_ROOT + self.path + '\\' + name + '_front.png')
                     scale = 700 / texture.height
                     x = (760 - texture.width * scale) / 2
-                    detail_card = arcade.gui.UITextureButton(x + 150, 50, scale=scale, texture=texture)
-                    self.detail_list.add(detail_card)
+                    self.detail_card = arcade.gui.UITextureButton(x + 150, 50, scale=scale, texture=texture)
+                    self.detail_list.add(self.detail_card)
                     self.selected = name
                     self.manager.children = {0:[]}
                     self.manager.add(self.detail_list)

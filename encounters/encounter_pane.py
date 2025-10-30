@@ -500,16 +500,25 @@ class EncounterPane():
             self.option_button.action = self.set_buttons
             self.option_button.action_args = {'key': step}
             self.hub.click_pane = self
+            def set_markers():
+                if distance != 99:
+                    for loc in allowed_locs:
+                        marker = arcade.Sprite(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'maps/highlight.png'), scale=0.4 if 'space_' not in loc else 0.15)
+                        marker.center_x = self.hub.location_manager.locations[loc]['x']
+                        marker.center_y = self.hub.location_manager.locations[loc]['y']
+                        self.hub.position_markers.append(marker)
             def no_click():
                 self.proceed_button.text = 'Select location'
                 self.proceed_button.disable()
                 self.clear_buttons([self.proceed_button] + ([] if must_move else [self.option_button]))
+                set_markers()
             def loc_select(loc):
                 if distance == 99 or loc in allowed_locs:
                     self.proceed_button.text = 'Move to ' + human_readable(loc)
                     self.proceed_button.action_args['location'] = loc
                     self.proceed_button.enable()
                     self.clear_buttons([self.proceed_button])
+                    self.hub.position_markers.clear()
                 else:
                     no_click()
             self.click_action = loc_select

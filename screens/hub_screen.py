@@ -83,11 +83,11 @@ class HubScreen(arcade.View):
         self.choice_layout = arcade.gui.UILayout()
         self.doom_counter = arcade.gui.UITextureButton(x=10, y=760, scale=0.18, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'maps/doom.png'))
         self.omen_counter = arcade.gui.UITextureButton(x=950, y=760, scale=0.35, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'maps/omen.png'))
+        self.token_manager = arcade.gui.UIManager()
         ui_layout = arcade.gui.UILayout(x=0, y=0, width=1000, height=142).with_background(arcade.load_texture(IMAGE_PATH_ROOT + 'gui/ui_pane.png'))
-        ui_layout.add(arcade.gui.UITextureButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui/map_overlay.png'), y=-200, scale=0.5))
-        ui_layout.add(self.doom_counter)
-        ui_layout.add(self.omen_counter)
-        self.overlay_toggle = ActionButton(x=10, y=142, width=336, height=87, action=self.toggle_overlay, texture='blank.png', style={'font_color': arcade.color.BLACK})
+        ui_layout.add(arcade.gui.UITextureButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui/map_overlay.png'), y=-200, scale=0.5), index=1)
+        self.token_manager.add(self.doom_counter)
+        self.token_manager.add(self.omen_counter)
         index = 0
         for text in ['investigator', 'possessions', 'reserve', 'location', 'ancient_one']:
             ui_layout.add(ActionButton(index * 190 + 50, y=21, width=140, height=100, texture='buttons/placeholder.png', text=human_readable(text),
@@ -134,14 +134,13 @@ class HubScreen(arcade.View):
 
         self.info_manager.add(self.info_pane.layout)
         self.ui_manager.add(ui_layout)
-        self.ui_manager.add(self.overlay_toggle)
-        self.ui_manager.add(ActionButton(x=920, y=142, width=70, height=70, action=self.undo, texture='buttons/undo.png'))
         self.info_manager.enable()
         self.ui_manager.enable()
         self.choice_manager.enable()
         self.select_ui_button(0)
         self.set_doom(self.ancient_one.doom)
         self.set_omen(0)
+        self.token_manager.enable()
         self.waiting_panes = []
 
         self.undo_action = {
@@ -161,28 +160,19 @@ class HubScreen(arcade.View):
             self.networker.publish_payload({'message': 'ready'}, 'login')
         self.respawn_name = ''
 
-        '''
-        #FOR TESTING
-        self.request_card('assets', 'arcane_tome')
-        self.request_card('assets', 'axe')
-        self.request_card('assets', 'arcane_scholar')
-        #self.request_card('conditions', 'amnesia')
-        self.investigator.sanity -= 3
-        self.investigator.clues.append('world:arkham')
-        self.info_panes['investigator'].clue_button.text = 'x ' + str(len(self.investigator.clues))
-        self.is_first = True
-        self.location_manager.player_count = 1
-        #self.request_card('conditions', 'blessed')
-        #END TESTING
-        '''
-        #self.investigator.clues.append('world:arkham')
+        self.position_markers = arcade.SpriteList()
 
     def on_draw(self):
         self.clear()
-        self.map.draw()
+        self.map.manager.draw()
+        for sprite in self.position_markers:
+            sprite.angle += 1
+        self.position_markers.draw()
+        self.map.token_manager.draw()
         self.info_manager.draw()
         self.ui_manager.draw()
         self.choice_manager.draw()
+        self.token_manager.draw()
         self.click_time += 1
         if self.slow_move[0] != 0 or self.slow_move[1] != 0:
             self.map.move(self.slow_move[0], self.slow_move[1])
@@ -195,7 +185,7 @@ class HubScreen(arcade.View):
         if self.info_pane == self.info_panes['investigator']:
             self.draw_point_meters(self.investigator.max_health, self.investigator.health, 1075, (204,43,40))
             self.draw_point_meters(self.investigator.max_sanity, self.investigator.sanity, 1202, (84, 117, 184))
-    
+
     def on_mouse_release(self, x, y, button, modifiers):
         if self.holding == 'investigator' and self.click_time >= 10:
             map_loc = self.map.get_location()
@@ -216,6 +206,7 @@ class HubScreen(arcade.View):
                     self.ticket_move(self.investigator.name, location[2], tickets[0][0], tickets[0][1], self.original_investigator_location)
             else:
                 self.move_unit(self.investigator.name, self.original_investigator_location)
+            self.position_markers.clear()
         elif getattr(self.holding, 'name', None) == 'charlie_send':
             inv_buttons = [button for button in self.info_pane.choice_layout.children if getattr(button, 'name', None) in list(self.location_manager.all_investigators.keys()) and self.holding.check_overlap(button)]
             if len(inv_buttons) > 0:
@@ -278,6 +269,11 @@ class HubScreen(arcade.View):
                         tokens = self.map.get_tokens('investigators', key, self.investigator.name)
                         self.investigator_token = tokens[0] if self.zoom == 2 else tokens[1]
                         self.original_investigator_location = key
+                        for loc in self.in_movement_range().keys():
+                            marker = arcade.Sprite(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'maps/highlight.png'), scale=0.4 if 'space_' not in loc else 0.15)
+                            marker.center_x = self.location_manager.locations[loc]['x']
+                            marker.center_y = self.location_manager.locations[loc]['y']
+                            self.position_markers.append(marker)
                     
         elif (self.info_pane == self.info_panes['possessions'] or (self.info_pane == self.info_panes['reserve'] and self.info_panes['reserve'].discard_view) or (self.info_pane == self.info_panes['location'] and self.info_panes['location'].is_trading)) and x > 1000:
             self.holding = 'items'
@@ -327,19 +323,6 @@ class HubScreen(arcade.View):
         self.info_manager.add(self.info_pane.layout)
         self.info_manager.trigger_render()
         self.gui_set(False)
-
-    def toggle_overlay(self):
-        if len(self.choice_layout.children) > 0:
-            if self.overlay_showing:
-                self.choice_manager.clear()
-                title = 'Show Overlay'
-                self.overlay_toggle.text = title
-                self.overlay_showing = False
-            else:
-                self.choice_manager.add(self.choice_layout)
-                self.overlay_toggle.text = 'Hide Overlay'
-                self.overlay_showing = True
-            self.ui_manager.trigger_render()
 
     def set_listener(self, topic, payload):
         if topic == self.investigator.name + '_player':
@@ -727,10 +710,10 @@ class HubScreen(arcade.View):
         for x in range(max - current, max):
             x = max - x - 1
             arcade.draw_arc_outline(
-                pos, 577, 110, 110, color, x * degrees + 93, (x + 1) * degrees + 87, 18)
+                pos, 583, 110, 110, color, x * degrees + 93, (x + 1) * degrees + 87, 18)
         angle = (max - current) * degrees * math.pi / 180
         x = 55 * math.sin(angle) + pos
-        y = 55 * math.cos(angle) + 577
+        y = 55 * math.cos(angle) + 583
         arcade.draw_circle_filled(x, y, 15, color)
         arcade.draw_text(current, x, y+2, width=20, anchor_x='center', anchor_y='center', bold=True, font_size=17, font_name="calibri")
 
@@ -947,7 +930,6 @@ class HubScreen(arcade.View):
     def clear_overlay(self):
         self.choice_layout.clear()
         self.choice_manager.clear()
-        self.overlay_toggle.text = self.server_message
         self.overlay_showing = False
         self.ui_manager.trigger_render()
         self.choice_manager.trigger_render()
@@ -955,7 +937,6 @@ class HubScreen(arcade.View):
     def show_overlay(self):
         self.choice_manager.add(self.choice_layout)
         self.overlay_showing = True
-        self.overlay_toggle.text = 'HIDE OVERLAY'        
 
     def request_spawn(self, kind, name='', location='', number='1'):
         self.networker.publish_payload({'message': 'spawn', 'value': kind, 'location': location, 'name': name, 'number': number}, self.investigator.name)

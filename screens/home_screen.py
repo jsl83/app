@@ -22,6 +22,8 @@ class HomeScreen(arcade.View):
             self.layout.add(buttons)
         self.host_action = host_action
         self.join_action = join_action
+
+        self.host_action(self.window)
     
     def on_draw(self):
         self.clear()        

@@ -94,10 +94,6 @@ class Map():
             self.token_manager.add(self.zoom_layout)
         self.map.move(x, y)
 
-    def draw(self):
-        self.manager.draw()
-        self.token_manager.draw()
-
     def spawn(self, kind, manager, location_name, name=None, monster_id=None):
         location = manager.locations[location_name]
         path = None

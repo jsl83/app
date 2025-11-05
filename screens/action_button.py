@@ -1,5 +1,6 @@
 import arcade, arcade.gui
 from arcade import Texture
+from arcade.gui.surface import Surface
 
 class ActionButton(arcade.gui.UITextureButton):
     def __init__(self,
@@ -15,7 +16,7 @@ class ActionButton(arcade.gui.UITextureButton):
                  size_hint=None,
                  size_hint_min=None,
                  size_hint_max=None,
-                 style=None,
+                 style={'font_color': arcade.color.WHITE, 'font_size': 15},
                  text_position: tuple = (0,0),
                  font: str = "",
                  action=lambda: None,
@@ -25,13 +26,14 @@ class ActionButton(arcade.gui.UITextureButton):
                  name: str = "",
                  anchor_y: str = "center",
                  is_action: bool = False,
+                 bold=False,
                  **kwargs):
         
         arcade_texture = None if texture == None else arcade.load_texture(":resources:eldritch/images/" + texture) if type(texture) == str else texture
         arcade_pressed = None if texture_pressed == None else arcade.load_texture(":resources:eldritch/images/" + texture_pressed)
         
         super().__init__(x, y, width, height, arcade_texture, texture_hovered, arcade_pressed, text, scale,
-                         size_hint, size_hint_min, size_hint_max, style, font=font, multiline=multiline, anchor_y=anchor_y, text_position=text_position)
+                         size_hint, size_hint_min, size_hint_max, style=style, font=font, multiline=multiline, anchor_y=anchor_y, text_position=text_position, bold=bold)
         
         self.action = action
         self.enabled = enabled
@@ -47,11 +49,9 @@ class ActionButton(arcade.gui.UITextureButton):
 
     def disable(self):
         self.enabled = False
-        self.style['font_color'] = arcade.color.ASH_GREY
     
     def enable(self):
         self.enabled = True
-        self.style['font_color'] = arcade.color.WHITE
 
     def select(self, selected: bool = False):
         self._tex = self.texture_pressed if selected else self.original_texture
@@ -79,14 +79,7 @@ class ActionButton(arcade.gui.UITextureButton):
 
     def check_overlap(self, button):
         return self.rect.x < button.rect.x + button.rect.width and self.rect.x + self.rect.width > button.rect.x and self.rect.y + self.rect.height > button.rect.y and self.rect.y < button.rect.y + button.rect.height
-    
-    @property
-    def pressed(self):
-        return self._pressed
 
-    @pressed.setter
-    def pressed(self, value):
-        pass
-        #if self._pressed != value:
-        #    self._pressed = value
-        #    self.trigger_render()
+    def set_style(self, color=None, size=None):
+        self._style['font_color'] = color or self._style.get('font_color', arcade.color.WHITE)
+        self._style['font_size'] = size or self._style.get('font_size', 15)

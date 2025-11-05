@@ -11,9 +11,12 @@ class ReservePane():
         self.layout = arcade.gui.UILayout(x=1000)
         self.choice_layout = arcade.gui.UILayout()
         self.button_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
-        self.button_pane = arcade.gui.UITexturePane(self.button_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/info_pane.png'))
+        self.button_pane = arcade.gui.UILayout(1000, 330, 280, 470).with_background(arcade.load_texture(IMAGE_PATH_ROOT + 'gui/reserve_top.png'))
+        self.shopping_pane = arcade.gui.UILayout(1000, 0, 280, 330).with_background(arcade.load_texture(IMAGE_PATH_ROOT + 'gui/shopping.png'))
+        self.bottom_pane = arcade.gui.UILayout(1000, 0, 280, 330).with_background(arcade.load_texture(IMAGE_PATH_ROOT + 'gui/reserve_bottom.png'))
         self.discard_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
-        self.discard_pane = arcade.gui.UITexturePane(self.discard_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/info_pane.png'))
+        self.discard_pane = arcade.gui.UITexturePane(self.discard_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/reserve_pane.png'))
+        self.enable_pane = arcade.gui.UILayout()
         self.reserve = []
         self.discard = []
         self.selected = []
@@ -24,27 +27,33 @@ class ReservePane():
         self.discard_view = False
         self.position = 0
         self.boundary = 0
-        y_pos = 760
+        y_pos = 749
         number = 0
         self.reserve_buttons = []
         for i in range(4):
             if number == 0:
-                y_pos -= 190
-            button = ActionButton(1015 + number * 130, y_pos, width=120, height=185, texture='buttons/placeholder.png', action=self.select_item)
-            self.button_layout.add(button)
+                y_pos -= 201
+            button = ActionButton(1014 + number * 140, y_pos, width=120, height=185, action=self.select_item, texture='assets/personal_assistant.png', scale=0.57)
+            self.button_pane.add(button)
             number += 1
             if number == 2:
                 number = 0
             self.reserve_buttons.append(button)
         self.layout.add(self.button_pane)
-        self.button_layout.add(ActionButton(x=1000, y=760, width=280, height=25, text='RESERVE'))
-        self.acquire_button = ActionButton(x=1000, y=325, width=280, height=25, text='Acquire Assets', texture='buttons/placeholder.png', action=self.acquire_assets)
-        self.discard_button = ActionButton(x=1000, y=275, width=280, height=25, text='View Discard', texture='buttons/placeholder.png', action=self.discard_action)
-        self.debt_button = ActionButton(x=1000, y=225, width=280, height=25, text='Bank Loan', texture='buttons/placeholder.png', action=self.bank_loan)
-        self.button_layout.add(self.acquire_button)
-        self.button_layout.add(self.discard_button)
-        self.discard_layout.add(ActionButton(x=1000, y=760, width=280, height=25, text='DISCARD'))
-        self.discard_layout.add(ActionButton(x=1260, y=780, width=20, height=20, text='X', texture='buttons/placeholder.png', action=self.close_discard))
+        self.layout.add(self.bottom_pane)
+        self.acquire_button = ActionButton(x=1036, y=273, width=208, height=37, action=self.acquire_assets, text='Acquire Assets', font='Garamond Eldritch', style={'font_color': arcade.color.BLACK}, text_position=(0,-2))
+        self.discard_button = ActionButton(x=1036, y=201, width=208, height=37, action=self.discard_action, text='View Discard', font='Garamond Eldritch', style={'font_color': arcade.color.BLACK}, text_position=(0,-2))
+        self.credit_button = ActionButton(x=1000, y=163, width=115, height=55, font='Poster Bodoni', style={'font_color': arcade.color.BLACK, 'font_size': 18})
+        self.debt_button = ActionButton(x=1090, y=0, width=100, height=138, action=self.bank_loan)
+        self.cycle_button = ActionButton(x=1154, y=161, width=126, height=88, action=self.discard_action, text='Cycle', style={'font_color': arcade.color.BLACK, 'font_size': 18}, font='Garamond Eldritch', text_position=(5,15))
+        self.cycle_button.disable()
+        self.bottom_pane.add(self.acquire_button)
+        self.bottom_pane.add(self.discard_button)
+        self.shopping_pane.add(self.acquire_button)
+        self.shopping_pane.add(self.cycle_button)
+        self.shopping_pane.add(self.credit_button)
+        self.shopping_pane.add(self.debt_button)
+        self.discard_layout.add(ActionButton(x=1031, y=740, width=217, height=46, text='Close Discard', texture='buttons/button.png', action=self.close_discard, font='Garamond Eldritch', style={'font_color': arcade.color.BLACK}, text_position=(0,-2)))
         self.empty_texture = arcade.load_texture(":resources:eldritch/images/buttons/placeholder.png")
         self.encounter_type = ['acquire_assets']
 
@@ -63,6 +72,7 @@ class ReservePane():
             option.name = item
             option.texture = card['texture']
             option.action_args = {'card': card}
+            option.scale = 0.5
             option.enable()
             self.reserve.append(card)
         if len(self.reserve) == 0:
@@ -90,7 +100,7 @@ class ReservePane():
                     self.hub.small_card_pane.setup(services, parent=self, single_pick=False, finish_action=finish, force_select=True, textures=[service['texture'] for service in services])
                 else:
                     self.hub.action_taken('shop')
-                self.acquire_button.disable()
+                self.disable_button(self.acquire_button)
             if self.hub.investigator.name == 'charlie_kane' and self.hub.location_manager.player_count > 1:
                 send_pane = InvestigatorSkillPane(self.hub)
                 send_pane.acquire_items = self.selected
@@ -111,38 +121,46 @@ class ReservePane():
                 for x in self.rolls:
                     if x >= self.hub.investigator.success:
                         self.successes += 1
-                self.acquire_button.text = 'Acquire (Remaining cost ' + str(self.successes) + ')'
-                self.acquire_button.enable()
-                self.discard_button.text = 'Cycle 1 Card'
-                self.layout.add(self.debt_button)
+                self.enable_button(self.acquire_button)
+                self.enable_button(self.discard_button)
+                self.disable_button(self.cycle_button)
+                self.layout.children.remove(self.bottom_pane)
+                self.layout.add(self.shopping_pane)
+                self.layout.add(self.enable_pane)
+                self.credit_button.text = str(self.successes)
             self.rolls, self.choice_layout = self.hub.run_test(1, self, options=[ActionButton(width=100, height=50, text='Finish', action=finish_test, texture='buttons/placeholder.png')])
             self.layout.add(self.choice_layout)
-            self.acquire_button.disable()
-            self.discard_button.disable()
+            self.disable_button(self.acquire_button)
+            self.disable_button(self.discard_button)
+            if next((item for item in self.hub.investigator.possessions['assets'] if item['name'] == 'debt'), False):
+                self.enable_pane.append(ActionButton(x=self.debt_button.x, y=self.debt_button.y, width=self.debt_button.width, height=self.debt_button.height, texture='buttons/transparent.png'))
             for button in self.reserve_buttons:
                 button.disable()
 
     def select_item(self, card):
         cost = card['cost']
+        button = next((button for button in self.reserve_buttons if button.name == card['name']), None)
         if self.is_shopping:
             if card in self.selected:
                 self.selected.remove(card)
+                self.enable_pane.children = [overlay for overlay in self.enable_pane.children if getattr(overlay, 'name', 'Default') != card['name']]
                 self.successes += cost
                 if not self.acquire_button.enabled and self.successes >= 0:
-                    self.acquire_button.enable()
+                    self.enable_button(self.acquire_button)
             else:
-                self.acquire_button.enable()
+                overlay = ActionButton(texture='buttons/transparent.png', x=button.x, y=button.y, width=button.width, height=button.height)
+                overlay.name = card['name']
+                self.enable_pane.add(overlay)
+                self.enable_button(self.acquire_button)
                 self.selected.append(card)
                 self.successes -= cost
                 if self.acquire_button.enabled and self.successes < 0:
-                    self.acquire_button.disable()
-                if len(self.selected) > 1:
-                    self.discard_button.disable()
-            self.acquire_button.text = 'Acquire (Remaining cost: ' + str(self.successes) + ')'
+                    self.disable_button(self.acquire_button)
+            self.credit_button.text = str(self.successes)
             if len(self.selected) == 1:
-                self.discard_button.enable()
-            else:
-                self.discard_button.disable()
+                self.enable_button(self.cycle_button)
+            elif self.cycle_button.enabled:
+                self.disable_button(self.cycle_button)
             self.layout.trigger_render()
 
     def discard_action(self):
@@ -158,9 +176,12 @@ class ReservePane():
     def bank_loan(self):
         self.hub.request_card('conditions', 'debt')
         self.successes += 2
-        self.acquire_button.text = 'Acquire (Remaining cost ' + str(self.successes) + ')'
+        self.credit_button.text = str(self.successes)
         if self.successes > 0 and len(self.selected) > 0:
             self.acquire_button.enable()
+        self.enable_pane.add(ActionButton(x=self.debt_button.x, y=self.debt_button.y, width=self.debt_button.width, height=self.debt_button.height, texture='gui/overlay.png'))
+        self.layout.trigger_render()
+        self.hub.info_manager.trigger_render()
 
     def reset(self):
         self.hub.gui_set(True)
@@ -168,18 +189,22 @@ class ReservePane():
         self.successes = 0
         self.rolls = []
         self.selected = []
-        self.acquire_button.text = 'Acquire Assets'
-        self.acquire_button.disable()
-        self.discard_button.text = 'View Discard'
-        self.discard_button.enable()
-        self.layout.children = [elem for elem in self.layout.children if elem not in [self.debt_button, self.choice_layout]]
+        self.enable_pane.clear()
+        self.disable_button(self.acquire_button)
+        for button in [self.discard_button, self.debt_button, self.cycle_button]:
+            button.enable()
+        self.layout.clear()
+        for pane in [self.button_pane, self.bottom_pane]:
+            self.layout.add(pane)
         self.layout.trigger_render()
         self.hub.clear_overlay()
         self.reset_discard()
 
     def close_discard(self):
         self.layout.children.clear()
+        self.enable_pane.clear()
         self.layout.add(self.button_pane)
+        self.layout.add(self.bottom_pane)
         self.discard_view = False
         self.reset_discard()
 
@@ -206,7 +231,7 @@ class ReservePane():
             row = int((len(self.discard) / 2) - 0.5)
             if row > 2:
                 self.boundary = 20 + (row - 3) * 190
-            button = ActionButton(1015 + column * 130, 570 - row * 190, width=120, height=185, name=name, texture='assets/' + name.replace('.','') + '.png')
+            button = ActionButton(1015 + column * 130, 540 - row * 190, width=120, height=185, name=name, texture='assets/' + name.replace('.','') + '.png')
             button.name = name
             self.discard_layout.add(button)
     
@@ -227,3 +252,13 @@ class ReservePane():
 
     def on_show(self):
         self.close_discard()
+
+    def enable_button(self, button):
+        button.enable()
+        button.set_style(color=arcade.color.BLACK, size=getattr(button, 'style', {}).get('font_size', 15))
+        self.hub.info_manager.trigger_render()
+        
+    def disable_button(self, button):
+        button.disable()
+        button.set_style(color=arcade.color.ASH_GREY, size=getattr(button, 'style', {}).get('font_size', 15))
+        self.hub.info_manager.trigger_render()

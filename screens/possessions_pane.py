@@ -14,11 +14,11 @@ class PossessionsPane():
         self.boundary = 0
         self.hub = hub
         self.small_card_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
-        self.texture_pane = arcade.gui.UITexturePane(self.button_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/info_pane.png'))
+        self.texture_pane = arcade.gui.UITexturePane(self.button_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/reserve_pane.png'))
         self.big_card = ActionButton(x=1015, y=400, width=250, height=385, texture='buttons/placeholder.png')
-        self.action_button = ActionButton(x=1000, y=300, width=280, height=50, text='Take Action', action=self.card_action)
-        self.flip_button = ActionButton(x=1000, y=200, width=280, height=50, text='Flip Card', action=self.flip_action)
-        self.back_button = ActionButton(x=1000, y=100, width=280, height=50, text='Back', action=self.back_action)
+        self.action_button = ActionButton(x=1031, y=300, width=217, height=41, text='Take Action', action=self.card_action, texture='buttons/button.png', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK})
+        self.flip_button = ActionButton(x=1031, y=200, width=217, height=41, text='Flip Card', action=self.flip_action, texture='buttons/button.png', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK})
+        self.back_button = ActionButton(x=1031, y=100, width=217, height=41, text='Back', action=self.back_action, texture='buttons/button.png', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK})
         self.card_back_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
         self.back_text = ActionButton(x=1000, y=200, width=280, height=600, text='', style={'font_size': 13})
         self.back_back_button = ActionButton(x=1000, y=75, width=280, height=50, text='Back', action=self.back_action)
@@ -36,8 +36,8 @@ class PossessionsPane():
         for card_type in ['assets', 'unique_assets', 'artifacts', 'spells', 'conditions']:
             item_list = [card for card in self.investigator.possessions[card_type] if tags == None or tags in card.tags]
             if len(item_list) > 0:
-                y_pos -= 45
-                self.overlay_layout.add(ActionButton(x=1000, y=y_pos, width=280, height=25, text=human_readable(card_type)))
+                y_pos -= 65
+                self.overlay_layout.add(ActionButton(x=1050, y=y_pos, width=180, height=45, text=human_readable(card_type), texture='gui/reserve_label.png', style={'font_color': arcade.color.BLACK, 'font_size': 18}, font='Garamond Eldritch', text_position=(0,-2)))
                 def create_button(x, y, name, kind):
                     texture = kind + '/' + name.replace('.', '') + '.png'
                     args = {'name': name, 'kind': kind}
@@ -60,10 +60,13 @@ class PossessionsPane():
     def show_card(self, name, kind):
         card = next((card for card in self.investigator.possessions[kind] if card.name == name))
         self.action_button.enable()
+        self.action_button.set_style(arcade.color.BLACK)
         self.flip_button.disable()
+        self.flip_button.set_style(arcade.color.GRAY)
         self.flip_button.action_args = {'card': card}
         self.active_card = card
         self.layout.clear()
+        self.layout.add(self.texture_pane)
         self.small_card_layout.clear()
         buttons = [self.big_card, self.back_button]
         if hasattr(card, 'action') and 'incantation' not in card.tags:
@@ -72,6 +75,7 @@ class PossessionsPane():
             passes_check = not key or self.hub.small_card_pane.req_dict[card.action[key][0]](card.action[key[0] + 'args'][0])
             if (self.hub.remaining_actions == 0 or card.action_used or not passes_check) and not (self.hub.my_turn and card.name == 'detained'):
                 self.action_button.disable()
+                self.action_button.set_style(arcade.color.GRAY)
         if hasattr(card, 'back'):
             buttons.append(self.flip_button)
         for button in buttons:
@@ -81,6 +85,7 @@ class PossessionsPane():
         self.action_button.action_args = {'card': card}
         if card.back_seen:
             self.flip_button.enable()
+            self.flip_button.set_style(arcade.color.BLACK)
 
     def card_action(self, card):
         self.back_action()

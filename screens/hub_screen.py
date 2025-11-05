@@ -90,13 +90,15 @@ class HubScreen(arcade.View):
         self.token_manager.add(self.omen_counter)
         index = 0
         for text in ['investigator', 'possessions', 'reserve', 'location', 'ancient_one']:
-            ui_layout.add(ActionButton(index * 190 + 50, y=21, width=140, height=100, texture='buttons/placeholder.png', text=human_readable(text),
-                                       action=self.switch_info_pane, action_args={'key': text}, texture_pressed='/buttons/pressed_placeholder.png'))
+            ui_layout.add(ActionButton(index * 190 + 50, y=21, width=140, height=100, texture='blank.png', text=human_readable(text), font='Garamond Eldritch', text_position=(0,-2),
+                                       action=self.switch_info_pane, action_args={'key': text}, style={'font_color': arcade.color.BLACK, 'font_size': 14}, bold=True))
             index += 1
 
         self.maps = {
             'world': Map('world', (0, -200), 0.5)
         }
+
+        self.ui_selector = ActionButton(52, 21, 138, 100, 'buttons/main_ui_pressed.png')
 
         self.actions_taken = {
             'focus': False,
@@ -134,6 +136,7 @@ class HubScreen(arcade.View):
 
         self.info_manager.add(self.info_pane.layout)
         self.ui_manager.add(ui_layout)
+        self.ui_manager.add(self.ui_selector)
         self.info_manager.enable()
         self.ui_manager.enable()
         self.choice_manager.enable()
@@ -248,6 +251,7 @@ class HubScreen(arcade.View):
         self.holding = None
 
     def on_mouse_press(self, x, y, button, modifiers):
+        print(x, y)
         if x < 1000 and y > 142 and not self.overlay_showing:
             #if self.click_time < 25 and get_distance((x,y), self.initial_click) < 50:
             #    if self.zoom == 1:
@@ -316,6 +320,7 @@ class HubScreen(arcade.View):
             self.info_pane = self.info_panes[key]
             self.info_manager.add(self.info_pane.layout)
             self.info_pane.on_show()
+            self.select_ui_button(['investigator', 'possessions', 'reserve', 'location', 'ancient_one'].index(key))
 
     def show_encounter_pane(self):
         self.info_manager.children = {0:[]}
@@ -464,8 +469,8 @@ class HubScreen(arcade.View):
                     case 'unit_moved':
                         self.move_unit(payload['value'], payload['destination'], payload['kind'])
                     case 'choose_lead':
-                        self.gui_set(False)
                         self.encounter_pane.finish(True)
+                        self.gui_set(False)
                         portraits = []
                         for name in self.location_manager.all_investigators.keys():
                             portraits.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.4, action=self.networker.publish_payload,
@@ -867,12 +872,12 @@ class HubScreen(arcade.View):
                 lola_button.action_args = {'choices': choices, 'title':titles[skill] + ' Test', 'options': options, 'subtitle':subtitle, 'pane': pane, 'trigger':lola_trigger, 'button': lola_button, 'double': double_six}
                 options.append(lola_button)
         #FOR TESTING
-        def autofail():
-            pane.rolls = [1]
-        def succeed():
-            pane.rolls = [6,6,6,6,6]
-        options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
-        options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
+        #def autofail():
+        #    pane.rolls = [1]
+        #def succeed():
+        #    pane.rolls = [6,6,6,6,6]
+        #options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
+        #options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
         #END TESTING
         if double_six:
             rolls += [roll for roll in rolls if roll == 6]
@@ -905,8 +910,10 @@ class HubScreen(arcade.View):
         for x in self.get_ui_buttons():
             if able:
                 x.enable()
+                x.set_style(color=arcade.color.BLACK)
             else:
                 x.disable()
+                x.set_style(color=arcade.color.GRAY)
         self.ui_manager.trigger_render()
 
     def get_ui_buttons(self):
@@ -918,6 +925,8 @@ class HubScreen(arcade.View):
         for button in buttons:
             button.select(False)
         buttons[index].select(True)
+        self.ui_selector.move((index * 190) + 52 - self.ui_selector.x, 0)
+        self.ui_manager.trigger_render()
     
     def request_card(self, kind, name='', command='get', tag='', investigator=None):
         requestor = self.investigator if investigator == None else investigator

@@ -1,4 +1,4 @@
-import arcade
+import arcade, threading, signal, argparse, requests
 import threading
 import signal
 import argparse
@@ -106,7 +106,8 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
 def start_server(window):
-    args = set_up_network(player="0")
+    ip = requests.get('https://checkip.amazonaws.com').text.strip()
+    args = set_up_network(ip_address=ip, player="0")
     Server(**args)
     Networker(**args, window=window)
 
@@ -115,6 +116,7 @@ def join_game(ip_address, window):
     Networker(**args, window=window)
 
 def main():
+    arcade.load_font(':resources:fonts/ttf/Garamond Eldritch.ttf')
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     window.show_view(HomeScreen(start_server, join_game, window))
     arcade.run()

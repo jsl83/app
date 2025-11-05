@@ -32,9 +32,9 @@ class InvestigatorPane():
             self.skills.append(arcade.gui.UITextureButton(x=1060, y=250 - 55 * x, width=200, texture=self.blank, align='center', style={'font_color': arcade.color.BLACK}))
             self.details.add(self.skills[x])
         self.rail_button = ActionButton(x=1036, width=115, height=36, y=450, action=self.ticket_action, action_args={'kind': 'rail'}, texture='blank.png',
-                                        text='x ' + str(self.investigator.ship_tickets), text_position=(35,-2), style={'font_color': arcade.color.BLACK})
+                                        text='x ' + str(self.investigator.ship_tickets), text_position=(33,-2), style={'font_color': arcade.color.BLACK})
         self.ship_button = ActionButton(x=1036, width=115, height=36, y=403, action=self.ticket_action, action_args={'kind': 'ship'}, texture='blank.png',
-                                        text='x ' + str(self.investigator.rail_tickets), text_position=(35,-2), style={'font_color': arcade.color.BLACK})
+                                        text='x ' + str(self.investigator.rail_tickets), text_position=(33,-2), style={'font_color': arcade.color.BLACK})
         self.clue_button = ActionButton(x=1172, y=450, width=70, height=36, texture='blank.png', text='x ' + str(len(self.investigator.clues)), text_position=(15,-2), style={'font_color': arcade.color.BLACK})
         self.focus_button = ActionButton(x=1172, y=403, width=70, height=36, action=self.focus_action, texture='blank.png', text='x ' + str(self.investigator.focus), text_position=(15,-2), style={'font_color': arcade.color.BLACK})
         self.skill_button = ActionButton(x=1040, y=180, width=200, height=135, style={'font_size': getattr(self.investigator, 'active_font', 12), 'font_color': arcade.color.BLACK},

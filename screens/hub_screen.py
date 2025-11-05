@@ -190,6 +190,8 @@ class HubScreen(arcade.View):
             self.draw_point_meters(self.investigator.max_sanity, self.investigator.sanity, 1202, (84, 117, 184))
 
     def on_mouse_release(self, x, y, button, modifiers):
+        if self.holding == 'investigator':
+            self.position_markers.clear()
         if self.holding == 'investigator' and self.click_time >= 10:
             map_loc = self.map.get_location()
             location = self.location_manager.get_closest_location((x,y), self.zoom, map_loc, 50)
@@ -209,7 +211,6 @@ class HubScreen(arcade.View):
                     self.ticket_move(self.investigator.name, location[2], tickets[0][0], tickets[0][1], self.original_investigator_location)
             else:
                 self.move_unit(self.investigator.name, self.original_investigator_location)
-            self.position_markers.clear()
         elif getattr(self.holding, 'name', None) == 'charlie_send':
             inv_buttons = [button for button in self.info_pane.choice_layout.children if getattr(button, 'name', None) in list(self.location_manager.all_investigators.keys()) and self.holding.check_overlap(button)]
             if len(inv_buttons) > 0:

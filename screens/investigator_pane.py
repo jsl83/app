@@ -37,10 +37,10 @@ class InvestigatorPane():
                                         text='x ' + str(self.investigator.rail_tickets), text_position=(33,-2), style={'font_color': arcade.color.BLACK})
         self.clue_button = ActionButton(x=1172, y=450, width=70, height=36, texture='blank.png', text='x ' + str(len(self.investigator.clues)), text_position=(15,-2), style={'font_color': arcade.color.BLACK})
         self.focus_button = ActionButton(x=1172, y=403, width=70, height=36, action=self.focus_action, texture='blank.png', text='x ' + str(self.investigator.focus), text_position=(15,-2), style={'font_color': arcade.color.BLACK})
-        self.skill_button = ActionButton(x=1040, y=180, width=200, height=135, style={'font_size': getattr(self.investigator, 'active_font', 12), 'font_color': arcade.color.BLACK},
-            text=self.investigator.active, texture='blank.png', align='center', multiline=True, action=self.skill_action)
-        self.passive = ActionButton(x=1040, y=25, width=200, height=135, style={'font_size': getattr(self.investigator, 'passive_font', 14), 'font_color': arcade.color.BLACK},
-            text=self.investigator.passive, texture=self.blank, align='center', multiline=True)
+        self.skill_button = ActionButton(x=1040, y=192, width=200, height=135, style={'font_size': getattr(self.investigator, 'active_font', 13), 'font_color': arcade.color.BLACK},
+            text=self.investigator.active, texture=self.blank, align='center', multiline=True, action=self.skill_action, bold=True)
+        self.passive = ActionButton(x=1040, y=25, width=200, height=135, style={'font_size': getattr(self.investigator, 'passive_font', 13), 'font_color': arcade.color.BLACK},
+            text=self.investigator.passive, align='center', multiline=True, texture=self.blank, bold=True)
         for button in [self.toggle_attributes, self.toggle_skills, self.skill_button, self.passive]:
             self.skill_pane.add(button)
         for button in [self.ship_button, self.rail_button, self.focus_button, self.clue_button]:

@@ -11,54 +11,55 @@ class LocationPane():
         self.location_manager = location_manager
         self.blank = arcade.load_texture(IMAGE_PATH_ROOT + 'blank.png')
 
-        self.layout = arcade.gui.UILayout(x=1000, width=280, height=800).with_background(texture=arcade.load_texture(
-            IMAGE_PATH_ROOT + 'gui/info_pane.png'))
-        self.title = arcade.gui.UITextureButton(x=1000, width=280, y=720, text='', texture=self.blank, style={'font_size': 20})
-        self.subtitle = arcade.gui.UITextureButton(x=1000, width=280, y=685, text='', texture=self.blank, style={'font_size': 14})
-        self.small_icon = arcade.gui.UITextureButton(x=1100, y=600, width=80, height=80, texture=self.blank)
+        self.layout = arcade.gui.UILayout(x=1000, width=280, height=800)
+
+        self.top_pane = arcade.gui.UILayout(x=1000, width=280, height=375, y=425).with_background(texture=arcade.load_texture(
+            IMAGE_PATH_ROOT + 'gui/location_top.png'))
+        self.bottom_pane = arcade.gui.UILayout(x=1000, width=280, height=469, y=0).with_background(texture=arcade.load_texture(
+            IMAGE_PATH_ROOT + 'gui/location_bottom.png'))
+        self.title = ActionButton(x=1041, width=198, y=701, height=82, text='', font='Garamond Eldritch', text_position=(0,11), texture=arcade.load_texture(
+                IMAGE_PATH_ROOT + 'gui/location_name.png'), style={'font_size': 20, 'font_color': arcade.color.BLACK}, bold=True)
+        self.subtitle = ActionButton(x=1000, width=280, y=704, text='', texture=self.blank, style={'font_size': 12, 'font_color': arcade.color.BLACK}, font='Garamond Eldritch', )
+        self.small_icon = arcade.gui.UITextureButton(x=1100, y=610, width=80, height=80, texture=self.blank)
         self.large_icon = arcade.gui.UITextureButton(x=1035, y=600, width=210, height=171, texture=self.blank)
         
         self.token_layout = arcade.gui.UILayout(x=1000, y=425, width=280, height=120)
         self.location_layout = arcade.gui.UILayout(x=1000, y=425, width=280, height=120)
 
         self.tokens = {
-            'expedition': arcade.gui.UITextureButton(x=1055, y=475, width=70, height=70, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'maps/expedition.png')),
-            'gate': arcade.gui.UITextureButton(x=1155, y=475, width=70, height=70, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'maps/gate.png')),
-            'clue': arcade.gui.UITextureButton(x=1024, y=425, width=40, height=40, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'maps/clue.png')),
-            'eldritch': arcade.gui.UITextureButton(x=1088, y=425, width=40, height=40, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'maps/eldritch.png')),
-            'mystery': arcade.gui.UITextureButton(x=1152, y=425, width=40, height=40, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'maps/mystery.png')),
-            'rumor': arcade.gui.UITextureButton(x=1216, y=425, width=40, height=40, texture=arcade.load_texture(
-                IMAGE_PATH_ROOT + 'maps/rumor.png'))
+            'expedition': arcade.gui.UITextureButton(x=1104, y=438, width=71, height=74, texture=arcade.load_texture(
+                IMAGE_PATH_ROOT + 'gui/circle_overlay.png')),
+            'gate': arcade.gui.UITextureButton(x=1098, y=518, width=82, height=82, texture=arcade.load_texture(
+                IMAGE_PATH_ROOT + 'gui/circle_overlay.png')),
+            'clue': arcade.gui.UITextureButton(x=1064, y=496, width=37, height=37, texture=arcade.load_texture(
+                IMAGE_PATH_ROOT + 'gui/circle_overlay.png')),
+            'eldritch': arcade.gui.UITextureButton(x=1177, y=495, width=37, height=37, texture=arcade.load_texture(
+                IMAGE_PATH_ROOT + 'gui/circle_overlay.png')),
+            'mystery': arcade.gui.UITextureButton(x=1027, y=457, width=37, height=37, texture=arcade.load_texture(
+                IMAGE_PATH_ROOT + 'gui/circle_overlay.png')),
+            'rumor': arcade.gui.UITextureButton(x=1216, y=457, width=37, height=37, texture=arcade.load_texture(
+                IMAGE_PATH_ROOT + 'gui/circle_overlay.png'))
         }
-        self.black = arcade.gui.UITextureButton(x=1000, y=425, width=280, height=120, texture=arcade.load_texture(
-            IMAGE_PATH_ROOT + 'gui/overlay.png'))
-        self.token_label = arcade.gui.UITextureButton(x=1000, y=555, width=280, height=20, text='TOKENS', texture=self.blank)
-        self.investigator_label = arcade.gui.UITextureButton(x=1000, y=335, width=280, height=20, text='INVESTIGATORS', texture=self.blank)
+        self.investigator_label = ActionButton(x=1032, y=315, width=215, height=58, text='Investigators', font='Garamond Eldritch', bold=True, text_position=(0,4), style={'font_color': arcade.color.BLACK}, texture='gui/location_underline.png')
         self.investigator_layout = arcade.gui.UILayout(x=1000, y=405, width=280, height=120)
-        self.monster_label = arcade.gui.UITextureButton(x=1000, y=510, width=280, height=20, text='MONSTERS', texture=self.blank)
+        self.monster_label = ActionButton(x=1032, y=470, width=215, height=58, text='Monsters', font='Garamond Eldritch', bold=True, text_position=(0,4), style={'font_color': arcade.color.BLACK}, texture='gui/location_underline.png')
         self.monster_layout = arcade.gui.UILayout(x=1000, y=405, width=280, height=120)
         self.toggle_layout = arcade.gui.UILayout(x=1000, y=0, height=425, width=280)
 
         self.selected = None
-        self.description_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
-        self.monster_close = ActionButton(x=1260, y=780, width=20, height=20, text='X', texture='buttons/placeholder.png', action=self.close_monster)
-        self.monster_picture = arcade.gui.UITextureButton(x=1040, y=560, height=200, width=200, texture=self.blank)
+        self.description_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800).with_background(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui/monster_back.png'))
+        self.monster_close = ActionButton(x=1031, y=0, width=217, height=46, text='Close Details', texture='buttons/button.png', action=self.close_monster, font='Garamond Eldritch', style={'font_color': arcade.color.BLACK}, text_position=(0,-2))
+        self.monster_picture = arcade.gui.UITextureButton(x=1000, y=520, height=280, width=280, texture=self.blank)
         self.horror_test = arcade.gui.UITextureButton(x=1050, y=400, width=25, height=25, texture=self.blank)
         self.strength_test = arcade.gui.UITextureButton(x=1050, y=335, width=25, height=25, texture=self.blank)
         self.monster = {
-            'name': arcade.gui.UITextureButton(x=1000, y=530, width=280, height=20, text='', texture=self.blank, multiline=True),
-            'toughness': arcade.gui.UITextureButton(x=1000, y=465, width=140, height=20, text='', texture=self.blank, align='center', multiline=True),
-            'horror': arcade.gui.UITextureButton(x=1040, y=400, width=100, height=20, text='', texture=self.blank, align='center', multiline=True),
-            'sanity': arcade.gui.UITextureButton(x=1140, y=400, width=100, height=20, text='', texture=self.blank, align='center', multiline=True),
-            'strength': arcade.gui.UITextureButton(x=1040, y=335, width=100, height=20, text='', texture=self.blank, align='center', multiline=True),
-            'damage': arcade.gui.UITextureButton(x=1140, y=335, width=100, height=20, text='', texture=self.blank, align='center', multiline=True),
-            'damage_taken': arcade.gui.UITextureButton(x=1140, y=465, width=140, height=20, text='', texture=self.blank, align='center', multiline=True),
-            'text': arcade.gui.UITextureButton(x=1020, y=25, width=240, height=290, text='', texture=self.blank, align='center', multiline=True),
+            'toughness': arcade.gui.UITextureButton(x=1182, y=465, width=140, height=40, text='', texture=self.blank, align='center', multiline=True, font='Poster Bodoni', style={'font_color': arcade.color.WHITE, 'font_size': 32}, bold=True),
+            'horror': arcade.gui.UITextureButton(x=1018, y=478, width=100, height=25, text='', texture=self.blank, align='center', multiline=True, style={'font_color': arcade.color.BLACK, 'font_size': 19}, font='Poster Bodoni'),
+            'sanity': arcade.gui.UITextureButton(x=1090, y=478, width=100, height=25, text='', texture=self.blank, align='center', multiline=True, font='Poster Bodoni', style={'font_color': arcade.color.BLUE, 'font_size': 19}),
+            'strength': arcade.gui.UITextureButton(x=1018, y=418, width=100, height=25, text='', texture=self.blank, align='center', multiline=True, style={'font_color': arcade.color.BLACK, 'font_size': 19}, font='Poster Bodoni'),
+            'damage': arcade.gui.UITextureButton(x=1090, y=418, width=100, height=25, text='', texture=self.blank, align='center', multiline=True, font='Poster Bodoni', style={'font_color': arcade.color.DARK_RED, 'font_size': 19}),
+            'damage_taken': arcade.gui.UITextureButton(x=1240, y=407, width=30, height=40, text='', texture=self.blank, align='center', multiline=True, font='Poster Bodoni', style={'font_color': arcade.color.WHITE, 'font_size': 19}),
+            'text': arcade.gui.UITextureButton(x=1020, y=46, width=240, height=354, text='', texture=self.blank, align='center', multiline=True, font='Adobe Garamond Pro', style={'font_color': arcade.color.DARK_RED})
         }
         for key in self.monster:
             self.description_layout.add(self.monster[key])
@@ -68,10 +69,8 @@ class LocationPane():
         for stat in ['lore', 'influence', 'observation', 'strength', 'will']:
             self.icons.append(arcade.load_texture(IMAGE_PATH_ROOT + 'icons/' + stat + '.png'))
 
-        self.toggle_rumor = ActionButton(1140, y=380, width=140, height=35, texture='buttons/placeholder.png', text='Rumors',
-                                              action=self.toggle_details, action_args={'flag': False}, texture_pressed='/buttons/pressed_placeholder.png')
-        self.toggle_info = ActionButton(1000, y=380, width=140, height=35, texture='buttons/placeholder.png', text='Details',
-                                          action=self.toggle_details, action_args={'flag': True}, texture_pressed='/buttons/pressed_placeholder.png')
+        self.toggle_rumor = ActionButton(1140, y=380, width=140, height=35, text='Rumors', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK}, action=self.toggle_details, action_args={'flag': False})
+        self.toggle_info = ActionButton(1000, y=380, width=140, height=35, text='-= Details =-', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK}, action=self.toggle_details, action_args={'flag': True})
         self.rumor_details = arcade.gui.UITextureButton(x=1000, y=0, height=390, width=280, texture=self.blank)
         self.rumor = None
         self.possession_screen = TradePane(self.hub.investigator, self.hub)
@@ -79,8 +78,12 @@ class LocationPane():
         self.is_trading = False
         
     def toggle_details(self, flag):
-        self.toggle_info.select(flag)
-        self.toggle_rumor.select(not flag)
+        if flag:
+            self.toggle_info.text = '-= Details =-'
+            self.toggle_rumor.text = 'Rumors'
+        else:
+            self.toggle_info.text = 'Details'
+            self.toggle_rumor.text = '-= Rumors =-'
         self.toggle_layout.clear()
         if flag:
             for widget in [self.monster_layout, self.investigator_layout]:
@@ -110,6 +113,8 @@ class LocationPane():
         else:
             self.large_icon.texture = arcade.load_texture(IMAGE_PATH_ROOT + 'maps/' + key + '.png')
             self.location_layout.add(self.large_icon)
+        self.layout.add(self.top_pane)
+        self.layout.add(self.bottom_pane)
         self.layout.add(self.location_layout)
 
     def on_show(self):
@@ -118,7 +123,6 @@ class LocationPane():
 
     def update_tokens(self):
         self.token_layout.clear()
-        self.token_layout.add(self.token_label)
         location = self.location_manager.locations[self.selected]
         has = []
         has_not = []
@@ -130,12 +134,9 @@ class LocationPane():
         
         for icon in has_not:
             self.token_layout.add(self.tokens[icon])
-        self.token_layout.add(self.black)
-        for icon in has:
-            self.token_layout.add(self.tokens[icon])
-            if self.rumor != None:
-                self.tokens['rumor'].text = str(self.location_manager.rumors[self.rumor].get('eldritch', ''))
-                self.tokens['rumor'].style['font_color'] = (255,0,0)
+        if self.rumor != None:
+            self.tokens['rumor'].text = str(self.location_manager.rumors[self.rumor].get('eldritch', ''))
+            self.tokens['rumor'].style['font_color'] = (255,0,0)
 
     def update_list(self, kind):
         y_offset = 0
@@ -146,7 +147,7 @@ class LocationPane():
             label = self.monster_label
             inv_number = len(investigators) + len(dead)
             y_offset = 0 if inv_number == 0 else 35 + (int((inv_number - 1) / 4) + 1) * 60
-            label.move(0, 335 - y_offset - label.y)
+            label.move(0, 315 - y_offset - label.y)
             number = len(self.location_manager.locations[self.selected]['monsters'])
         else:
             layout = self.investigator_layout
@@ -157,7 +158,7 @@ class LocationPane():
             layout.add(label)
             i = 0
             row = 0
-            y = 260 - y_offset + (19 if kind == 'monsters' else 0)
+            y = 240 - y_offset + (19 if kind == 'monsters' else 0)
             row_num = number - row * 4
             offset = (280 - (row_num * 49 + (row_num - 1) * 12)) / 2 if row_num < 4 else 24
             for unit_obj in [monster for monster in self.location_manager.locations[self.selected][kind]] if kind == 'monsters' else investigators + dead:
@@ -199,8 +200,10 @@ class LocationPane():
         self.location_layout.add(self.toggle_info)
         self.location_layout.add(self.toggle_rumor)
         self.toggle_rumor.enable()
+        self.toggle_rumor.set_style(arcade.color.BLACK)
         if self.rumor == None:
             self.toggle_rumor.disable()
+            self.toggle_rumor.set_style(arcade.color.GRAY)
         else:
             self.rumor_details.text = human_readable(self.rumor)
             for x in ['solve', 'unsolved', 'reckoning', 'effect']:
@@ -215,8 +218,8 @@ class LocationPane():
         for stat in self.monster:
             self.monster[stat].text = str(stats[stat])
         self.monster_picture.texture = arcade.load_texture(":resources:eldritch/images/monsters/" + unit_obj.name + '.png')
-        self.horror_test = arcade.gui.UITextureButton(x=1030, y=390, texture=self.icons[stats['horror_check']])
-        self.strength_test = arcade.gui.UITextureButton(x=1030, y=325, texture=self.icons[stats['strength_check']])
+        self.horror_test = arcade.gui.UITextureButton(x=1014, y=474, texture=self.icons[stats['horror_check']])
+        self.strength_test = arcade.gui.UITextureButton(x=1014, y=412, texture=self.icons[stats['strength_check']])
         self.description_layout.add(self.horror_test)
         self.description_layout.add(self.strength_test)
         self.layout.add(self.description_layout)

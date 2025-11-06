@@ -448,6 +448,8 @@ class EncounterPane():
 
     def additional_action(self, amt=1, step='finish'):
         self.hub.remaining_actions += 1
+        self.hub.action_number.text = str(self.hub.remaining_actions)
+        self.hub.ui_manager.trigger_render()
         self.set_buttons(step)
 
     def adjust_triggers(self, kind, args, step='finish'):

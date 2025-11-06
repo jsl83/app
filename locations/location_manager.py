@@ -119,6 +119,20 @@ class LocationManager():
                 count += self.locations[loc][kind]
         return count
     
+    def get_finder_locs(self, key):
+        locs = []
+        if key == 'clue':
+            locs = [loc for loc in self.locations if self.locations[loc]['clue']]
+        elif key == 'monsters':
+            locs = [loc for loc in self.locations if len(self.locations[loc]['monsters']) > 0]
+        elif key == 'misc':
+            locs = [loc for loc in self.locations if self.locations[loc]['eldritch'] or self.locations[loc]['mystery'] or self.locations[loc]['rumor']]
+        elif 'gate' in key:
+            locs = [loc for loc in self.locations if self.locations[loc]['gate'] and self.locations[loc]['gate_color'] in key]
+        else:
+            locs = [self.all_investigators[key].location]
+        return locs
+    
     def get_map_name(self, loc):
         return 'world'
     

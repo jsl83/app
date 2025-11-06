@@ -23,6 +23,7 @@ class HubScreen(arcade.View):
         self.networker = networker
         self.networker.external_message_processor = self.set_listener
         self.ancient_one = AncientOne(ancient_one)
+        self.highlight_texture = arcade.load_texture(IMAGE_PATH_ROOT + 'maps/highlight.png')
 
         self.doom = 0
         self.omen = 0
@@ -113,9 +114,30 @@ class HubScreen(arcade.View):
         self.map = self.maps['world']
         self.location_manager = LocationManager(len(all_investigators), self)
         self.all_investigators = all_investigators
+        circle_index = 0
+        self.finder_buttons = []
         for name in all_investigators:
             self.location_manager.spawn_investigator(name, investigator)
             self.maps['world'].spawn('investigators', self.location_manager, self.location_manager.all_investigators[name].location, name)
+            inv_button = ActionButton(texture='investigators/' + name + '_circle.png', scale=0.3, x=10 + circle_index * 38, y=158 + ((circle_index % 2) * 42), action_args={'key': name})
+            self.finder_buttons.append(inv_button)
+            ui_layout.add(inv_button)
+            circle_index += 1
+        for stars in range(circle_index, 8):
+            ui_layout.add(ActionButton(texture='investigators/empty_circle.png', scale=0.3, x=10 + stars * 38, y=158 + ((stars % 2) * 42)))
+        self.clue_button = ActionButton(17, 400, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'clue'})
+        self.monster_button = ActionButton(17, 375, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'monsters'})
+        self.misc_button = ActionButton(17, 350, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'misc'})
+        self.red_gates = ActionButton(87, 400, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'redgate'})
+        self.blue_gates = ActionButton(87, 375, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'bluegate'})
+        self.green_gates = ActionButton(87, 350, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'greengate'})
+        for count_button in [self.clue_button, self.monster_button, self.misc_button, self.red_gates, self.blue_gates, self.green_gates]:
+            ui_layout.add(count_button)
+            self.finder_buttons.append(count_button)
+        self.lead_button = arcade.gui.UITextureButton(x=10, y=158, scale=0.55, texture=arcade.load_texture(IMAGE_PATH_ROOT + '/gui/lead_investigator.png'))
+        self.action_number = arcade.gui.UITextureButton(x=952, y=148, width=20, height=25, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'blank.png'), text='0', font='Poster Bodoni', style={'font_color': arcade.color.WHITE, 'font_size':18})
+        ui_layout.add(self.lead_button)
+        ui_layout.add(self.action_number)
 
         self.investigator = self.location_manager.all_investigators[investigator]
         self.encounter_pane = EncounterPane(self)
@@ -164,18 +186,22 @@ class HubScreen(arcade.View):
         self.respawn_name = ''
 
         self.position_markers = arcade.SpriteList()
+        self.finder_markers = arcade.SpriteList()
 
     def on_draw(self):
         self.clear()
         self.map.manager.draw()
-        for sprite in self.position_markers:
-            sprite.angle += 2
-        self.position_markers.draw()
         self.map.token_manager.draw()
         self.info_manager.draw()
         self.ui_manager.draw()
         self.choice_manager.draw()
         self.token_manager.draw()
+        self.position_markers.draw()
+        self.finder_markers.draw()
+        for sprite in self.position_markers:
+            sprite.angle += 2
+        for sprite in self.finder_markers:
+            sprite.angle += 2
         self.click_time += 1
         if self.slow_move[0] != 0 or self.slow_move[1] != 0:
             self.map.move(self.slow_move[0], self.slow_move[1])
@@ -190,6 +216,9 @@ class HubScreen(arcade.View):
             self.draw_point_meters(self.investigator.max_sanity, self.investigator.sanity, 1202, (84, 117, 184))
 
     def on_mouse_release(self, x, y, button, modifiers):
+        if self.holding == 'finder':
+            self.finder_markers.clear()
+            self.holding = None
         if self.holding == 'investigator':
             self.position_markers.clear()
         if self.holding == 'investigator' and self.click_time >= 10:
@@ -265,6 +294,10 @@ class HubScreen(arcade.View):
             self.holding = 'map'
             self.initial_click = (x, y)
             self.click_time = 0
+            finder_button = next((button for button in list(self.ui_manager.get_widgets_at((x,y))) if button in self.finder_buttons), None)
+            if finder_button:
+                self.holding = 'finder'
+                self.highlight_locations(finder_button.action_args['key'])
             if self.remaining_actions > 0 and not self.actions_taken['move'] and self.gui_enabled:
                 location = self.location_manager.get_closest_location((x, y), self.zoom, self.map.get_location(), 40)
                 if location != None:
@@ -275,7 +308,7 @@ class HubScreen(arcade.View):
                         self.investigator_token = tokens[0] if self.zoom == 2 else tokens[1]
                         self.original_investigator_location = key
                         for loc in self.in_movement_range().keys():
-                            marker = arcade.Sprite(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'maps/highlight.png'), scale=0.4 if 'space_' not in loc else 0.15)
+                            marker = arcade.Sprite(texture=self.highlight_texture, scale=0.4 if 'space_' not in loc else 0.15)
                             marker.center_x = self.location_manager.locations[loc]['x']
                             marker.center_y = self.location_manager.locations[loc]['y']
                             self.position_markers.append(marker)
@@ -364,6 +397,8 @@ class HubScreen(arcade.View):
                     self.info_pane = small_card
                 case 'charlie_kane':
                     self.remaining_actions = 1
+                    self.action_number.text = '1'
+                    self.ui_manager.trigger_render()
                     self.charlie_action = True
                 case 'services':
                     self.gui_set(False)
@@ -431,6 +466,7 @@ class HubScreen(arcade.View):
                             self.info_panes['location'].update_all()
                         if not no_token:
                             self.maps[payload['map']].spawn(payload['value'], self.location_manager, payload['location'], name, monster_id)
+                            self.update_finders(payload['value'])
                     case 'card_received':
                         investigator = self.location_manager.all_investigators[payload['owner']]
                         if payload['owner'] == 'mark_harrigan' and self.investigator.name == 'mark_harrigan' and 'detained' in payload.get('value', '') and not payload.get('bypass_mark', False):
@@ -484,6 +520,8 @@ class HubScreen(arcade.View):
                     case 'lead_selected':
                         self.gui_set(True)
                         self.lead_investigator = payload['value']
+                        inv_index = self.all_investigators.index(self.lead_investigator)
+                        self.lead_button.move(10 - self.lead_button.x + inv_index * 38, 135 - self.lead_button.y + ((inv_index % 2) * 42))
                         if not payload.get('dead_trigger', None) != None:
                             self.clear_overlay()
                         for action in self.actions_taken:
@@ -510,6 +548,8 @@ class HubScreen(arcade.View):
                                         self.networker.publish_payload({'message': 'turn_finished'}, self.investigator.name)
                                     else:
                                         self.remaining_actions = 2 if not next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False) else 0
+                                        self.action_number.text = str(self.remaining_actions)
+                                        self.ui_manager.trigger_render()
                                         self.info_panes['investigator'].skill_check()
                                         for items in self.investigator.possessions.values():
                                             for item in items:
@@ -570,6 +610,7 @@ class HubScreen(arcade.View):
                         loc = payload['value'].split(':')
                         self.location_manager.locations[loc[1]][kind] = False
                         self.maps[loc[0]].remove_tokens(kind, loc[1])
+                        self.update_finders(kind)
                         self.map.token_manager.trigger_render()
                     case 'monster_damaged':
                         monster_id = int(payload['value'])
@@ -587,6 +628,7 @@ class HubScreen(arcade.View):
                                 if not hasattr(monster, 'epic'):
                                     self.location_manager.monster_deck.append(monster.name)
                                 self.map.remove_tokens('monsters', monster.location, str(payload['value']))
+                                self.monster_button.text = str(int(self.monster_button.text) - 1)
                                 self.map.token_manager.trigger_render()
                         if monster_id < 0:
                             for monster in self.location_manager.all_monsters:
@@ -599,6 +641,7 @@ class HubScreen(arcade.View):
                         if rumor['location'] != 'no_spawn':
                             self.location_manager.locations[rumor['location']]['rumor'] = False
                             self.maps['world'].remove_tokens('rumor', rumor['location'], payload['value'])
+                            self.misc_button.text = str(int(self.misc_button.text) - 1)
                         if not payload['solved'] and rumor.get('unsolve_encounter', None) != None:
                             rumor['unsolve_encounter']['title'] = human_readable(payload['value']) + ' - Reckoning'
                             self.encounter_pane.mythos_reckonings.append(rumor['unsolve_encounter'])
@@ -698,6 +741,7 @@ class HubScreen(arcade.View):
                         if mystery.get('mystery_token', False):
                             self.map.spawn('mystery', self.location_manager, mystery['mystery_token'])
                             self.location_manager.locations[mystery['mystery_token']]['mystery'] = True
+                            self.misc_button.text = str(int(self.misc_button.text) + 1)
                     case 'mystery_advanced':
                         self.ancient_one.mystery_tracker += payload['value']
                         mystery = self.ancient_one.mysteries[self.ancient_one.current_mystery]
@@ -920,7 +964,7 @@ class HubScreen(arcade.View):
         self.ui_manager.trigger_render()
 
     def get_ui_buttons(self):
-        buttons = self.ui_manager.children[0][0].children
+        buttons = [child for child in self.ui_manager.children[0][0].children if type(child) == ActionButton]
         return buttons[len(buttons) - 5: len(buttons)]
     
     def select_ui_button(self, index):
@@ -1082,12 +1126,16 @@ class HubScreen(arcade.View):
             def ruby():
                 self.clear_overlay()
                 self.remaining_actions += 1 if next((card for card in self.investigator.possessions['conditions'] if card.name == 'detained'), False) else 0
+                self.action_number.text = str(self.remaining_actions)
+                self.ui_manager.trigger_render()
                 next((trigger for trigger in self.triggers['turn_end'] if trigger['name'] == 'ruby_of_r\'lyeh'))['used'] = True
                 self.encounter_pane.take_damage(0, -1, self.clear_overlay, {})
             trigger_dict = {'ruby_of_r\'lyeh': ruby}
             if action != None:
                 self.actions_taken[action] = True
             self.remaining_actions -= action_point
+            self.action_number.text = str(self.remaining_actions)
+            self.ui_manager.trigger_render()
             if self.remaining_actions == 0:
                 if len([trigger for trigger in self.triggers['turn_end'] if not trigger['used']]) > 0:
                     choices = [ActionButton(width=100, height=50, text=human_readable(trigger['name']), action=trigger_dict[trigger['name']], texture='buttons/placeholder.png') for trigger in self.triggers['turn_end']]
@@ -1119,3 +1167,23 @@ class HubScreen(arcade.View):
         if not is_ambush and not is_combat:
             self.networker.publish_payload({'message': 'damage_monster', 'value': monster.monster_id, 'damage': damage}, self.investigator.name)
         return choices
+    
+    def highlight_locations(self, key):
+        locs = self.location_manager.get_finder_locs(key)
+        for loc in locs:
+            marker = arcade.Sprite(texture=self.highlight_texture, scale=0.4 if 'space_' not in loc else 0.3 if key in self.location_manager.all_investigators else 0.2)
+            marker.center_x = self.location_manager.locations[loc]['x']
+            marker.center_y = self.location_manager.locations[loc]['y']
+            self.finder_markers.append(marker)
+
+    def update_finders(self, key):
+        if key == 'gate':
+            self.red_gates.text = str(len(self.location_manager.get_finder_locs('redgate')))
+            self.blue_gates.text = str(len(self.location_manager.get_finder_locs('bluegate')))
+            self.green_gates.text = str(len(self.location_manager.get_finder_locs('greengate')))
+        elif key == 'monsters':
+            self.monster_button.text = str(len(self.location_manager.get_finder_locs('monsters')))
+        elif key == 'clue':
+            self.clue_button.text = str(len(self.location_manager.get_finder_locs('clue')))
+        elif key in ['eldritch', 'rumor', 'mystery']:
+            self.misc_button.text = str(len(self.location_manager.get_finder_locs('misc')))

@@ -19,7 +19,7 @@ class ActionButton(arcade.gui.UITextureButton):
                  style={'font_color': arcade.color.WHITE, 'font_size': 15},
                  text_position: tuple = (0,0),
                  font: str = "",
-                 action=lambda: None,
+                 action=lambda **args: None,
                  enabled: bool=True,
                  action_args=None,
                  multiline: bool = False,

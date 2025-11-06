@@ -11,24 +11,24 @@ class AncientOnePane():
         self.blank = arcade.load_texture(IMAGE_PATH_ROOT + 'blank.png')
 
         self.layout = arcade.gui.UILayout(x=1000, width=280, height=800).with_background(texture=arcade.load_texture(
-            IMAGE_PATH_ROOT + 'gui/info_pane.png'))
+            IMAGE_PATH_ROOT + 'gui/ao_pane.png'))
         self.details = arcade.gui.UILayout(x=1000, width=280, height=350)
-        self.layout.add(arcade.gui.UITextureButton(x=1000, width=280, y=560, text=human_readable(ancient.name), texture=self.blank, font="Typical Writer", style={'font_size': 20}))
-        self.mystery_count = arcade.gui.UITextureButton(x=1062, y=505, texture=arcade.load_texture(
-            IMAGE_PATH_ROOT +'ancient_ones/' + ancient.name + '_portrait.png'), text=ancient.mysteries_needed, text_position=(50,-100)) 
+        self.layout.add(arcade.gui.UITextureButton(x=1000, width=280, y=515, text=human_readable(ancient.name), texture=self.blank, font="Typical Writer", style={'font_size': 20, 'font_color': arcade.color.BLACK}))
+        self.mystery_count = arcade.gui.UITextureButton(x=1000, y=570, texture=arcade.load_texture(IMAGE_PATH_ROOT +'ancient_ones/' + ancient.name + '_square.png')) 
         self.layout.add(self.mystery_count)
-        self.toggle_attributes = ActionButton(1000, y=475, width=140, height=30, texture='buttons/placeholder.png', text='Details',
-                                              action=self.toggle_details, action_args={'flag': False}, texture_pressed='/buttons/pressed_placeholder.png')
-        self.toggle_skills = ActionButton(1140, y=475, width=140, height=30, texture='buttons/placeholder.png', text='Mystery',
-                                          action=self.toggle_details, action_args={'flag': True}, texture_pressed='/buttons/pressed_placeholder.png')
+        self.layout.add(arcade.gui.UITextureButton(x=1000,y=562, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'ancient_ones/ao_border.png')))
+        self.toggle_attributes = ActionButton(1000, y=475, width=140, height=30, action=self.toggle_details, action_args={'flag': False}, texture_pressed='/gui/ao_selector.png')
+        self.toggle_skills = ActionButton(1137, y=475, width=142, height=30, action=self.toggle_details, action_args={'flag': True}, texture_pressed='/gui/ao_selector.png')
         self.toggle_attributes.select(True)
         self.layout.add(self.toggle_attributes)
         self.layout.add(self.toggle_skills)
-        self.mystery_counter = arcade.gui.UITextureButton(x=1020, y=385, width=240, height=70, style={'font_size': 14},
-            text='', texture=self.blank, align='center')
-        self.mystery = arcade.gui.UITextureButton(x=1020, y=25, width=240, height=360, style={'font_size': 12},
+        self.mystery_title = arcade.gui.UITextureButton(x=1020, y=355, width=240, height=70, style={'font_size': 14, 'font_color': arcade.color.BLACK},
+            text='', texture=self.blank, align='center', bold=True, font='UglyQua')
+        self.mystery_counter = arcade.gui.UITextureButton(x=1020, y=350, width=240, height=20, style={'font_size': 12, 'font_color': arcade.color.BLACK},
+            text='', texture=self.blank, align='center', font='UglyQua', bold=True)
+        self.mystery = ActionButton(x=1020, y=0, width=240, height=350, style={'font_size': 12, 'font_color': arcade.color.BLACK},
             text='', texture=self.blank, align='center', multiline=True)
-        self.stats = arcade.gui.UITextureButton(x=1020, y=25, width=240, height=415, style={'font_size': 14},
+        self.stats = arcade.gui.UITextureButton(x=1020, y=25, width=240, height=415, style={'font_size': 14, 'font_color': arcade.color.BLACK},
             text=str(ancient.text), texture=self.blank, align='center', multiline=True)
         self.details.add(self.stats)
         self.layout.add(self.details)
@@ -38,6 +38,7 @@ class AncientOnePane():
         if flag:
             self.details.add(self.mystery)
             self.details.add(self.mystery_counter)
+            self.details.add(self.mystery_title)
             self.toggle_skills.select(True)
             self.toggle_attributes.select(False)
         else:

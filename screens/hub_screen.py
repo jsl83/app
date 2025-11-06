@@ -169,7 +169,7 @@ class HubScreen(arcade.View):
         self.clear()
         self.map.manager.draw()
         for sprite in self.position_markers:
-            sprite.angle += 1
+            sprite.angle += 2
         self.position_markers.draw()
         self.map.token_manager.draw()
         self.info_manager.draw()
@@ -685,8 +685,10 @@ class HubScreen(arcade.View):
                             self.ancient_one.mystery_required = len(self.all_investigators)
                         elif mystery['required'] == 'half':
                             self.ancient_one.mystery_required = math.ceil(len(self.all_investigators) / 2)
-                        self.info_panes['ancient_one'].mystery_counter.text = human_readable(payload['value']) + '\n\n' + human_readable(mystery['kind']) + ': 0 / ' + str(self.ancient_one.mystery_required)
+                        self.info_panes['ancient_one'].mystery_title.text = human_readable(payload['value'])
+                        self.info_panes['ancient_one'].mystery_counter.text = human_readable(mystery['kind']) + ': 0 / ' + str(self.ancient_one.mystery_required)
                         self.info_panes['ancient_one'].mystery.text = mystery['text']
+                        self.info_panes['ancient_one'].mystery.set_style(size=mystery.get('font_size', 12))
                         if mystery.get('font_size', False):
                             self.info_panes['ancient_one'].mystery.style['font_size'] = mystery['font_size']
                         if mystery.get('triggers', False):

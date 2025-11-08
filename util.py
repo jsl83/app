@@ -7,23 +7,23 @@ def human_readable(text: str):
         name += token.capitalize() + ' '
     return name[0:-1]
 
-def create_choices(title='', subtitle='', choices=[], size=(1000,658), pos=(0,142), options=[],
-                   flip: bool = False, offset=(0,200), background=IMAGE_PATH_ROOT + 'gui/overlay.png'):
+def create_choices(title='', subtitle='', choices=[], size=(700,385), pos=(150,278), options=[],
+                   flip: bool = False, offset=(0,200), background=IMAGE_PATH_ROOT + 'gui/base_overlay.png'):
 
     choice_gui = arcade.gui.UILayout(width=size[0], height=size[1], x=pos[0], y=pos[1]).with_background(arcade.load_texture(background))
     index = 1
     if title != '':
-        title_button = arcade.gui.UITextureButton(y=size[1]-100, width=size[0], height=50, align='center', text=title)
+        title_button = arcade.gui.UITextureButton(x=pos[0], y=size[1]-115 + pos[1], width=size[0], height=50, align='center', text=title, font='UglyQua', style={'font_size': 18})
         title_button.identifier = 'overlay_title'
         choice_gui.add(title_button)
         index += 1
     if subtitle != '':
-        subtitle_button = arcade.gui.UITextureButton(y=size[1]-150, width=size[0], height=50, align='center', text=subtitle)
+        subtitle_button = arcade.gui.UITextureButton(x=pos[0], y=size[1]-165 + pos[1], width=size[0], height=50, align='center', text=subtitle, font='UglyQua')
         subtitle_button.identifier = 'overlay_subtitle'
         choice_gui.add(subtitle_button)
         index += 1
 
-    start_y = size[1] - offset[1] - (50 if subtitle != '' else 0)
+    start_y = size[1] - offset[1] - (50 if subtitle != '' else 0) + pos[1]
 
     for menu in [choices, options]:
         choice_height = 0
@@ -34,7 +34,7 @@ def create_choices(title='', subtitle='', choices=[], size=(1000,658), pos=(0,14
                 choice_height = button.height
             choice_gui.add(button)
 
-        start_x = (size[0] - (choice_width - 20)) / 2
+        start_x = pos[0] + ((size[0] - (choice_width - 20)) / 2)
         start_y -= (choice_height / 2)
 
         for button in menu:

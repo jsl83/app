@@ -24,6 +24,7 @@ class HubScreen(arcade.View):
         self.networker.external_message_processor = self.set_listener
         self.ancient_one = AncientOne(ancient_one)
         self.highlight_texture = arcade.load_texture(IMAGE_PATH_ROOT + 'maps/highlight.png')
+        self.base_overlay = arcade.gui.UITextureButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui/overlay_back.png'), y=140)
 
         self.doom = 0
         self.omen = 0
@@ -125,12 +126,12 @@ class HubScreen(arcade.View):
             circle_index += 1
         for stars in range(circle_index, 8):
             ui_layout.add(ActionButton(texture='investigators/empty_circle.png', scale=0.3, x=10 + stars * 38, y=158 + ((stars % 2) * 42)))
-        self.clue_button = ActionButton(17, 400, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'clue'})
-        self.monster_button = ActionButton(17, 375, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'monsters'})
-        self.misc_button = ActionButton(17, 350, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'misc'})
-        self.red_gates = ActionButton(87, 400, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'redgate'})
-        self.blue_gates = ActionButton(87, 375, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'bluegate'})
-        self.green_gates = ActionButton(87, 350, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(10,-2), action_args={'key': 'greengate'})
+        self.clue_button = ActionButton(17, 400, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'clue'})
+        self.monster_button = ActionButton(17, 375, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'monsters'})
+        self.misc_button = ActionButton(17, 350, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'misc'})
+        self.red_gates = ActionButton(87, 400, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'redgate'})
+        self.blue_gates = ActionButton(87, 375, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'bluegate'})
+        self.green_gates = ActionButton(87, 350, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'greengate'})
         for count_button in [self.clue_button, self.monster_button, self.misc_button, self.red_gates, self.blue_gates, self.green_gates]:
             ui_layout.add(count_button)
             self.finder_buttons.append(count_button)
@@ -235,6 +236,7 @@ class HubScreen(arcade.View):
                                                     width=200, height=100, action_args={'name': self.investigator.name, 'location': location[2], 'overlay': True,
                                                     'rail': combo[0], 'ship': combo[1], 'original': self.original_investigator_location}))
                     self.choice_layout = (create_choices(choices=choices, title='Choose Tickets'))
+                    self.choice_layout.add(self.base_overlay)
                     self.show_overlay()
                 else:
                     self.ticket_move(self.investigator.name, location[2], tickets[0][0], tickets[0][1], self.original_investigator_location)
@@ -510,13 +512,11 @@ class HubScreen(arcade.View):
                         self.gui_set(False)
                         portraits = []
                         for name in self.location_manager.all_investigators.keys():
-                            portraits.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.4, action=self.networker.publish_payload,
+                            portraits.append(ActionButton(texture='investigators/' + name + '_portrait.png', scale=0.3, action=self.networker.publish_payload,
                                                         action_args={'payload': {'message': 'lead_selected', 'value': name},'topic': self.investigator.name}))
                         self.choice_layout = create_choices(choices=portraits, title="Choose Lead Investigator")
+                        self.choice_layout.add(self.base_overlay)
                         self.show_overlay()
-                        #FOR TESTING
-                        #self.networker.publish_payload({'message': 'lead_selected', 'value': 'akachi_onyele'}, self.investigator.name)
-                        #END TESTING
                     case 'lead_selected':
                         self.gui_set(True)
                         self.lead_investigator = payload['value']
@@ -557,48 +557,24 @@ class HubScreen(arcade.View):
                                         for triggers in self.triggers.values():
                                             for trigger in triggers:
                                                 trigger['used'] = False
-                                        #'''
-                                        #FOR TESTING
-                                        #self.remaining_actions = 3
-                                        #if self.is_first:
-                                        #location = next((key for key in self.location_manager.locations.keys() if self.location_manager.locations[key]['expedition']))
-                                        #if self.investigator.name == 'akachi_onyele':
-                                        #self.ticket_move(self.investigator.name, 'arkham', 0, 0, self.investigator.location)
-                                        #else:
-                                            #self.ticket_move('akachi_onyele', 'arkham', 0, 0, 'space_16')
-                                        #self.investigator.focus = 0
-                                        #self.info_panes['investigator'].focus_action()
-                                        #END TESTING
-                                        #'''
                                 case 'encounter':
-                                        #FOR TESTING
-                                    #self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                                        #END TESTING
                                     self.show_encounter_pane()
                                     self.encounter_pane.encounter_phase()
                                 case 'reckoning':
                                     self.encounter_pane.reckoning(first=True)
                                 case 'mythos':
-                                    #FOR TESTING
-                                    #if self.is_first:
                                     self.clear_overlay()
                                     self.show_encounter_pane()
                                     self.encounter_pane.activate_mythos()
                                     self.is_first = False
-                                    #else:
-                                    #    self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
-                                    #END TESTING
                     case 'encounter_choice':
                         self.clear_overlay()
                         self.show_encounter_pane()
                         self.encounter_pane.start_encounter(payload['value'])
                     case 'mythos':
-                        #FOR TESTING
-                        #if self.is_first:
                         self.clear_overlay()
                         self.show_encounter_pane()
                         self.encounter_pane.load_mythos(payload['value'])
-                        #END TESTING
                     case 'mythos_switch':
                         self.encounter_pane.mythos_switch = True
                     case 'omen':
@@ -913,6 +889,7 @@ class HubScreen(arcade.View):
                     for x in choices + options:
                         x.move(-x.x, -x.y)
                     pane.choice_layout = create_choices(title, subtitle, choices, options=options, offset=(0,150))
+                    pane.choice_layout.add(self.base_overlay)
                     pane.layout.add(pane.choice_layout)
                     trigger['used'] = True
                 lola_button = ActionButton(texture='investigators/lola_hayes_portrait.png', text='Add die', text_position=(0,-50), scale=0.25, action=lola_hayes, action_args={})
@@ -1141,6 +1118,7 @@ class HubScreen(arcade.View):
                     choices = [ActionButton(width=100, height=50, text=human_readable(trigger['name']), action=trigger_dict[trigger['name']], texture='buttons/placeholder.png') for trigger in self.triggers['turn_end']]
                     choices.append(ActionButton(width=100, height=50, text='End Turn', action=self.end_turn, texture='buttons/placeholder.png'))
                     self.choice_layout = create_choices('End of Turn Actions', choices=choices)
+                    self.choice_layout.add(self.base_overlay)
                     self.show_overlay()
                 else:
                     self.end_turn()

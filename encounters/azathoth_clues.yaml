@@ -221,7 +221,7 @@
         - san: -6
           skip: True
       pass_text: An eerie mist surrounds you, and you find yourself in the court of Azathoth!
-      omen_text: "You return to Earth with your mind intact.\n\nDiscard 1 Eldrtich token from the Omen track."
+      omen_text: "You return to Earth with your mind intact.\n\nDiscard 1 Eldritch token from the Omen track."
     - test:
         - skill
       targs:

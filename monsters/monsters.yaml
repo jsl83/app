@@ -106,7 +106,7 @@
       title: Gnoph-Keh - Reckoning
       keys:
         - aargs
-      action_text: Each Investigator on this space loses 1 Health.
+      action_text: Each Investigator on this space loses 1 Sanity.
     text: "Reckoning\n\nEach investigator on this space loses 1 Sanity."
   elder_thing:
     count: 1
@@ -477,6 +477,7 @@
             '12': doom
             '3456': finish
           skip: True
+          title: Star Spawn - Reckoning
       finish:
         - set_buttons
       fargs:
@@ -635,13 +636,13 @@
           chosen: True
           skip: True
           step: spawn
+          skip_check: True
       spawn:
         - spawn_monster
       sargs:
         - name: zombie_horde
           skip: True
-      title: Zombie - Reckoning
-      action_text: Spawn the Zombie Horde Epic Monster on this space. If you do, discard this Monster.
+      action_text: "Zombie\nReckoning\n\nSpawn the Zombie Horde Epic Monster on this space. If you do, discard this Monster."
       keys:
         - aargs
         - sargs

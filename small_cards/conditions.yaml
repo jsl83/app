@@ -27,6 +27,7 @@
             - key: finish
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+        texture: conditions/amnesia.png
     reckoning:
       title: Amnesia
       action:
@@ -118,6 +119,7 @@
             - key: finish
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+        texture: conditions/back_injury.png
     reckoning:
       title: Back Injury
       action:
@@ -739,6 +741,7 @@
             - key: finish
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+        texture: conditions/hallucinations.png
     reckoning:
       title: Hallucinations
       action:
@@ -820,6 +823,7 @@
             - key: finish
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+        texture: conditions/internal_injury.png
     reckoning:
       title: Internal Injury
       action:
@@ -899,6 +903,7 @@
             - key: finish
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+        texture: conditions/leg_injury.png
     reckoning:
       title: Leg Injury
       action:
@@ -983,6 +988,7 @@
             - key: finish
               skip: True
           action_text: When you perform a Rest action, you may roll 1 die. On a 5 or 6, discard this card.
+        texture: conditions/paranoia.png
     reckoning:
       title: Paranoia
       action:

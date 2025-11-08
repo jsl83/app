@@ -127,7 +127,7 @@ class Map():
         button = ActionButton(location['x'] * 2 - item['size'] * item['scale'] / 2, location['y'] * 2 - item['size'] * item['scale'] / 2 - offset * 45,
                                 texture=path, scale=item['scale'], name=location_name)
         button.item_name = name if monster_id == None else monster_id
-        self.layouts[kind if kind not in ['mystery', 'eldrtich'] else 'clue'].add(button)
+        self.layouts[kind if kind not in ['mystery', 'eldritch'] else 'clue'].add(button)
         button.move(self.map.x, self.map.y + 400)
         zoom_button = ActionButton(location['x'] - item['size'] * item['zoom_scale'] / 2, location['y'] - item['size'] * item['zoom_scale'] / 2 - offset * 25,
                                     texture=path, scale=item['zoom_scale'], name=location_name)

@@ -160,7 +160,7 @@ class InvestigatorPane():
                     self.hub.action_taken('rest')
                 self.hub.gui_set(False)
                 self.hub.small_card_pane.encounter_type = ['rest']
-                self.hub.small_card_pane.setup(triggers, self, single_pick=False, finish_action=show, textures=['buttons/placeholder.png']*len(self.hub.triggers['rest_actions']))
+                self.hub.small_card_pane.setup(triggers, self, single_pick=False, finish_action=show, textures=[trigger.get('texture', 'buttons/rectangle.png') for trigger in self.hub.triggers['rest_actions']])
             elif does_something:
                 self.hub.action_taken('rest')
 

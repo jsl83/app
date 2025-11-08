@@ -232,8 +232,8 @@ class HubScreen(arcade.View):
                 if len(tickets) > 1:
                     choices = []
                     for combo in tickets:
-                        choices.append(ActionButton(texture='buttons/placeholder.png', action=self.ticket_move, text='Rail: ' + str(combo[0]) + '\nShip: ' + str(combo[1]),
-                                                    width=200, height=100, action_args={'name': self.investigator.name, 'location': location[2], 'overlay': True,
+                        choices.append(ActionButton(texture='buttons/rectangle.png', action=self.ticket_move, text='Rail: ' + str(combo[0]) + '\nShip: ' + str(combo[1]),
+                                                    width=150, height=50, action_args={'name': self.investigator.name, 'location': location[2], 'overlay': True,
                                                     'rail': combo[0], 'ship': combo[1], 'original': self.original_investigator_location}))
                     self.choice_layout = (create_choices(choices=choices, title='Choose Tickets'))
                     self.choice_layout.add(self.base_overlay)
@@ -283,7 +283,6 @@ class HubScreen(arcade.View):
         self.holding = None
 
     def on_mouse_press(self, x, y, button, modifiers):
-        print(x, y)
         if x < 1000 and y > 142 and not self.overlay_showing:
             #if self.click_time < 25 and get_distance((x,y), self.initial_click) < 50:
             #    if self.zoom == 1:
@@ -580,6 +579,7 @@ class HubScreen(arcade.View):
                     case 'omen':
                         self.set_omen(int(payload['value']))
                     case 'doom':
+                        print(payload['value'])
                         self.set_doom(int(payload['value']))
                     case 'token_removed':
                         kind = payload['kind']
@@ -869,7 +869,7 @@ class HubScreen(arcade.View):
                 reroll_triggers += [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('mod_die', False) and (not reroll.get('used', False) or not reroll.get('single_use', False))]
             if len(reroll_triggers) > 0:
                 for trigger in reroll_triggers:
-                    trigger_button = ActionButton(width=100, height=50, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action, 'force_select': True}, texture=trigger.get('texture', 'buttons/placeholder.png'), text=human_readable(trigger.get('name', '')), name=trigger.get('name', trigger.get('id', '')), scale=trigger.get('scale', 1))
+                    trigger_button = ActionButton(width=100, height=33, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action, 'force_select': True}, texture=trigger.get('texture', 'buttons/rectangle.png'), text=human_readable(trigger.get('name', '')), name=trigger.get('name', trigger.get('id', '')), scale=trigger.get('scale', 1))
                     if trigger.get('used', False) and trigger.get('single_use', False):
                         trigger_button.disable()
                     options.append(trigger_button)
@@ -895,17 +895,9 @@ class HubScreen(arcade.View):
                 lola_button = ActionButton(texture='investigators/lola_hayes_portrait.png', text='Add die', text_position=(0,-50), scale=0.25, action=lola_hayes, action_args={})
                 lola_button.action_args = {'choices': choices, 'title':titles[skill] + ' Test', 'options': options, 'subtitle':subtitle, 'pane': pane, 'trigger':lola_trigger, 'button': lola_button, 'double': double_six}
                 options.append(lola_button)
-        #FOR TESTING
-        #def autofail():
-        #    pane.rolls = [1]
-        #def succeed():
-        #    pane.rolls = [6,6,6,6,6]
-        #options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
-        #options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
-        #END TESTING
         if double_six:
             rolls += [roll for roll in rolls if roll == 6]
-        return rolls, create_choices(choices = choices, title=titles[skill] + ' Test', options=options, offset=(0,150), subtitle=subtitle)
+        return rolls, create_choices(choices = choices, title=titles[skill] + ' Test', options=options, offset=(0,170), subtitle=subtitle)
     
     def trigger_check(self, trigger, encounter_types):
         pass_condition = True
@@ -1115,8 +1107,8 @@ class HubScreen(arcade.View):
             self.ui_manager.trigger_render()
             if self.remaining_actions == 0:
                 if len([trigger for trigger in self.triggers['turn_end'] if not trigger['used']]) > 0:
-                    choices = [ActionButton(width=100, height=50, text=human_readable(trigger['name']), action=trigger_dict[trigger['name']], texture='buttons/placeholder.png') for trigger in self.triggers['turn_end']]
-                    choices.append(ActionButton(width=100, height=50, text='End Turn', action=self.end_turn, texture='buttons/placeholder.png'))
+                    choices = [ActionButton(width=100, height=33, text=human_readable(trigger['name']), action=trigger_dict[trigger['name']], texture='buttons/rectangle.png') for trigger in self.triggers['turn_end']]
+                    choices.append(ActionButton(width=100, height=33, text='End Turn', action=self.end_turn, texture='buttons/rectangle.png'))
                     self.choice_layout = create_choices('End of Turn Actions', choices=choices)
                     self.choice_layout.add(self.base_overlay)
                     self.show_overlay()

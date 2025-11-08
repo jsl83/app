@@ -18,8 +18,9 @@ with open('encounters/mythos.yaml') as stream:
 class EncounterPane():
     def __init__(self, hub, background='encounter'):
         self.layout = arcade.gui.UILayout(x=1000, width=280, height=800)
+        self.background = arcade.gui.UITextureButton(x=1000, width=280, height=800, texture=TEXTURES[background])
+        self.layout.add(self.background)
         self.choice_layout = arcade.gui.UILayout()
-        self.background = background
         self.hub = hub
         self.monsters = []
         self.encounters = []
@@ -28,11 +29,11 @@ class EncounterPane():
         self.rolls = []
         self.rumor_not_gate = None
         self.gate_close = True
-        self.phase_button = ActionButton(x=1020, width=240, y=725, height=50)
-        self.text_button = ActionButton(x=1020, width=240, y=275, height=425)
-        self.proceed_button = ActionButton(1020, 200, 240, 50)
-        self.option_button = ActionButton(1020, 125, 240, 50)
-        self.last_button = ActionButton(1020, 50, 240, 50)
+        self.phase_button = ActionButton(x=1020, width=240, y=740, height=50, font='UglyQua', bold=True, style={'font_size': 18, 'font_color': arcade.color.BLACK})
+        self.text_button = ActionButton(x=1020, width=240, y=275, height=450, font='Typical Writer', style={'font_color': arcade.color.BLACK}, bold=True)
+        self.proceed_button = ActionButton(1020, 195, 240, 60, font='Garamond Eldritch', style={'font_color': arcade.color.BLACK})
+        self.option_button = ActionButton(1020, 105, 240, 60, font='Garamond Eldritch', style={'font_color': arcade.color.BLACK})
+        self.last_button = ActionButton(1020, 15, 240, 60, font='Garamond Eldritch', style={'font_color': arcade.color.BLACK})
         self.action_dict = {
             'additional_action': self.additional_action,
             'adjust_triggers': self.adjust_triggers,
@@ -152,7 +153,7 @@ class EncounterPane():
             self.layout.children.remove(self.choice_layout)
 
     def clear_buttons(self, buttons=[]):
-        self.layout.clear()
+        self.layout.children = [child for child in self.layout.children if child == self.background]
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
         if len(self.choice_layout.children) > 0:
@@ -204,7 +205,7 @@ class EncounterPane():
             options = []
             for trigger in [trig for trig in self.hub.triggers['precombat'] if (not trig['used'] or not trig.get('single_use', False)) and (not trig.get('first_combat', False) or self.first_fight)]:
                 trigger['action']['title'] = human_readable(trigger['name'])
-                options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=human_readable(trigger['name']), action=small_card.setup, action_args={'encounters':[trigger['action']], 'parent': self, 'finish_action': finish_action, 'force_select': True}, name=human_readable(trigger['name'])))
+                options.append(ActionButton(width=100, height=33, texture='buttons/rectangle.png', text=human_readable(trigger['name']), action=small_card.setup, action_args={'encounters':[trigger['action']], 'parent': self, 'finish_action': finish_action, 'force_select': True}, name=human_readable(trigger['name'])))
             self.choice_layout = create_choices('Choose Monster', choices=choices, options=options)
             self.choice_layout.add(self.hub.base_overlay)
             self.layout.add(self.choice_layout)
@@ -245,7 +246,7 @@ class EncounterPane():
                             if len([roll for roll in small_card.rolls if roll >= self.investigator.success]) > 0:
                                 self.choose_encounter(small_card.chosen_location)
                     small_card.rolls = None
-                    options.append(ActionButton(width=100, height=50, text=human_readable(trigger['name']), texture='buttons/placeholder.png', action=small_card.setup, action_args={'encounters': [trigger], 'parent': self, 'force_select': True, 'finish_action': finish_action}))
+                    options.append(ActionButton(width=100, height=33, text=human_readable(trigger['name']), texture='buttons/rectangle.png', action=small_card.setup, action_args={'encounters': [trigger], 'parent': self, 'force_select': True, 'finish_action': finish_action}))
                 if encounter in ['clue', 'expedition', 'gate', 'generic', 'green', 'orange', 'purple']:
                     path = 'encounters/' + encounter + '.png'
                     request = True
@@ -297,7 +298,7 @@ class EncounterPane():
 
     def combat_will(self, monster, player_request=None, first_trigger=True):
         self.in_combat = True
-        self.layout.clear()
+        self.layout.children = [child for child in self.layout.children if child == self.background]
         self.encounter_type.append('combat')
         self.first_fight = False
         self.hub.info_manager.children = {0:[]}
@@ -333,7 +334,7 @@ class EncounterPane():
                     dmg = successes - horror
                     dmg = min(dmg, 0)
                     self.take_damage(0, dmg, self.resolve_combat if (monster.horror.get('skip', False) and successes == 0) or monster.horror.get('damage', False) else self.combat_strength, {'monster': monster, 'player_request': player_request})
-            next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_san)
+            next_button = ActionButton(width=100, height=33, texture='buttons/rectangle.png', text='Next', action=lose_san)
             self.encounter_type.append('combat_will')
             self.rolls, self.choice_layout = self.hub.run_test(monster.horror['index'],
                                         self,
@@ -360,7 +361,7 @@ class EncounterPane():
                 dmg = successes - monster.strength['str']
                 dmg = dmg if dmg < 0 else 0
                 self.take_damage(dmg, 0, self.resolve_combat, {'monster': monster, 'player_request': player_request})
-            next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=lose_hp)
+            next_button = ActionButton(width=100, height=33, texture='buttons/rectangle.png', text='Next', action=lose_hp)
             self.encounter_type.append('combat_strength')
             self.rolls, self.choice_layout = self.hub.run_test(monster.strength['index'],
                                         self,
@@ -427,7 +428,7 @@ class EncounterPane():
 
     def finish(self, skip=False):
         self.encounter_type = []
-        self.layout.clear()
+        self.layout.children = [child for child in self.layout.children if child == self.background]
         for button in [self.phase_button, self.text_button, self.proceed_button, self.option_button, self.last_button]:
             button.unset()
         self.layout.add(self.text_button)
@@ -560,7 +561,7 @@ class EncounterPane():
                     self.set_buttons(step)
                 choices = []
                 for destination in places:
-                    choices.append(ActionButton(texture='buttons/placeholder.png', text=human_readable(destination), action=choose_path, action_args={'loc': destination}))
+                    choices.append(ActionButton(texture='buttons/square.png', text=human_readable(destination), action=choose_path, action_args={'loc': destination}))
                 self.clear_overlay()
                 self.clear_buttons()
                 self.choice_layout = create_choices(choices=choices, title='Select Location')
@@ -639,7 +640,7 @@ class EncounterPane():
             for monster in monsters:
                 choices.append(ActionButton(
                     width=100, height=100, texture='monsters/' + monster.name + '.png', action=select, action_args={'monster': monster}))
-                options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
+                options.append(ActionButton(texture='buttons/small_circle.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
             self.clear_overlay()
             self.choice_layout = create_choices(title='Select Monster', choices=choices, options=options)
             self.choice_layout.add(self.hub.base_overlay)
@@ -681,7 +682,7 @@ class EncounterPane():
                     self.hub.networker.publish_payload({'message': 'remove_gate', 'value': map_name + ':' + self.investigator.location}, self.investigator.name)
             if len(triggers) > 0:
                 trigger_pane = SmallCardPane(self.hub)
-                trigger_pane.setup(triggers, self, False, textures=[trigger.get('texture', 'buttons/placeholder.png') for trigger in triggers], finish_action=finish_close, force_select=True)
+                trigger_pane.setup(triggers, self, False, textures=[trigger.get('texture', 'buttons/rectangle.png') for trigger in triggers], finish_action=finish_close, force_select=True)
             else:
                 finish_close()
         else:
@@ -735,7 +736,7 @@ class EncounterPane():
                 self.hub.gui_set(False)
                 if self.encounter.get(step + '_text', None) != None:
                     self.text_button.text = self.encounter.get(step + '_text')
-                self.layout.clear()
+                self.layout.children = [child for child in self.layout.children if child == self.background]
                 self.proceed_button.disable()
                 self.proceed_button.text = 'Select Monster'
                 for button in [self.text_button, self.phase_button, self.proceed_button]:
@@ -769,7 +770,7 @@ class EncounterPane():
                         for monster in monsters:
                             choices.append(ActionButton(
                                 width=100, height=100, texture='monsters/' + monster.name + '.png', action=select if single else lambda *args: None, action_args={'monster': monster}))
-                            options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
+                            options.append(ActionButton(texture='buttons/small_circle.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
                         self.clear_overlay()
                         self.choice_layout = create_choices(title='Select ' + ('' if single else 'all ') + 'Monster(s)', subtitle=('Damage: ' + str(damage)) if damage != 99 else 'Discard Monster', choices=choices, options=options)
                         self.choice_layout.add(self.hub.base_overlay)
@@ -880,7 +881,7 @@ class EncounterPane():
                                     self.wait_step = step
                                     self.hub.waiting_panes.append(self)
                                 discard_card(selected[x])
-                    button = ActionButton(width=150, height=50, text='Discard Selected', texture='buttons/placeholder.png', action=submit)
+                    button = ActionButton(width=150, height=50, text='Discard Selected', texture='buttons/rectangle.png', action=submit)
                     if (amt == 'keep_one' and len(items) != len(selected) + 1) or type(amt) == int:
                         button.disable()
                     def select(card, step):
@@ -901,7 +902,7 @@ class EncounterPane():
                         button.trigger_render()
                     options = [button]
                 title_text = 'Select ' + ((human_readable(tag) + ' ') if tag != 'any' else '') + (kind[:-1] if kind != 'all' else 'Possession') + ('' if amt == 'one' else 's') + ' to discard'
-                choices = [ActionButton(texture=item.texture, width=120, height=185, action=select, action_args={'card': item, 'step': step}) for item in items]
+                choices = [ActionButton(texture=item.texture, width=90, height=138, action=select, action_args={'card': item, 'step': step}) for item in items]
                 self.choice_layout = create_choices(choices = choices, options = options, title=title_text)
                 self.choice_layout.add(self.hub.base_overlay)
                 self.layout.add(self.choice_layout)
@@ -935,7 +936,7 @@ class EncounterPane():
                                     self.wait_step = step
                                     self.hub.waiting_panes.append(self)
                                 self.hub.request_card('assets', item, 'acquire')
-                    confirm_button = ActionButton(width=100, height=50, y=50, action=confirm, text='Confirm', texture='buttons/placeholder.png')
+                    confirm_button = ActionButton(width=100, height=33, y=50, action=confirm, text='Confirm', texture='buttons/rectangle.png')
                     confirm_button.disable()
                     options.append(confirm_button)
                     def next_step(item, step):
@@ -1019,16 +1020,16 @@ class EncounterPane():
                 title = 'Health'
             case 'san':
                 title = 'Sanity'
-        payment_button = ActionButton(height=100, width=100, text=str(self.group_payments[name]['my_payment']), texture='buttons/placeholder.png')
-        minus_button = ActionButton(height=50, width=50, text='-', texture='buttons/placeholder.png', action_args={'amt': -1})
-        submit_button = ActionButton(height=50, width=100, text='Submit Payment', texture='buttons/placeholder.png')
-        plus_button =  ActionButton(height=50, width=50, text='+', texture='buttons/placeholder.png', action_args={'amt': 1})
+        payment_button = ActionButton(height=50, width=100, text='Payment: ' + str(self.group_payments[name]['my_payment']), font='UglyQua')
+        minus_button = ActionButton(height=50, width=50, text='-', texture='buttons/small_circle.png', action_args={'amt': -1}, font='Garamond Eldritch', text_position=(0,-2))
+        submit_button = ActionButton(height=50, width=150, text='Submit', texture='buttons/rectangle.png', font='Garamond Eldritch', text_position=(0,-2))
+        plus_button =  ActionButton(height=50, width=50, text='+', texture='buttons/small_circle.png', action_args={'amt': 1}, font='Garamond Eldritch', text_position=(0,-2))
         options = [minus_button, submit_button, plus_button]
         def increment(amt):
             for button in options:
                 button.enable()
             self.group_payments[name]['my_payment'] += amt
-            payment_button.text = str(self.group_payments[name]['my_payment'])
+            payment_button.text = 'Payment: ' + str(self.group_payments[name]['my_payment'])
             if self.group_payments[name]['my_payment'] < min_pay or self.group_payments[name]['my_payment'] > max_pay:
                 submit_button.disable()
             if self.group_payments[name]['my_payment'] <= min_pay:
@@ -1092,7 +1093,7 @@ class EncounterPane():
             self.clear_buttons()
         else:
             inv = next((player for player in self.hub.location_manager.all_investigators.values() if player.name == investigator), self.investigator)
-            self.layout.clear()
+            self.layout.children = [child for child in self.layout.children if child == self.background]
             self.layout.add(self.text_button)
             self.layout.add(self.phase_button)
             if kind != None:
@@ -1143,7 +1144,7 @@ class EncounterPane():
                     choices.append(ActionButton(width=80, height=80, texture='icons/' + skills[int(char)] + '.png', action=improve, action_args={'stat': int(char)}))
             options = []
             if option != None:
-                options = [ActionButton(height=50, texture='buttons/placeholder.png', text='Skip', action=self.set_buttons, action_args={'key': option})]
+                options = [ActionButton(height=33, texture='buttons/rectangle.png', text='Skip', action=self.set_buttons, action_args={'key': option})]
             self.choice_layout = create_choices(choices=choices, title='Improve a Skill', options=options)
             self.choice_layout.add(self.hub.base_overlay)
             self.layout.add(self.choice_layout)
@@ -1206,7 +1207,7 @@ class EncounterPane():
                     for monster in monsters:
                         choices.append(ActionButton(
                             width=100, height=100, texture='monsters/' + monster.name + '.png', action=move_any, action_args={'monster': monster, 'encounter': encounter}))
-                        options.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
+                        options.append(ActionButton(texture='buttons/small_circle.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
                     self.clear_overlay()
                     self.choice_layout = create_choices(title='Move Monster(s)', choices=choices, options=options)
                     self.choice_layout.add(self.hub.base_overlay)
@@ -1383,6 +1384,8 @@ class EncounterPane():
         else:
             self.clear_overlay()
             self.set_button_set = set()
+            for button in [self.text_button, self.proceed_button, self.option_button, self.last_button]:
+                button.set_style(size=15)
             if key == 'no_effect':
                 self.proceed_button.enable()
                 self.proceed_button.text = 'Onward...'
@@ -1396,14 +1399,15 @@ class EncounterPane():
                 actions = self.encounter[key]
                 has_text = self.encounter.get(key + '_flavor', False) or self.encounter.get(key + '_text', False)
                 self.text_button.text = (self.encounter.get(key + '_flavor', '') + ('\n\n' if self.encounter.get(key + '_flavor', False) else '') + self.encounter.get(key + '_text', '')) if has_text else self.text_button.text
+                self.text_button.set_style(size=self.encounter.get('font_size', 15))
                 for x in range(len(actions)):
                     args = self.encounter[key[0] + 'args'][x]
                     buttons[x].text = args.get('text', '')
                     buttons[x].enable()
                     omit_args = {}
-                    for keys in [key for key in args.keys() if key not in ['text', 'check', 'skip', 'owner_only', 'on_trade']]:
+                    for keys in [key for key in args.keys() if key not in ['text', 'check', 'skip', 'owner_only', 'on_trade', 'skip_check']]:
                         omit_args[keys] = args[keys]
-                    if actions[x] in self.req_dict and not self.req_dict[actions[x]](omit_args) and len(actions) > 0:
+                    if actions[x] in self.req_dict and not args.get('skip_check', False) and not self.req_dict[actions[x]](omit_args) and len(actions) > 0:
                         buttons[x].disable()
                     if actions[x] == 'skill' or args.get('skip', None) != None:
                         buttons[x].action = lambda: None
@@ -1423,7 +1427,7 @@ class EncounterPane():
                                 buttons[x].action = self.hub.networker.publish_payload
                                 buttons[x].action_args = {'payload': {'message': 'spawn_rumor'}, 'topic': self.investigator.name}
                     self.set_button_set.add(buttons[x])
-                self.layout.clear()
+                self.layout.children = [child for child in self.layout.children if child == self.background]
                 self.layout.add(self.text_button)
                 self.layout.add(self.phase_button)
                 for x in range(len(self.encounter.get(key, actions))):
@@ -1460,7 +1464,7 @@ class EncounterPane():
         self.hub.networker.publish_payload({'message': 'shuffle_mystery', 'doom': doom}, self.investigator.name)
         self.set_buttons(step)
 
-    def single_roll(self, effects, other_action=None):
+    def single_roll(self, effects, other_action=None, title=''):
         def trigger_effects():
             self.clear_overlay()
             for key in effects.keys():
@@ -1468,16 +1472,8 @@ class EncounterPane():
                     self.set_buttons(effects[key])
         roll = random.randint(1, 6) + self.investigator.encounter_impairment
         roll = 1 if roll < 1 else roll
-        options = [ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=trigger_effects if other_action == None else other_action)]
-        #FOR TESTING
-        def autofail():
-            self.rolls = [1]
-        def succeed():
-            self.rolls = [6]
-        options.append(ActionButton(action=succeed, texture='buttons/placeholder.png', text='succeed'))
-        options.append(ActionButton(action=autofail, texture='buttons/placeholder.png', text='fail'))
-        #END TESTING
-        self.choice_layout = create_choices(options=options,
+        options = [ActionButton(width=100, height=33, texture='buttons/rectangle.png', text='Next', action=trigger_effects if other_action == None else other_action)]
+        self.choice_layout = create_choices(title, options=options,
             choices=[arcade.gui.UITextureButton(texture = arcade.load_texture(IMAGE_PATH_ROOT + 'icons/die_' + str(roll) + '.png'))])
         self.choice_layout.add(self.hub.base_overlay)
         self.layout.add(self.choice_layout)
@@ -1492,7 +1488,7 @@ class EncounterPane():
                 self.set_buttons(step)
             else:
                 self.set_buttons(fail)
-        next_button = ActionButton(width=100, height=30, texture='buttons/placeholder.png', text='Next', action=confirm_test)
+        next_button = ActionButton(width=109, height=36, texture='buttons/rectangle.png', text='Finish', action=confirm_test)
         self.rolls, self.choice_layout = self.hub.run_test(stat, self, mod, [next_button])
         self.layout.add(self.choice_layout)
 
@@ -1607,7 +1603,7 @@ class EncounterPane():
             choices = []
             for rumor in self.hub.location_manager.rumors.keys():
                 choices.append(ActionButton(
-                    width=100, height=300, texture='buttons/placeholder.png', text=human_readable(rumor), action=choose_rumor, action_args={'key': rumor}))
+                    width=100, height=155, texture='encounters/rumor.png', text=human_readable(rumor), action=choose_rumor, action_args={'key': rumor}))
             self.choice_layout = create_choices(choices=choices, title='Select Rumor')
             self.choice_layout.add(self.hub.base_overlay)
             self.layout.add(self.choice_layout)
@@ -1643,7 +1639,7 @@ class EncounterPane():
                     self.clear_overlay()
                     self.death_screen()
                 if self.investigator.health <= 0 and self.investigator.sanity <= 0:
-                    self.choice_layout = create_choices('Choose Defeat Type', choices=[ActionButton(width=100, height=50, texture='buttons/placeholder.png', action=choose_defeat, action_args={'kind': kind}, text=kind) for kind in ['Health', 'Sanity']])
+                    self.choice_layout = create_choices('Choose Defeat Type', choices=[ActionButton(width=100, height=33, texture='buttons/rectangle.png', action=choose_defeat, action_args={'kind': kind}, text=kind) for kind in ['Health', 'Sanity']])
                     self.choice_layout.add(self.hub.base_overlay)
                     self.layout.add(self.choice_layout)
                 else:
@@ -1704,7 +1700,7 @@ class EncounterPane():
                     self.discard('assets', resolve_damage, 'ally')
                 choices.append(ActionButton(scale=0.5, texture='monsters/maniac.png', action=maniac))
             next_button = ActionButton(
-                y=50, width=100, height=50, texture='buttons/placeholder.png', text='Next', action=resolve_damage)
+                y=50, width=100, height=33, texture='buttons/rectangle.png', text='Next', action=resolve_damage)
             self.choice_layout = create_choices(choices=choices, options=options + [next_button], title='Taking Damage', subtitle='Health: ' + str(-self.hp_damage) + '   Sanity: ' + str(-self.san_damage))
             self.choice_layout.add(self.hub.base_overlay)
             self.layout.add(self.choice_layout)
@@ -1718,7 +1714,7 @@ class EncounterPane():
         self.encounter = MYTHOS[mythos]
         self.encounter_type = []
         self.phase_button.text = 'Mythos Phase'
-        self.layout.clear()
+        self.layout.children = [child for child in self.layout.children if child == self.background]
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
         text = human_readable(mythos) + '\n\n' + self.encounter['flavor'] + '\n\n' + self.encounter.get('text', '')
@@ -1770,7 +1766,7 @@ class EncounterPane():
         small_card = SmallCardPane(self.hub)
         if first:
             self.load_reckoning_effects()
-        if index == 5:
+        if index == 5 and self.mythos:
             self.set_buttons(step)
             self.load_mythos(self.mythos)
             self.hub.show_encounter_pane()
@@ -1824,7 +1820,7 @@ class SmallCardPane(EncounterPane):
         self.clear_overlay()
         self.single_pick = single_pick
         self.default_text = default_text
-        self.textures = textures if len(textures) > 0 else ['buttons/placeholder.png'] * len(self.encounters)
+        self.textures = textures if len(textures) > 0 else ['buttons/rectangle.png'] * len(self.encounters)
         if force_select and len(encounters) == 1:
             self.encounter_selected(encounters[0])
         else:
@@ -2006,7 +2002,7 @@ class SmallCardPane(EncounterPane):
         if len(places) > 1:
             choices = []
             for destination in places:
-                choices.append(ActionButton(texture='buttons/placeholder.png', text=human_readable(destination), action=move_to_investigator, action_args={'monster': monster, 'destination': destination}))
+                choices.append(ActionButton(texture='buttons/square.png', text=human_readable(destination), action=move_to_investigator, action_args={'monster': monster, 'destination': destination}))
             self.clear_overlay()
             self.clear_buttons()
             self.choice_layout = create_choices(choices=choices, title='Select Location')
@@ -2090,7 +2086,7 @@ class SmallCardPane(EncounterPane):
         for x in range(len(self.encounters)):
             choices.append(ActionButton(scale=self.scale, texture=self.textures[x], action=self.encounter_selected, action_args={'encounter': self.encounters[x]}))
         if len([encounter for encounter in self.encounters if encounter.get('is_required', False)]) == 0:
-            choices.append(ActionButton(width=100, height=50, texture='buttons/placeholder.png', text='Skip Effects', action=self.finish, action_args={'skip': True}))
+            choices.append(ActionButton(width=100, height=33, texture='buttons/rectangle.png', text='Skip Effects', action=self.finish, action_args={'skip': True}))
         self.choice_layout = create_choices('Choose Effect', choices=choices)
         self.choice_layout.add(self.hub.base_overlay)
         self.layout.add(self.choice_layout)
@@ -2110,7 +2106,7 @@ class SmallCardPane(EncounterPane):
         self.option_button.action = respond
         self.proceed_button.action_args = {'item': item, 'owner': owner, 'checked': True}
         self.option_button.action_args = {'item': item, 'owner': owner, 'checked': False}
-        self.layout.clear()
+        self.layout.children = [child for child in self.layout.children if child == self.background]
         for button in [self.text_button, self.phase_button, self.option_button, self.proceed_button]:
             self.layout.add(button)
 
@@ -2151,6 +2147,9 @@ class SmallCardPane(EncounterPane):
             self.hub.info_pane = self.parent
             if self.finish_action != None:
                 self.finish_action(self.encounter_name)
+
+    def set_background(self, background):
+        self.background.texture = TEXTURES[background]
 
 class InvestigatorSkillPane(SmallCardPane):
     def __init__(self, hub):
@@ -2204,7 +2203,7 @@ class InvestigatorSkillPane(SmallCardPane):
             self.clear_overlay()
             my_clues = len(self.investigator.clues)
             their_clues = len(self.hub.location_manager.all_investigators[name].clues)
-            info_button = ActionButton(texture='buttons/placeholder.png', text='Trade Clues')
+            info_button = ActionButton(width=100, height=33, texture='buttons/rectangle.png', text='Trade Clues')
             self.action_string = '0'
             def send():
                 transaction = int(self.action_string)
@@ -2224,8 +2223,8 @@ class InvestigatorSkillPane(SmallCardPane):
                 self.action_string = str(transaction)
             jacqueline = ActionButton(texture='investigators/jacqueline_fine_portrait.png', text='Clues: ' + str(my_clues), text_position=(0,-70), scale=0.5)
             other = ActionButton(texture='investigators/' + name + '_portrait.png', text='Clues: ' + str(their_clues), text_position=(0,-70), scale=0.5)
-            send_button = ActionButton(width=30, texture='buttons/placeholder.png', text='>>', action=send)
-            take_button = ActionButton(width=30, texture='buttons/placeholder.png', text='<<', action=take)
+            send_button = ActionButton(width=50, texture='buttons/small_circle.png', text='>>', action=send)
+            take_button = ActionButton(width=50, texture='buttons/small_circle.png', text='<<', action=take)
             self.choice_layout = create_choices('Trade Clues - ' + human_readable(name), choices=[jacqueline, take_button, info_button, send_button, other])
             self.choice_layout.add(self.hub.base_overlay)
             self.layout.add(self.choice_layout)
@@ -2273,7 +2272,7 @@ class InvestigatorSkillPane(SmallCardPane):
         self.clear_overlay()
         health = min(self.investigator.health - 1, self.investigator.max_sanity - self.investigator.sanity)
         sanity = min(self.investigator.sanity - 1, self.investigator.max_health - self.investigator.health)
-        info_button = ActionButton(texture='buttons/placeholder.png', text='Convert HP/SAN')
+        info_button = ActionButton(texture='buttons/rectangle.png', text='Convert HP/SAN')
         self.action_string = '0'
         def send():
             transaction = int(self.action_string)
@@ -2293,8 +2292,8 @@ class InvestigatorSkillPane(SmallCardPane):
             self.action_string = str(transaction)
         health_button = ActionButton(texture='icons/health.png', text=str(self.investigator.health), scale=2, style={'font_color': arcade.color.BLACK})
         san_button = ActionButton(texture='icons/sanity.png', text=str(self.investigator.sanity), scale=2, style={'font_color': arcade.color.BLACK})
-        send_button = ActionButton(width=30, texture='buttons/placeholder.png', text='>>', action=send)
-        take_button = ActionButton(width=30, texture='buttons/placeholder.png', text='<<', action=take)
+        send_button = ActionButton(width=50, texture='buttons/small_circle.png', text='>>', action=send)
+        take_button = ActionButton(width=50, texture='buttons/small_circle.png', text='<<', action=take)
         self.choice_layout = create_choices('Lily Chen - Action', choices=[health_button, take_button, info_button, send_button, san_button])
         self.choice_layout.add(self.hub.base_overlay)
         self.layout.add(self.choice_layout)

@@ -13,7 +13,7 @@ class ServerLoadingScreen(arcade.View):
 
         self.manager.add(arcade.gui.UILabel(y=650, text="Ancient One", align='center', width=500))
         self.manager.add(arcade.gui.UILabel(y=650, text="Investigators", align='center', width=700, x=580))
-        self.start_button = arcade.gui.UITextureButton(texture=arcade.load_texture(IMAGE_PATH + 'buttons/placeholder.png'), y=150, x=855, width=150, text='Start Game', align='center')
+        self.start_button = arcade.gui.UITextureButton(texture=arcade.load_texture(IMAGE_PATH + 'buttons/rectangle.png'), y=150, x=855, width=150, text='Start Game', align='center')
         self.start_button.enabled = False
         self.manager.add(self.start_button)
         self.click_time = 0

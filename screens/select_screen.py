@@ -64,7 +64,7 @@ class SelectionScreen(arcade.View):
 
         detail_buttons = ['Select', 'Flip', 'Back']
         for i in range(0, 3):
-            button = arcade.gui.UITextureButton(1050, 300 + i * 100, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons\\placeholder.png'))
+            button = arcade.gui.UITextureButton(1050, 300 + i * 100, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons\\rectangle.png'))
             button.text = detail_buttons[i]
             self.detail_list.add(button)
         ###
@@ -141,7 +141,7 @@ class SelectionScreen(arcade.View):
                             payload['replace'] = self.networker.investigator
                         else:
                             self.manager.children = {0:[]}
-                            self.manager.add(arcade.gui.UITextureButton(width=1280, y=700, text='Waiting for other players', texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons/placeholder.png')))
+                            self.manager.add(arcade.gui.UITextureButton(width=1280, y=700, text='Waiting for other players', texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons/rectangle.png')))
                         if self.selected == 'lola_hayes' and self.respawn:
                             self.networker.game_screen.small_card_pane.set_return_gui(self.info_pane)
                             self.networker.game_screen.small_card_pane.improve_skill('01234')

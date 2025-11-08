@@ -54,7 +54,7 @@ class ReservePane():
         self.shopping_pane.add(self.credit_button)
         self.shopping_pane.add(self.debt_button)
         self.discard_layout.add(ActionButton(x=1031, y=740, width=217, height=46, text='Close Discard', texture='buttons/button.png', action=self.close_discard, font='Garamond Eldritch', style={'font_color': arcade.color.BLACK}, text_position=(0,-2)))
-        self.empty_texture = arcade.load_texture(":resources:eldritch/images/buttons/placeholder.png")
+        self.empty_texture = arcade.load_texture(":resources:eldritch/images/buttons/rectangle.png")
         self.encounter_type = ['acquire_assets']
 
     def restock(self, removed, added):
@@ -128,7 +128,7 @@ class ReservePane():
                 self.layout.add(self.shopping_pane)
                 self.layout.add(self.enable_pane)
                 self.credit_button.text = str(self.successes)
-            self.rolls, self.choice_layout = self.hub.run_test(1, self, options=[ActionButton(width=100, height=50, text='Finish', action=finish_test, texture='buttons/placeholder.png')])
+            self.rolls, self.choice_layout = self.hub.run_test(1, self, options=[ActionButton(width=100, height=33, text='Finish', action=finish_test, texture='buttons/rectangle.png')])
             self.layout.add(self.choice_layout)
             self.disable_button(self.acquire_button)
             self.disable_button(self.discard_button)

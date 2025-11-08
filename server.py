@@ -370,10 +370,6 @@ class Server(threading.Thread, BanyanBase):
                         if self.current_phase == 4:
                             self.end_mythos()
                         else:
-                            topic = ''
-                            #if self.current_phase == 2 and self.mythos != None and self.mythos.get('lead_only', None) != None:
-                            #    topic = 'server_update'
-                            #else:
                             topic = self.selected_investigators[self.current_player] + '_server'
                             self.publish_payload({'message': 'player_turn', 'value': self.phases[self.current_phase]}, topic)
                     case 'get_encounter':
@@ -820,7 +816,7 @@ class Server(threading.Thread, BanyanBase):
 
     def web_between_worlds(self):
         payment = self.set_payment('investigators', 'clues', 'web_between_worlds', 2)
-        encounter = {'action': ['group_pay_reckoning', 'update_rumor'], 'aargs': [{'kind': 'clues', 'name': 'web_between_worlds', 'first': True, 'text': 'Spend ' + str(payment) + ' Clues'}, {'name': 'web_between_worlds', 'kind': 'value', 'amt': -1, 'step': 'reckoning', 'text': 'Add 1 Eldritch Token'}], 'action_text': 'Web Between Worlds - Reckoning\n\nDiscard 1 Eldritch token from this card unless Investigators as a group spend Clues equal to half Investigators.'}
+        encounter = {'action': ['group_pay_reckoning', 'update_rumor'], 'aargs': [{'kind': 'clues', 'name': 'web_between_worlds', 'first': True, 'text': 'Spend ' + str(payment) + ' Clues'}, {'name': 'web_between_worlds', 'kind': 'value', 'amt': -1, 'step': 'reckoning', 'text': 'Add 1 Eldritch Token'}], 'action_text': 'Web Between Worlds\nReckoning\n\nDiscard 1 Eldritch token from this card unless Investigators as a group spend Clues equal to half Investigators.'}
         self.publish_payload({'message': 'player_mythos_reckoning', 'value': encounter}, self.selected_investigators[self.lead_investigator] + '_server')
 
     def restock_reserve(self, removed=[], discard=False, refill=True, cycle=False):

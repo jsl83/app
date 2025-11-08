@@ -69,9 +69,9 @@ class LocationPane():
         for stat in ['lore', 'influence', 'observation', 'strength', 'will']:
             self.icons.append(arcade.load_texture(IMAGE_PATH_ROOT + 'icons/' + stat + '.png'))
 
-        self.toggle_rumor = ActionButton(1140, y=380, width=140, height=35, text='Rumors', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK}, action=self.toggle_details, action_args={'flag': False})
-        self.toggle_info = ActionButton(1000, y=380, width=140, height=35, text='-= Details =-', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK}, action=self.toggle_details, action_args={'flag': True})
-        self.rumor_details = arcade.gui.UITextureButton(x=1000, y=0, height=390, width=280, texture=self.blank)
+        self.toggle_rumor = ActionButton(1140, y=380, width=140, height=35, text='Rumors', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK}, action=self.toggle_details, action_args={'flag': False}, bold=True)
+        self.toggle_info = ActionButton(1000, y=380, width=140, height=35, text='-= Details =-', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK}, action=self.toggle_details, action_args={'flag': True}, bold=True)
+        self.rumor_details = arcade.gui.UITextureButton(x=1000, y=0, height=390, width=280, texture=self.blank, font='Typical Writer', style={'font_color': arcade.color.BLACK})
         self.rumor = None
         self.possession_screen = TradePane(self.hub.investigator, self.hub)
         self.possession_screen.close_button.action = self.on_show
@@ -136,7 +136,7 @@ class LocationPane():
             self.token_layout.add(self.tokens[icon])
         if self.rumor != None:
             self.tokens['rumor'].text = str(self.location_manager.rumors[self.rumor].get('eldritch', ''))
-            self.tokens['rumor'].style['font_color'] = (255,0,0)
+            self.tokens['rumor'].style['font_color'] = arcade.color.PURPLE
 
     def update_list(self, kind):
         y_offset = 0

@@ -45,6 +45,7 @@ class ReservePane():
         self.discard_button = ActionButton(x=1036, y=201, width=208, height=37, action=self.discard_action, text='View Discard', font='Garamond Eldritch', style={'font_color': arcade.color.BLACK}, text_position=(0,-2))
         self.credit_button = ActionButton(x=1000, y=163, width=115, height=55, font='Poster Bodoni', style={'font_color': arcade.color.BLACK, 'font_size': 18})
         self.debt_button = ActionButton(x=1090, y=0, width=100, height=138, action=self.bank_loan)
+        self.disable_debt = ActionButton(x=1090, y=0, width=100, height=138, texture='buttons/transparent.png')
         self.cycle_button = ActionButton(x=1154, y=161, width=126, height=88, action=self.discard_action, text='Cycle', style={'font_color': arcade.color.BLACK, 'font_size': 18}, font='Garamond Eldritch', text_position=(5,15))
         self.cycle_button.disable()
         self.bottom_pane.add(self.acquire_button)
@@ -132,8 +133,8 @@ class ReservePane():
             self.layout.add(self.choice_layout)
             self.disable_button(self.acquire_button)
             self.disable_button(self.discard_button)
-            if next((item for item in self.hub.investigator.possessions['assets'] if item['name'] == 'debt'), False):
-                self.enable_pane.append(ActionButton(x=self.debt_button.x, y=self.debt_button.y, width=self.debt_button.width, height=self.debt_button.height, texture='buttons/transparent.png'))
+            if next((item for item in self.hub.investigator.possessions['assets'] if item.name == 'debt'), False):
+                self.enable_pane.append(self.disable_debt)
             for button in self.reserve_buttons:
                 button.disable()
 
@@ -179,7 +180,7 @@ class ReservePane():
         self.credit_button.text = str(self.successes)
         if self.successes > 0 and len(self.selected) > 0:
             self.acquire_button.enable()
-        self.enable_pane.add(ActionButton(x=self.debt_button.x, y=self.debt_button.y, width=self.debt_button.width, height=self.debt_button.height, texture='gui/overlay.png'))
+        self.enable_pane.add(self.disable_debt)
         self.layout.trigger_render()
         self.hub.info_manager.trigger_render()
 

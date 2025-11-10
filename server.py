@@ -170,7 +170,7 @@ class Server(threading.Thread, BanyanBase):
         self.is_first = True
         self.get_locations = {
             'cultists': lambda: list(set(monster['location'] for monster in self.monsters if monster['name'] == 'cultist')),
-            'gate_omen': lambda: [gate for gate in self.decks['gates']['board'] if LOCATIONS[gate.split(':')[1]] == self.omen_cycle[self.omen]],
+            'gate_omen': lambda: [gate for gate in self.decks['gates']['board'] if LOCATIONS[gate.split(':')[1]].get('gate_color', '') == self.omen_cycle[self.omen]],
             'monsters_on_loc': lambda loc: len([monster for monster in self.monsters if monster['location'] == loc])
         }
 
@@ -811,12 +811,12 @@ class Server(threading.Thread, BanyanBase):
 
     def spreading_sickness(self):
         amt = [rumor for rumor in self.reckoning_actions if rumor['name'] == 'spreading_sickness'][0]['recurring'] + 1
-        encounter = {'action': ['hp_san'], 'aargs': [{'hp':-amt, 'step': 'reckoning', 'skip': True}], 'action_text': 'Spreading Sickness - Reckoning\n\nPlace a Health Token on this card, then each Investigator loses Health equal to the number of tokens on this card.'}
+        encounter = {'button_text': 'Spreading Sickness', 'is_required': True, 'action': ['hp_san'], 'aargs': [{'hp':-amt, 'step': 'reckoning', 'skip': True}], 'action_text': 'Spreading Sickness \n\nPlace a Health Token on this card, then each Investigator loses Health equal to the number of tokens on this card.'}
         self.publish_payload({'message': 'player_mythos_reckoning', 'value': encounter}, 'server_update')
 
     def web_between_worlds(self):
         payment = self.set_payment('investigators', 'clues', 'web_between_worlds', 2)
-        encounter = {'action': ['group_pay_reckoning', 'update_rumor'], 'aargs': [{'kind': 'clues', 'name': 'web_between_worlds', 'first': True, 'text': 'Spend ' + str(payment) + ' Clues'}, {'name': 'web_between_worlds', 'kind': 'value', 'amt': -1, 'step': 'reckoning', 'text': 'Add 1 Eldritch Token'}], 'action_text': 'Web Between Worlds\nReckoning\n\nDiscard 1 Eldritch token from this card unless Investigators as a group spend Clues equal to half Investigators.'}
+        encounter = {'button_text': 'Web Between Worlds', 'is_required': True, 'action': ['group_pay_reckoning', 'update_rumor'], 'aargs': [{'kind': 'clues', 'name': 'web_between_worlds', 'first': True, 'text': 'Spend ' + str(payment) + ' Clues'}, {'name': 'web_between_worlds', 'kind': 'value', 'amt': -1, 'step': 'reckoning', 'text': 'Add 1 Eldritch Token'}], 'action_text': 'Web Between Worlds\nReckoning\n\nDiscard 1 Eldritch token from this card unless Investigators as a group spend Clues equal to half Investigators.'}
         self.publish_payload({'message': 'player_mythos_reckoning', 'value': encounter}, self.selected_investigators[self.lead_investigator] + '_server')
 
     def restock_reserve(self, removed=[], discard=False, refill=True, cycle=False):

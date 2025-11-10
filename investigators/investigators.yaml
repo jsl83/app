@@ -37,6 +37,7 @@
             distance: 0
         title: Akachi Onyele
         action_text: When you close a Gate during an Other World Encounter, you may move to any space containing a Clue or a Gate.
+        button_text: Akachi Onyele
   charlie_kane:
     expansion: 0
     max_health: 4

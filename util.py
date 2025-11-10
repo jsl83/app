@@ -18,12 +18,12 @@ def create_choices(title='', subtitle='', choices=[], size=(700,385), pos=(150,2
         choice_gui.add(title_button)
         index += 1
     if subtitle != '':
-        subtitle_button = arcade.gui.UITextureButton(x=pos[0], y=size[1]-165 + pos[1], width=size[0], height=50, align='center', text=subtitle, font='UglyQua')
+        subtitle_button = arcade.gui.UITextureButton(x=pos[0], y=size[1]-155 + pos[1], width=size[0], height=50, align='center', text=subtitle, font='UglyQua')
         subtitle_button.identifier = 'overlay_subtitle'
         choice_gui.add(subtitle_button)
         index += 1
 
-    start_y = size[1] - offset[1] - (50 if subtitle != '' else 0) + pos[1]
+    start_y = size[1] - offset[1] - (35 if subtitle != '' else 0) + pos[1]
 
     for menu in [choices, options]:
         choice_height = 0
@@ -38,7 +38,7 @@ def create_choices(title='', subtitle='', choices=[], size=(700,385), pos=(150,2
         start_y -= (choice_height / 2)
 
         for button in menu:
-            button.move(start_x, start_y + ((choice_height - button.height) / 2))
+            button.move(start_x, (start_y if menu == choices else 360) + ((choice_height - button.height) / 2))
             start_x += button.width + 20
 
         start_y -= (40 + choice_height / 2)

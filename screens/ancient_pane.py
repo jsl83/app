@@ -47,4 +47,4 @@ class AncientOnePane():
             self.details.add(self.stats)
 
     def on_show(self):
-        pass
+        self.toggle_details(False)

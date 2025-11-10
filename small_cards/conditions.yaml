@@ -7,7 +7,6 @@
       - kind: rest_actions
         owner_only: True
         trigger:
-          title: Amnesia
           action:
             - single_roll
           aargs:
@@ -15,6 +14,7 @@
                 '1234': nada
                 '56': discard
               skip: True
+              title: Amnesia
           discard:
             - discard
           dargs:
@@ -99,7 +99,6 @@
       - kind: rest_actions
         owner_only: True
         trigger:
-          title: Back Injury
           action:
             - single_roll
           aargs:
@@ -107,6 +106,7 @@
                 '1234': nada
                 '56': discard
               skip: True
+              title: Back Injury
           discard:
             - discard
           dargs:
@@ -188,7 +188,6 @@
     tags:
       - boon
     reckoning:
-      title: Blessed
       is_required: True
       action:
         - single_roll
@@ -197,6 +196,7 @@
             '12': discard
             '3456': nada
           skip: True
+          title: Blessed
       discard:
         - discard
       dargs:
@@ -240,7 +240,6 @@
       - bane
     reckoning:
       is_required: True
-      title: Cursed
       action:
         - single_roll
       aargs:
@@ -248,6 +247,7 @@
             '123': nada
             '456': discard
           skip: True
+          title: Cursed
       discard:
         - discard
       dargs:
@@ -308,7 +308,6 @@
     tags:
       - deal
     reckoning:
-      title: Dark Pact
       is_required: True
       action:
         - single_roll
@@ -317,6 +316,7 @@
             '1': flip
             '23456': nada
           skip: True
+          title: Dark Pact
       flip:
         - flip_card
       fargs:
@@ -721,7 +721,6 @@
       - kind: rest_actions
         owner_only: True
         trigger:
-          title: Hallucinations
           action:
             - single_roll
           aargs:
@@ -729,6 +728,7 @@
                 '1234': nada
                 '56': discard
               skip: True
+              title: Hallucinations
           discard:
             - discard
           dargs:
@@ -803,7 +803,6 @@
       - kind: rest_actions
         owner_only: True
         trigger:
-          title: Internal Injury
           action:
             - single_roll
           aargs:
@@ -811,6 +810,7 @@
                 '1234': nada
                 '56': discard
               skip: True
+              title: Internal Injury
           discard:
             - discard
           dargs:
@@ -883,7 +883,6 @@
       - kind: rest_actions
         owner_only: True
         trigger:
-          title: Leg Injury
           action:
             - single_roll
           aargs:
@@ -891,6 +890,7 @@
                 '1234': nada
                 '56': discard
               skip: True
+              title: Leg Injury
           discard:
             - discard
           dargs:
@@ -968,7 +968,6 @@
       - kind: rest_actions
         owner_only: True
         trigger:
-          title: Paranoia
           action:
             - single_roll
           aargs:
@@ -976,6 +975,7 @@
                 '1234': nada
                 '56': discard
               skip: True
+              title: Paranoia
           discard:
             - discard
           dargs:

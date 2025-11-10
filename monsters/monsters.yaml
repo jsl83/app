@@ -81,7 +81,7 @@
       dargs:
         - skip: True
           increment: -1
-      title: Dark Young - Reckoning
+      title: Dark Young
       action_text: Roll 1 die. On a 1 or 2, advance Doom by 1.
     text: "Reckoning\n\nRoll 1 die. On a 1 or 2, advance Doom by 1."
   deep_one:
@@ -100,10 +100,10 @@
       action:
         - monster_reckoning_damage
       aargs:
-        - skip: True
+        - text: Resolve
           san: -1
           first: True
-      title: Gnoph-Keh - Reckoning
+      title: Deep One
       keys:
         - aargs
       action_text: Each Investigator on this space loses 1 Sanity.
@@ -170,10 +170,10 @@
       action:
         - monster_reckoning_damage
       aargs:
-        - skip: True
+        - text: Resolve
           hp: -1
           first: True
-      title: Gnoph-Keh - Reckoning
+      title: Gnoph-Keh
       keys:
         - aargs
       action_text: Each Investigator on this space loses 1 Health.
@@ -248,7 +248,7 @@
       is_required: True
       keys:
         - aargs
-      title: Hound of Tindalos - Reckoning
+      title: Hound of Tindalos
       action_text: Move this Monster to the nearest space containing an investigator. Then an investigator on that space immediately encounters it.
   lloigor:
     count: 1
@@ -267,12 +267,12 @@
       action:
         - monster_reckoning_damage
       aargs:
-        - skip: True
+        - text: Resolve
           first: True
           adjacent: True
           hp: -1
           san: -1
-      title: Lloigor - Reckoning
+      title: Lloigor
       keys:
         - aargs
       action_text: Each Investigator on this space or an adjacent space loses 1 Health and 1 Sanity.
@@ -319,7 +319,7 @@
         - text: Move
           distance: 99
           encounter: False
-      title: Mi-go - Reckoning
+      title: Mi-go
       keys:
         - aargs
       action_text: Discard the nearest Clue and move this Monster to that space.
@@ -405,6 +405,7 @@
             '12': draw
             '3456': finish
           skip: True
+          title: Serpent People
       finish:
         - set_buttons
       fargs:
@@ -414,7 +415,6 @@
         - attract_investigator
       dargs:
         - skip: True
-      title: Serpent People - Reckoning
       action_text: Roll 1 die. On a 1 or 2, the nearest Investigator moves 1 space toward this Monster.
       keys:
         - dargs
@@ -437,7 +437,7 @@
       aargs:
         - amt: -99
           text: Next
-      title: Shoggoth - Reckoning
+      title: Shoggoth
       action_text: This Monster recovers all Health.
       keys:
         - aargs
@@ -477,7 +477,7 @@
             '12': doom
             '3456': finish
           skip: True
-          title: Star Spawn - Reckoning
+          title: Star Spawn
       finish:
         - set_buttons
       fargs:
@@ -488,7 +488,7 @@
       dargs:
         - skip: True
           increment: -1
-      title: Star Spawn - Reckoning
+      title: Star Spawn
       action_text: Roll 1 die. On a 1 or 2, advance Doom by 1.
   vampire:
     count: 1
@@ -524,6 +524,7 @@
             12: near
             3456: finish
           skip: True
+          title: Warlock
       near:
         - nearest_investigator
       nargs:
@@ -536,7 +537,6 @@
           name: cursed
           investigator: chosen
           skip: True
-      title: Warlock - Reckoning
       action_text: Roll 1 die. On a 1 or 2, the nearest Investigator gains a Cursed Condition.
       keys:
         - nargs
@@ -560,8 +560,8 @@
         - first: True
           cursed: True
           hp: -1
-          skip: True
-      title: Witch - Reckoning
+          text: Resolve
+      title: Witch
       action_text: Each Investigator who has a Cursed Condition loses 1 Health.
       keys:
         - aargs
@@ -734,7 +734,7 @@
       dargs:
         - skip: True
           increment: -1
-      title: Zombie Horde - Reckoning
+      title: Zombie Horde
       action_text: Roll 1 die. On a 1 or 2, advance Doom by 1.
     resolve_trigger:
       cond: hp_damage

@@ -46,7 +46,7 @@ class PossessionsPane():
                     number = 0
                     for item in item_list:
                         if number == 0:
-                            y_pos -= 190
+                            y_pos -= 192
                         create_button(1015 + number * 130, y_pos, item.name, card_type)
                         number += 1
                         if number == 2:
@@ -89,11 +89,12 @@ class PossessionsPane():
 
     def card_action(self, card):
         self.back_action()
+        self.hub.holding = None
         self.hub.small_card_pane.encounter_type = [card.kind]
-        card.action['title'] = human_readable(card.name)
+        self.hub.small_card_pane.phase_button.text = human_readable(card.name)
         self.hub.gui_set(False)
         self.hub.info_pane = self.hub.small_card_pane
-        self.hub.small_card_pane.set_background(card.kind)
+        #self.hub.small_card_pane.set_background(card.kind)
         self.hub.small_card_pane.setup([card.action], self, textures=[card.texture], finish_action=self.on_finish_small, force_select=True)
 
     def on_finish_small(self, name):

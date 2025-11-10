@@ -1,5 +1,6 @@
 ---
   a_dark_power:
+    kind: 'yellow'
     action:
       - combat
     aargs:
@@ -8,6 +9,7 @@
     flavor: Lightning cracks across the sky. You have a sinking dread that all the good you've accomplished is about to be undone.
     text: Each Monster recovers all Health. Then each investigator immediately encounters each Monster on their space in the order of their choice.
   a_proposition:
+    kind: 'green'
     action:
       - request_card
       - set_buttons
@@ -28,6 +30,7 @@
     flavor: You had told everyone the parchment was indecipherable, but you were lying. You know the ritual necessary to summon and bind the dark power. You could strike a bargain with it. The situation is desperate, but you know that a solution is within its power. But what will it ask of you in return?
     text: The Lead Investigator may gain a Dark Pact Condition to immediately solve 1 Rumor Mythos card in play.
   all_for_nothing:
+    kind: 'yellow'
     action:
       - shuffle_mystery
       - group_pay
@@ -45,6 +48,7 @@
     flavor: You wrap the towel around some ice and apply it to your injuries, hoping to reduce the swelling. You make a mental list of all the sacrifices that you've had to make and those that you've asked of others. All that terrible loss and you can't for the life of you think of any good that's been accomplished.
     text: Shuffle a solved Mystery back into the deck unless investigators as a group spend Clues equal to half the number of investigators. If there are no solved Mysteries, advance Doom by 1.
   ancient_guardians:
+    kind: 'yellow'
     action:
       - end_mythos
     aargs:
@@ -53,6 +57,7 @@
     flavor: An article on the back page of the newspaper catches your attention. An unexplained attack on a remote outpost left no survivors. You've read about two other similar attacks happening in the same region. You can see that the forgotten corners of the globe are growing more dangerous.
     text: 2 Monsters spawn on the Active Expedition space.
   arrests_made_in_murder_case!:
+    kind: 'yellow'
     action:
       - condition_check
     aargs:
@@ -90,17 +95,20 @@
     flavor: You open the door of your hotel to find several stone-faced policemen. There's been a lot of unexplained deaths and nothing attracts suspicion like being a stranger.
     text: Each investigator on a City space with a Weapon possession tests Influence. If they fails, they discard 1 Weapon possession and gain a Detained Condition.
   blood_flows:
+    kind: 'green'
     action:
       - damage_monsters
     aargs:
       - damage: 99
         lose_hp: True
         skip: True
+        skip_check: True
     font_size: 13
     flavor: >
       "Strong gris-gris," the old man told you. You've been wearing the pouch around your neck ever since New Orleans. "You want it to spill blood fuh you," he drawled, "you has to spill your blood fuh the gris-gris."
     text: The Lead Investigator discards 1 Monster of his choice and loses Health equal to its toughness.
   burden_of_greed:
+    kind: 'yellow'
     action:
       - condition_check
     aargs:
@@ -132,6 +140,7 @@
     flavor: You can't sleep and can't stop shaking. Compulsively, you open up your suitcase and count everything, gripping everything you own so tightly your hands bleed.
     text: Each investigator may discard any number of Item possessions, then they lose 1 Health for each Item possession they have.
   buying_information:
+    kind: 'green'
     action:
       - skill
     aargs:
@@ -147,6 +156,7 @@
       "When you get there, stop at this address." The nervous little man hands you a business card for a restaurant. "Ask for the catch of the day and then tuck a sawbuck into your napkin. These guys can get you the answers you need." When you get the bill for your meal, it includes directions to a payphone. It's already ringing by the time you find it. You answer and explain your situation to the gruff voice on the other end of the line.
     text: The Lead Investigator tests Influence and gains a number of Clues equal to their test result.
   calling_the_elder_things:
+    kind: 'green'
     action:
       - end_mythos
     aargs:
@@ -155,6 +165,7 @@
     flavor: According to the police report, several individuals entered the warehouse in the middle of the night. They performed some sort of ritual which culminated in their death. What you know that the police don't is that, afterward, something inhuman left that warehouse.
     text: Spawn 1 Monster on each space that contains a Cultist Monster.
   desperate_times:
+    kind: 'yellow'
     action:
       - request_card
       - set_doom
@@ -169,6 +180,7 @@
     flavor: You hear it again and again on the news. Every day the world takes another step toward utter annihilation. You ask yourself, how much would you sacrifice to prevent that disaster? Even if you could only grant humanity one more day of existence, could you honestly say that the price was too high?
     text: Doom advances by 2 unless the Lead Investigator gains a Dark Pact Condition.
   dimensional_instability:
+    kind: 'green'
     action:
       - end_mythos
     aargs:
@@ -177,6 +189,7 @@
     flavor: You cannot believe that this gibbering lunatic was once the smiling, lucid lawyer you spoke to this morning. "Collapsed," his trembling hands indicated empty air. "The worlds collided, and the door collapsed!" He abruptly pulls himself off the floor and looks out the small window of his cell. "But so too will they pull. They will rip and tear, and a new door will open elsewhere."
     text: Discard each Gate that corresponds to the current Omen and advance Doom by 1 for each Gate discarded.
   dimensions_collide:
+    kind: 'blue'
     action:
       - end_mythos
     aargs:
@@ -189,6 +202,7 @@
       unsolved: When there are no Eldritch tokens on this card, investigators lose the game.
       eldritch: 4
   driven_to_bankruptcy:
+    kind: 'green'
     action:
       - end_mythos
     aargs:
@@ -197,6 +211,7 @@
     flavor: Walking down the street, you are surrounded by locked doors and boarded up windows. You see only a few people striding down the sidewalk, and almost all of them avoid eye contact. Those that do look you in the eye glare at you suspiciously.
     text: When this card enters play, discard all cards from the reserve. Cards cannot be placed in the reserve until the next reckoning.
   everyone_has_a_price:
+    kind: 'yellow'
     action:
       - request_card
       - set_buttons
@@ -216,6 +231,7 @@
     flavor: He writes the price on a piece of paper and slides it across the table. It's more than you can afford, but you don't have any other options, and this greedy lout knows it.
     text: Each investigator may gain a Debt Condition to discard 1 Condition.
   eyes_everywhere:
+    kind: 'yellow'
     action:
       - single_roll
     aargs:
@@ -245,6 +261,7 @@
     damage_text: You are assaulted on all sides.
     fight_text: Your pursuers are not human!
   faded_from_society:
+    kind: 'blue'
     action:
       - end_mythos
     aargs:
@@ -257,6 +274,7 @@
       unsolved: When there are no Eldritch tokens on this card, solve this Rumor.
       eldritch: 4
   fractured_reality:
+    kind: 'blue'
     action:
       - end_mythos
     aargs:
@@ -270,6 +288,7 @@
       unsolved: Advance Doom by 1 for each Gate on the game Board.
       eldritch: 4
   from_bad_to_worse:
+    kind: 'yellow'
     action:
       - loss_per_condition
     aargs:
@@ -293,6 +312,7 @@
     flavor: Piece by piece, you are falling apart. It's getting harder to successfully negotiate simple human interactions. Your wounds won't stop bleeding, and your hands won't stop shaking.
     text: You lose 1 Health for each Injury Condition, 1 Sanity for each Madness Condition, and 1 Clue for each Deal Condition
   from_beyond:
+    kind: 'green'
     action:
       - server_check
     aargs:
@@ -319,6 +339,7 @@
     flavor: The shop owner's body was found in the storeroom among those curios and antiques deemed "too esoteric" for public display. While the police ascribed his death to natural causes, you see it for something more sinister. The insidious powers from outside of reality are growing more aggressive, impatient for the meal they plan to make of this world.
     text: Resolve the Reckoning effect on each Mythos card in play twice unless investigators, as a group, spend Clues equal to half Investigators. If there are no Mythos cards in play with a Reckoning effect, advance Doom by 1.
   growing_madness:
+    kind: 'blue'
     action:
       - end_mythos
     aargs:
@@ -338,6 +359,7 @@
             step: reckoning
             skip: True
   haunting_nightmares:
+    kind: 'yellow'
     action:
       - spend_clue
       - hp_san
@@ -354,6 +376,7 @@
         skip: True
     flavor: You wake up in mid-scream, and your heart is racing. What little you can remember of your nightmare was so visceral and horrific that you dread falling back asleep.
   heart_of_corruption:
+    kind: 'green'
     lead_only: True
     action:
       - request_card
@@ -378,6 +401,7 @@
     flavor: You compared the picture in the magazine to the drawing on the old, tattered map. It was definitely a match, but what could be so valuable that it required so much secrecy, and why was that particular point on the map marked with blood?
     text: The Lead Investigator gains 1 Artifact, then rolls 1 die. On a 1 or 2, they lose 2 Health and 2 Sanity.
   heat_wave_singes_the_globe:
+    kind: 'yellow'
     action:
       - hp_san
       - delayed
@@ -387,6 +411,7 @@
       - text: Become Delayed
     flavor: Sweating and exhausted, you stop to rest in what little shade you can find. You've already heard stories of this heat wave claiming the lives of sick or elderly individuals. You fear that if you keep going at this pace, you might fall victim to it as well.
   legitimate_banking:
+    kind: 'green'
     lead_only: True
     action:
       - impair_encounter
@@ -411,6 +436,7 @@
     flavor: The man in the suit slides the contract across the desk. "We've spoken to the police and the customs agents, and all of the necessary payments have been made. If you'll just sign this, indicating that you understand your obligations, you can be on your way." His assistant places a pen in your hand.
     text: The Lead Investigator gains a Debt Condition. If the Lead Investigator already had a Debt Condition, they resolve the Reckoning effect on that card, treating all die rolls as l's.
   lost_knowledge:
+    kind: 'blue'
     action:
       - end_mythos
     aargs:
@@ -433,6 +459,7 @@
             text: Discard Clues
       not_encounter: True
   mysterious_lights:
+    kind: 'blue'
     action:
       - allow_gate_close
     aargs:
@@ -450,6 +477,7 @@
       solve: Test Observation, then spend Clues equal to half Investigators.
       effect: Gates cannot be closed.
   no_peace_for_the_fallen:
+    kind: 'green'
     action:
       - request_card
     aargs:
@@ -461,6 +489,7 @@
     flavor: You can feel the decay clinging to you. This sickening putrefaction is everywhere, and you fear the toll it's taking on your friends lying in hospital beds.
     text: Discard all possessions on defeated investigators' sheets and return all defeated investigator tokens and sheets to the game box. Then the Lead Investigator gains a Cursed Condition.
   omen_of_good_fortune:
+    kind: 'yellow'
     action:
       - set_omen
     aargs:
@@ -469,6 +498,7 @@
     flavor: You drop a penny into the peculiar mechanical device. The automaton waves its hand and turns over a card bearing the words, "Good luck is with you!"
     text: The Lead Investigator may move the Omen to a space of their choice on the Omen track without advancing Doom.
   patrolling_the_border:
+    kind: 'green'
     action:
       - choose_investigator
     aargs:
@@ -481,6 +511,7 @@
     manager_object:
       unsolved: Each Investigator on a City space tests Observation. If they fail, they become Delayed and gain a Detained Condition.
       unsolve_encounter:
+        button_text: Patrolling the Border
         action:
           - condition_check
         aargs:
@@ -505,6 +536,7 @@
           - skip: True
             step: reckoning
   perplexing_stars:
+    kind: 'yellow'
     action:
       - end_mythos
     aargs:
@@ -512,6 +544,7 @@
     flavor: Before your very eyes the stars shift in the night sky. Constellations break apart and reform, shattering your previous predictions of the omens.
     text: Move the Omen counterclockwise by 1, then advance Doom by 1 for each Gate on the game board that corresponds to the current Omen.
   rally_the_people:
+    kind: 'yellow'
     action:
       - request_card
     aargs:
@@ -523,6 +556,7 @@
     flavor: After the noise and violence is over, one of the shopkeepers peers out from his shuttered windows. Amazed to see you alive, he opens the window and calls out, "Is it over? Are we safe?" You wave to let him know that everything is fine.
     text: The Lead Investigator gains 1 random Ally Asset from the deck.
   return_of_the_ancient_ones:
+    kind: 'blue'
     action:
       - adjust_triggers
     aargs:
@@ -569,7 +603,9 @@
       is_solve: True
       not_encounter: True
       trigger: monster_kill
+      font_size: 10
   rising_terror:
+    kind: 'green'
     action:
       - monster_reckoning
     aargs:
@@ -589,6 +625,7 @@
     flavor: The full moon seems to stir the blood of every beast. Even listless, old hounds seem possessed by the spirit of some feral ancestor, vicious and cruel.
     text: Resolve the Reckoning effect on each Monster on the game board twice. If there are no Monsters on the game board with a Reckoning effect, advance Doom by 1.
   secrets_of_the_past:
+    kind: 'blue'
     action:
       - disable_expeditions
     aargs:
@@ -607,6 +644,7 @@
       unsolved: When the Expedition Deck is empty, Investigators lose the game.
       eldritch: 6
   silver_twilight_aid:
+    kind: 'yellow'
     action:
       - gain_clue
       - gain_asset
@@ -618,6 +656,7 @@
         kind: spells
     flavor: One inside the lodge, your host invites you to follow him upstairs. Several members stare in astonishment. Outsiders are rarely granted such access. At the top of the stairs you are ushered into a library, filled with rare and exotic tomes. "Now," he says, "how can we help you?"
   spreading_sickness:
+    kind: 'blue'
     action:
       - end_mythos
     aargs:
@@ -629,6 +668,7 @@
       reckoning: Place a Health Token on this card, then each Investigator loses Health equal to the number of tokens on this card.
       eldritch: 0
   stars_aligned:
+    kind: 'blue'
     action:
       - end_mythos
     aargs:
@@ -639,6 +679,7 @@
       solve: Test Observation, then spend Clues equal to half Investigators.
       reckoning: Advance the Omen by 1.
   strange_sightings:
+    kind: 'green'
     action:
       - resting_enabled
     aargs:
@@ -651,10 +692,11 @@
     eargs:
       - text: End turn (all)
     flavor: Pulling the curtain back slightly, you see that same suspicious man watching your hotel. You're going to have to sneak out the back exit and try to lose him again.
-    text: Investigators cannot preform Rest actions until the next Reckoning.
+    text: Investigators cannot perform Rest actions until the next Reckoning.
     manager_object:
       unsolved: Investigators can perform Rest actions again.
       unsolve_encounter:
+        button_text: Strange Sightings
         action:
           - resting_enabled
         aargs:
@@ -662,7 +704,9 @@
             origin: strange_sightings
             step: reckoning
             text: Next
+        action_text: Investigators can perform Rest actions.
   support_of_the_church:
+    kind: 'green'
     action:
       - request_card
     aargs:
@@ -674,6 +718,7 @@
     flavor: You hang your head in exhaustion and frustration. You jump suddenly when a hand rests on your shoulder. To your relief, you turn to find the local priest. "Have faith, my child," he tells you. "Your good works have not gone unseen. Your brave acts are making a difference."
     text: The Lead Investigator gains a Blessed Condition.
   that_which_consumes:
+    kind: 'green'
     action:
       - select_location
     aargs:
@@ -690,13 +735,14 @@
     font_size: 12
     lead_only: True
   the_bermuda_triangle:
+    kind: 'yellow'
     action:
       - single_roll
     aargs:
       - effects:
           '12': move
           '3456': nada
-        skip: Cast the die
+        skip: True
     move:
       - move_investigator
     margs:
@@ -717,6 +763,7 @@
     move_text: Move to Space 8 and become Delayed.
     nada_text: You escape the storm.
   the_storm:
+    kind: 'yellow'
     action:
       - spend_clue
     aargs:
@@ -727,6 +774,7 @@
     text: Each investigator discards Clues equal to the number of Rumor Mythos cards in play. If there are no Rumor Mythos cards in play, draw and resolve 1 Rumor Mythos card from the game box.
     font_size: 14
   the_wind-walker:
+    kind: 'blue'
     action:
       - end_mythos
     aargs:
@@ -751,6 +799,7 @@
             skip: True
       not_encounter: True
   the_world_fights_back:
+    kind: 'yellow'
     action:
       - hp_san
       - hp_san
@@ -766,6 +815,7 @@
     flavor: Across the globe, headlines announce terrors that threaten to engulf humanity. Individuals everywhere take action against these horrors and assist those who have already been fighting the ancient one.
     text: Choose one of the following
   the_world_shakes:
+    kind: 'yellow'
     action:
       - condition_check
     aargs:
@@ -793,6 +843,7 @@
     text: Each investigator on the Active Expedition space or an adjacent space loses 2 Health and becomes Delayed. Then search the Expedition Encounter deck for each card corresponding to the Active Expedition and return it to the game box. Then shuffle the Expedition Encounter deck.
     font_size: 12
   tide_of_despair:
+    kind: 'yellow'
     action:
       - hp_san
       - discard
@@ -806,6 +857,7 @@
     flavor: A cold, bitter wind howls through the trees and people everywhere cling to their fires and blankets. The chill has settled into your bones, and there's no warmth to be found.
     text: Each investigator loses 2 Health and 2 Sanity unless they discard a Blessed Condition.
   tied_to_a_dark_purpose:
+    kind: 'green'
     action:
       - impair_encounter
     aargs:
@@ -828,6 +880,7 @@
     flavor: Keep running. Never look back. You've known for a long time now that the consequences of your actions are always one step behind you. But now, it's all catching up to you.
     text: Resolve the Reckoning effect on all Conditions, treating all die rolls as 1's.
   torn_asunder:
+    kind: 'green'
     action:
       - hp_san
     aargs:
@@ -847,6 +900,7 @@
     flavor: Strange forces stretch you in all directions. The portals between worlds are pulling reality apart, and you feel these unearthly energies coming from all corners of the globe.
     text: Each investigator loses Health equal to the number of Gates on the game board that corresponds to the current Omen. If there are no Gates that correspond to the current Omen, advance the Omen by 1.
   treacherous_magic:
+    kind: 'yellow'
     action:
       - condition_check
     aargs:
@@ -890,6 +944,7 @@
     text: Each investigator may discard any number of Spells, then they loses 1 Sanity for each Spell they have. Each investigator that lost Sanity from this effect also gains a Madness Condition.
     font_size: 12
   unexpected_betrayal:
+    kind: 'green'
     action:
       - condition_check
     aargs:
@@ -918,6 +973,7 @@
     flavor: After weeks of encountering ancient and monstrous creatures, you were unprepared for something so cold and personal as being betrayed by an associate. Lies can be every bit as destructive as any wizard's curse.
     text: Each investigator with at least 1 Ally Asset loses 3 Health and discards 1 Ally Asset.
   web_between_worlds:
+    kind: 'blue'
     action:
       - end_mythos
     aargs:

@@ -138,8 +138,10 @@ class InvestigatorPane():
             if not ((self.investigator.health == self.investigator.max_health and self.investigator.sanity == self.investigator.max_sanity and len(self.investigator.rest_triggers) == 0) or len(self.investigator.recover_restrictions) != 0):
                 if len(self.investigator.sanity_recover_restrictions) == 0:
                     self.investigator.sanity += (1 + len([trigger for trigger in self.hub.triggers['rest_san_bonus'] if self.hub.trigger_check(trigger, [])]))
+                    self.investigator.sanity = min(self.investigator.sanity, self.investigator.max_sanity)
                 if len(self.investigator.health_recover_restrictions) == 0:
                     self.investigator.health += (1 + len([trigger for trigger in self.hub.triggers['rest_hp_bonus'] if self.hub.trigger_check(trigger, [])]))
+                    self.investigator.health = min(self.investigator.health, self.investigator.max_health)
                 self.hub.networker.publish_payload({'message': 'update_hpsan', 'hp': self.investigator.health, 'san': self.investigator.sanity}, self.investigator.name)
                 does_something = True
             triggers = []

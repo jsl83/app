@@ -91,9 +91,12 @@ class HubScreen(arcade.View):
         self.token_manager.add(self.doom_counter)
         self.token_manager.add(self.omen_counter)
         index = 0
+        self.ui_buttons = []
         for text in ['investigator', 'possessions', 'reserve', 'location', 'ancient_one']:
-            ui_layout.add(ActionButton(index * 190 + 50, y=21, width=140, height=100, texture='blank.png', text=human_readable(text), font='Garamond Eldritch', text_position=(0,-2),
-                                       action=self.switch_info_pane, action_args={'key': text}, style={'font_color': arcade.color.BLACK, 'font_size': 14}, bold=True))
+            main_button = ActionButton(index * 190 + 50, y=21, width=140, height=100, texture='blank.png', text=human_readable(text), font='Garamond Eldritch', text_position=(0,-2),
+                                       action=self.switch_info_pane, action_args={'key': text}, style={'font_color': arcade.color.BLACK, 'font_size': 14}, bold=True)
+            ui_layout.add(main_button)
+            self.ui_buttons.append(main_button)
             index += 1
 
         self.maps = {
@@ -330,7 +333,7 @@ class HubScreen(arcade.View):
             self.info_pane.move(dy)
         elif self.holding == 'investigator':
             self.investigator_token.move(dx, dy)
-        elif self.holding != None:
+        elif self.holding not in [None, 'finder']:
             self.holding.move(dx, dy)
 
     def check_map_boundaries(self):
@@ -487,8 +490,6 @@ class HubScreen(arcade.View):
                             if card.name == 'debt' or card.name == 'detained':
                                 card.action['pargs'][0]['investigator'] = payload['owner']
                             if payload['owner'] == self.investigator.name:
-                                if payload['value'][0:-1] == 'debt':
-                                    self.info_panes['reserve'].debt_button.disable()
                                 self.info_panes['possessions'].setup()
                             if payload.get('from_discard', False):
                                 self.info_panes['reserve'].discard_item(payload['value'])
@@ -525,7 +526,7 @@ class HubScreen(arcade.View):
                             self.clear_overlay()
                         for action in self.actions_taken:
                             self.actions_taken[action] = False
-                            self.info_panes['reserve'].acquire_button.enable()
+                            self.info_panes['reserve'].enable_button(self.info_panes['reserve'].acquire_button)
                             if hasattr(self.investigator, 'passive_used'):
                                 self.investigator.passive_used = False
                         if hasattr(self.investigator, 'passive_used'):
@@ -579,7 +580,6 @@ class HubScreen(arcade.View):
                     case 'omen':
                         self.set_omen(int(payload['value']))
                     case 'doom':
-                        print(payload['value'])
                         self.set_doom(int(payload['value']))
                     case 'token_removed':
                         kind = payload['kind']
@@ -619,7 +619,7 @@ class HubScreen(arcade.View):
                             self.maps['world'].remove_tokens('rumor', rumor['location'], payload['value'])
                             self.misc_button.text = str(int(self.misc_button.text) - 1)
                         if not payload['solved'] and rumor.get('unsolve_encounter', None) != None:
-                            rumor['unsolve_encounter']['title'] = human_readable(payload['value']) + ' - Reckoning'
+                            rumor['unsolve_encounter']['title'] = human_readable(payload['value'])
                             self.encounter_pane.mythos_reckonings.append(rumor['unsolve_encounter'])
                         elif payload['solved'] and rumor.get('trigger', False):
                             self.triggers[rumor['trigger']] = [trig for trig in self.triggers[rumor['trigger']] if trig['name'] != payload['value']]
@@ -869,7 +869,7 @@ class HubScreen(arcade.View):
                 reroll_triggers += [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('mod_die', False) and (not reroll.get('used', False) or not reroll.get('single_use', False))]
             if len(reroll_triggers) > 0:
                 for trigger in reroll_triggers:
-                    trigger_button = ActionButton(width=100, height=33, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action, 'force_select': True}, texture=trigger.get('texture', 'buttons/rectangle.png'), text=human_readable(trigger.get('name', '')), name=trigger.get('name', trigger.get('id', '')), scale=trigger.get('scale', 1))
+                    trigger_button = ActionButton(width=100, height=33, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action, 'force_select': True}, texture=trigger.get('texture', 'buttons/rectangle.png'), text=human_readable(trigger.get('name', '')), name=trigger.get('name', trigger.get('id', '')), scale=0.3 if trigger.get('texture', False) else 1)
                     if trigger.get('used', False) and trigger.get('single_use', False):
                         trigger_button.disable()
                     options.append(trigger_button)
@@ -933,8 +933,7 @@ class HubScreen(arcade.View):
         self.ui_manager.trigger_render()
 
     def get_ui_buttons(self):
-        buttons = [child for child in self.ui_manager.children[0][0].children if type(child) == ActionButton]
-        return buttons[len(buttons) - 5: len(buttons)]
+        return self.ui_buttons
     
     def select_ui_button(self, index):
         buttons = self.get_ui_buttons()
@@ -1075,6 +1074,7 @@ class HubScreen(arcade.View):
         self.action_taken('move')
         if (self.investigator.name == 'silas_marsh' and not self.info_panes['investigator'].skill_check()):
             self.info_panes['investigator'].skill_button.disable()
+        
 
     def undo(self):
         if self.undo_action != None:

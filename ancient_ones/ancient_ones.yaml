@@ -60,6 +60,7 @@
                 - skip: True
               title: Mystery - Occult Research
               action_text: Spend 1 Clue and place it on this Mystery.
+              button_text: Mystery
       omen_of_devastation:
         text: "The Nemesis Moon appears in the night sky, visible to all and heralding an imminent doom.\n\nWhen an investigator closes a Gate that corresponds to the current Omen, they may spend 1 Clue to place 1 Eldritch token on this card.\n\nAt the end of the Mythos Phase, if there are Eldritch tokens on this card equal to half the number of Investigators, solve this Mystery."
         required: half
@@ -80,6 +81,7 @@
               - skip: True
             title: Mystery - Omen of Devastation
             action_text: Spend 1 Clue to place 1 Eldritch token on this Mystery.
+            button_text: Mystery
       seed_of_the_daemon_sultan:
         text: "A strange green comet has fallen from the sky. Even after the impact, the meteorite continues to slowly burrow itself deeper into the earth.\n\nAs an encounter, an Investigator on Tunguska may attempt to search for signs of the impact in the dead forest (Observation). If they pass, they discover the strange green meteorite and may spend 2 Clues to place 1 Eldritch token on this card.\n\nAt the end of the Mythos Phase, if there are Eldritch Tokens on this card equal to half NoInvestigators, solve this Mystery."
         required: half

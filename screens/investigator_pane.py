@@ -58,6 +58,7 @@ class InvestigatorPane():
             'trish_scarborough': lambda *args: len(self.investigator.clues) == 0
         }
         self.skill_check()
+        self.state = 'details'
 
     def focus_action(self):
         if self.investigator.focus < 2 and not self.hub.actions_taken['focus'] and self.hub.remaining_actions > 0:
@@ -76,7 +77,7 @@ class InvestigatorPane():
         self.focus_button.text = 'x ' + str(self.investigator.focus)
 
     def ticket_action(self, kind):
-        if (not ((kind == 'ship' and self.investigator.ship_tickets >= 2) or (kind == 'rail' and self.investigator.rail_tickets >= 2))) and not self.hub.actions_taken['ticket'] and self.hub.remaining_actions > 0 and kind in self.hub.location_manager.locations[self.investigator.location]['routes'].values():
+        if (not ((kind == 'ship' and self.investigator.ship_tickets >= 2) or (kind == 'rail' and self.investigator.rail_tickets >= 2))) and not self.hub.actions_taken['ticket'] and self.hub.remaining_actions > 0 and kind in self.hub.location_manager.locations[self.investigator.location]['routes'].values() and self.hub.location_manager.locations[self.investigator.location]['kind'] == 'city':
             tickets = self.investigator.get_ticket(kind)
             self.set_ticket_counts()
             self.hub.action_taken('ticket')
@@ -120,12 +121,16 @@ class InvestigatorPane():
         if flag:
             self.layout.children.remove(self.details)
             self.layout.add(self.skill_pane)
+            self.state = 'skills'
         else:
             self.layout.children.remove(self.skill_pane)
             self.layout.add(self.details)
+            self.state ='details'
 
     def on_show(self):
         self.skill_check()
+        if self.state == 'skills':
+            self.toggle_details(False)
 
     def skill_check(self):
         self.skill_button.disable()

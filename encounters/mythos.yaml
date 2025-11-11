@@ -457,6 +457,7 @@
             location: all
             step: reckoning
             text: Discard Clues
+        is_required: True
       not_encounter: True
   mysterious_lights:
     kind: 'blue'
@@ -512,6 +513,7 @@
       unsolved: Each Investigator on a City space tests Observation. If they fail, they become Delayed and gain a Detained Condition.
       unsolve_encounter:
         button_text: Patrolling the Border
+        is_required: True
         action:
           - condition_check
         aargs:
@@ -552,7 +554,7 @@
         tag: ally
         text: Gain 1 Ally Asset
     lead_only: True
-    font_size: 13
+    font_size: 15
     flavor: After the noise and violence is over, one of the shopkeepers peers out from his shuttered windows. Amazed to see you alive, he opens the window and calls out, "Is it over? Are we safe?" You wave to let him know that everything is fine.
     text: The Lead Investigator gains 1 random Ally Asset from the deck.
   return_of_the_ancient_ones:
@@ -732,7 +734,7 @@
       - text: No Gates
     flavor: In one night, the whole monstrous undertaking has disappeared. Every occult sigil has been sanded from the wall and painted over. Every name on your list has moved to a new city without notice. You would like to believe that you managed to drive them out, but you fear that it signifies something worse. The dark goal they'd been pursuing is now accomplished.
     text: Investigators, as a group, choose 1 Gate on the game board and discard it. If the discarded Gate does not correspond to the current Omen, advance Doom by 1.
-    font_size: 12
+    font_size: 11
     lead_only: True
   the_bermuda_triangle:
     kind: 'yellow'
@@ -772,7 +774,7 @@
         not_spend: True
     flavor: The wind suddenly picks up, causing a shiver despite the clear, blue sky. Looking to the horizon, you see steely-gray clouds approaching.
     text: Each investigator discards Clues equal to the number of Rumor Mythos cards in play. If there are no Rumor Mythos cards in play, draw and resolve 1 Rumor Mythos card from the game box.
-    font_size: 14
+    font_size: 13
   the_wind-walker:
     kind: 'blue'
     action:

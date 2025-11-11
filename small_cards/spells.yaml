@@ -604,6 +604,7 @@
         kind: precombat
         first_combat: True
         trigger:
+          encounter: encounter
           action:
             action:
               - set_buttons

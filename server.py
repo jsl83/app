@@ -27,6 +27,8 @@ with open('ancient_ones/server_mythos.yaml') as stream:
 
 class Server(threading.Thread, BanyanBase):
     def __init__(self, back_plane_ip_address=None, process_name=None, player=None):
+        self.test_mythos = 'perplexing_stars'
+        self.test_color = 1
         threading.Thread.__init__(self)
         self.the_lock = threading.Lock()
         self.daemon = True
@@ -339,6 +341,9 @@ class Server(threading.Thread, BanyanBase):
                                 for x in range(3):
                                     if len(self.mythos_deck[x]) > 0:
                                         name = random.choice(list(self.mythos_deck[x].keys()))
+                                        if self.test_mythos:
+                                            name = self.test_mythos
+                                            self.test_mythos = None
                                         self.mythos = self.mythos_deck[x][name]
                                         self.publish_payload({'message': 'mythos', 'value': name}, 'server_update')
                                         kind = self.mythos['color']
@@ -841,10 +846,13 @@ class Server(threading.Thread, BanyanBase):
         for x in range(3):
             for character in self.ancient_one.mythos[x]:
                 color = int(character)
-                card = random.choice(list(MYTHOS[color].keys()))
+                card = random.choice([car for car in list(MYTHOS[color].keys()) if car != self.test_mythos])
                 self.mythos_deck[x][card] = MYTHOS[color][card]
                 self.mythos_deck[x][card]['color'] = color
                 del MYTHOS[color][card]
+            if self.test_mythos:
+                self.mythos_deck[0][self.test_mythos] = MYTHOS[self.test_color][self.test_mythos]
+                self.mythos_deck[0][self.test_mythos]['color'] = self.test_color
 
     def set_omen(self, pos=None, trigger=True, increment=1):
         if pos != None:

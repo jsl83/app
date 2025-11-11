@@ -22,7 +22,7 @@ class EncounterPane():
         self.mythos_banner = arcade.gui.UITextureButton(x=1055, y=676, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui/mythos_icons.png'))
         self.mythos_icons = {}
         for icon in ['reckoning', 'omen', 'surge', 'clues', 'gate', 'eldritch', 'rumor']:
-            self.mythos_icons[icon] = ActionButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'icons/' + icon + '.png'), style={'font_color': arcade.color.BLACK, 'font_size': 10 if icon == 'rumor' else 12}, bold=True, text_position=(0,-7))
+            self.mythos_icons[icon] = ActionButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'icons/' + icon + '.png'), style={'font_color': arcade.color.BLACK, 'font_size': 7 if icon == 'rumor' else 12}, bold=True, text_position=(0,-7))
         self.layout.add(self.background)
         self.choice_layout = arcade.gui.UILayout()
         self.hub = hub
@@ -239,6 +239,7 @@ class EncounterPane():
             choices.append(ActionButton(texture='conditions/detained.png', action=begin_detained, scale=0.5))
         else:
             for encounter in self.encounters:
+                is_rumor = False
                 request = False
                 args = {}
                 for trigger in [trig for trig in self.hub.triggers['preencounter'] if self.hub.trigger_check(trig, self.encounter_type) and (not trig.get('single_use', False) or not trig['used'])]:
@@ -261,9 +262,11 @@ class EncounterPane():
                 elif encounter != 'eldritch':
                     path = 'encounters/rumor.png'
                     args = {'value': 'rumor:0', 'loc': encounter}
+                    is_rumor = True
                 button = ActionButton(texture=path, scale=0.3)
                 button.action = self.hub.networker.publish_payload if request else self.start_encounter
-                button.action_args = args           
+                button.action_args = args
+                button.text = human_readable(args['loc']) if is_rumor else ''
                 choices.append(button)
             for x in range(len(self.hub.triggers['special_encounters'])):
                 trigger = self.hub.triggers['special_encounters'][x]
@@ -686,7 +689,7 @@ class EncounterPane():
                     self.hub.networker.publish_payload({'message': 'remove_gate', 'value': map_name + ':' + self.investigator.location}, self.investigator.name)
             if len(triggers) > 0:
                 trigger_pane = SmallCardPane(self.hub)
-                trigger_pane.setup(triggers, self, False, textures=[trigger.get('texture', 'buttons/rectangle.png') for trigger in triggers], finish_action=finish_close, force_select=True)
+                trigger_pane.setup(triggers, self, False, textures=[trigger.get('texture', 'buttons/rectangle.png') for trigger in triggers], finish_action=finish_close, force_select=True, scale=0.67)
             else:
                 finish_close()
         else:
@@ -771,13 +774,18 @@ class EncounterPane():
                     if len(monsters) > 0:
                         self.proceed_button.text = ''
                         self.proceed_button.action_args = {'loc': loc}
+                        health_buttons = []
                         for monster in monsters:
                             choices.append(ActionButton(
                                 width=100, height=100, texture='monsters/' + monster.name + '.png', action=select if single else lambda *args: None, action_args={'monster': monster}))
-                            options.append(ActionButton(texture='buttons/small_circle.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
+                            health_button = ActionButton(texture='buttons/small_circle.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness))
+                            options.append(health_button)
+                            health_buttons.append(health_button)
                         self.clear_overlay()
                         self.choice_layout = create_choices(title='Select ' + ('' if single else 'all ') + 'Monster(s)', subtitle=('Damage: ' + str(damage)) if damage != 99 else 'Discard Monster', choices=choices, options=options)
                         self.choice_layout.add(self.hub.base_overlay)
+                        for button in health_buttons:
+                            button.move(0,-5)
                         self.clear_buttons([self.proceed_button, self.option_button])
                         self.layout.add(self.choice_layout)
                         if not single:
@@ -1340,6 +1348,7 @@ class EncounterPane():
                 self.option_button.disable()
                 self.layout.add(self.proceed_button)
                 self.layout.add(self.option_button)
+                self.click_action = None
         self.hub.click_pane = self
         self.click_action = select_loc
 
@@ -1409,11 +1418,13 @@ class EncounterPane():
                     args = self.encounter[key[0] + 'args'][x]
                     buttons[x].text = args.get('text', '')
                     buttons[x].enable()
+                    buttons[x].set_style(arcade.color.BLACK)
                     omit_args = {}
                     for keys in [key for key in args.keys() if key not in ['text', 'check', 'skip', 'owner_only', 'on_trade', 'skip_check']]:
                         omit_args[keys] = args[keys]
                     if actions[x] in self.req_dict and not args.get('skip_check', False) and not self.req_dict[actions[x]](omit_args) and len(actions) > 0:
                         buttons[x].disable()
+                        buttons[x].set_style(arcade.color.GRAY)
                     if actions[x] == 'skill' or args.get('skip', None) != None:
                         buttons[x].action = lambda: None
                         buttons[x].action_args = None
@@ -1455,8 +1466,11 @@ class EncounterPane():
                 self.hub.networker.publish_payload({'message': 'set_omen', 'pos': color, 'trigger': advance_doom}, self.investigator.name)
                 self.clear_overlay()
                 self.set_buttons(step)
+            omen_buttons = []
+            button_positions = []
             for x in range(4):
-                choices.append(ActionButton(height=150, width=150, texture='icons/' + colors[x] + '_omen.png', action=choose_omen, action_args={'color': x}, scale=0.5))
+                omen_button = ActionButton(height=150, width=150, texture='icons/' + colors[x] + '_omen.png', action=choose_omen, action_args={'color': x}, scale=0.5)
+                choices.append(omen_button)
             self.choice_layout = create_choices('Set Omen', choices=choices)
             self.choice_layout.add(self.hub.base_overlay)
             self.layout.add(self.choice_layout)
@@ -1592,11 +1606,14 @@ class EncounterPane():
                 if len(self.investigator.clues) < clues + 1:
                     norman_pane.proceed_button.disable()
             else:
-                self.wait_step = step
-                self.hub.waiting_panes.append(self)
-                for x in range(clues):
-                    clue = random.choice(self.investigator.clues)
-                    self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
+                if clues == 0:
+                    self.set_buttons(step)
+                else:
+                    self.wait_step = step
+                    self.hub.waiting_panes.append(self)
+                    for x in range(clues):
+                        clue = random.choice(self.investigator.clues)
+                        self.hub.networker.publish_payload({'message': 'card_discarded', 'kind': 'clues', 'value': clue}, self.investigator.name)
         return clues
 
     def solve_rumor(self, choice=False, step='finish', name=None):
@@ -1704,8 +1721,7 @@ class EncounterPane():
                     self.hp_damage = 0
                     self.discard('assets', resolve_damage, 'ally')
                 choices.append(ActionButton(scale=0.5, texture='monsters/maniac.png', action=maniac))
-            next_button = ActionButton(
-                y=50, width=100, height=33, texture='buttons/rectangle.png', text='Next', action=resolve_damage)
+            next_button = ActionButton(width=100, height=33, texture='buttons/rectangle.png', text='Next', action=resolve_damage)
             self.choice_layout = create_choices(choices=choices, options=options + [next_button], title='Taking Damage', subtitle='Health: ' + str(-self.hp_damage) + '   Sanity: ' + str(-self.san_damage))
             self.choice_layout.add(self.hub.base_overlay)
             self.layout.add(self.choice_layout)
@@ -1723,8 +1739,7 @@ class EncounterPane():
         self.layout.add(self.text_button)
         self.layout.add(self.phase_button)
         text = human_readable(mythos) + '\n\n' + self.encounter['flavor'] + '\n\n' + self.encounter.get('text', '')
-        if self.encounter.get('font_size', None) != None:
-            self.text_button.style = {'font_size': int(self.encounter['font_size'])}
+        self.text_button.set_style(size=int(self.encounter.get('font_size', 15)))
         self.text_button.text = text
         self.hub.info_manager.trigger_render()
         self.option_button.text = 'Waiting for other players'
@@ -1754,13 +1769,13 @@ class EncounterPane():
                 if self.hub.location_manager.rumors[self.mythos].get('eldritch', False):
                     icons.append('eldritch')
                     self.mythos_icons['eldritch'].text = str(self.hub.location_manager.rumors[self.mythos]['eldritch'])
-                if self.hub.location_manager.rumors[self.mythos].get('location', False):
+                if self.hub.location_manager.rumors[self.mythos].get('location', 'no_spawn') != 'no_spawn':
                     icons.append('rumor')
                     self.mythos_icons['rumor'].text = human_readable(self.hub.location_manager.rumors[self.mythos]['location'])
             for x in range(len(icons)):
                 icon = self.mythos_icons[icons[x]]
                 self.layout.add(icon)
-                icon.move(1072 + (50 * x) - icon.x, 709 - (icon.height / 2) + (3 * x) - icon.y)
+                icon.move(1082 + (45 * x) - icon.x, 709 - (icon.height / 2) + (3 * x) - icon.y)
 
 
     def load_reckoning_effects(self, monsters_only=False):
@@ -1792,9 +1807,7 @@ class EncounterPane():
         if first:
             self.load_reckoning_effects()
         if index == 5:
-            self.hub.encounter_pane.load_mythos(self.hub.encounter_pane.mythos)
-            self.hub.show_encounter_pane()
-            self.hub.activate_mythos()
+            self.hub.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
         elif len(self.reckonings[kind]) > 0 and (not self.investigator.is_dead or kind != 'item'):
             def finish_action(name):
                 self.reckoning(kinds[index], step=step)
@@ -1863,6 +1876,7 @@ class SmallCardPane(EncounterPane):
         card.back_seen = True
         self.encounter = getattr(card, 'back')
         self.set_buttons('action')
+        self.phase_button.text = human_readable(card.name)
 
     def spell_flip(self, name, take_action=False):
         card = next((card for card in self.investigator.possessions['spells'] if card.name == name))
@@ -1995,6 +2009,7 @@ class SmallCardPane(EncounterPane):
             self.clear_overlay()
             self.hub.networker.publish_payload({'message': 'move_monster', 'value': monster.monster_id, 'location': destination}, self.investigator.name)
             same_loc = [inv for inv in self.hub.location_manager.all_investigators.keys() if self.hub.location_manager.all_investigators[inv].location == destination]
+            self.hub.finder_markers.clear()
             if (damage > 0 or encounter) and len(same_loc) > 0:
                 def selected(investigator):
                     self.hub.waiting_panes.append(self)
@@ -2024,6 +2039,7 @@ class SmallCardPane(EncounterPane):
         places = set()
         for route in paths:
             places.add(route[min(distance, len(route) - 1)])
+        self.hub.create_markers(list(places))
         if len(places) > 1:
             choices = []
             for destination in places:

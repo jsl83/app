@@ -208,6 +208,8 @@ class ReservePane():
         self.layout.add(self.bottom_pane)
         self.discard_view = False
         self.reset_discard()
+        if len(self.hub.location_manager.locations[self.hub.investigator.location]['monsters']) > 0:
+            self.disable_button(self.acquire_button)
 
     def discard_item(self, name, remove=False):
         if name in self.discard:

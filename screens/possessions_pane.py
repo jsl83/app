@@ -14,7 +14,7 @@ class PossessionsPane():
         self.boundary = 0
         self.hub = hub
         self.small_card_layout = arcade.gui.UILayout(x=1000, y=0, width=280, height=800)
-        self.texture_pane = arcade.gui.UITexturePane(self.button_layout, arcade.load_texture(IMAGE_PATH_ROOT + 'gui/reserve_pane.png'))
+        self.texture_pane = arcade.gui.UITextureButton(x=1000, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui/reserve_pane.png'))
         self.big_card = ActionButton(x=1015, y=400, width=250, height=385, texture='buttons/placeholder.png')
         self.action_button = ActionButton(x=1031, y=300, width=217, height=41, text='Take Action', action=self.card_action, texture='buttons/button.png', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK})
         self.flip_button = ActionButton(x=1031, y=200, width=217, height=41, text='Flip Card', action=self.flip_action, texture='buttons/button.png', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK})
@@ -31,7 +31,6 @@ class PossessionsPane():
         self.layout.children = []
         self.overlay_layout.children = []
         y_pos = start_pos
-        self.layout.add(self.texture_pane)
         self.layout.add(self.overlay_layout)
         for card_type in ['assets', 'unique_assets', 'artifacts', 'spells', 'conditions']:
             item_list = [card for card in self.investigator.possessions[card_type] if tags == None or tags in card.tags]

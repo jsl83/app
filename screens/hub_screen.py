@@ -129,9 +129,9 @@ class HubScreen(arcade.View):
             circle_index += 1
         for stars in range(circle_index, 8):
             ui_layout.add(ActionButton(texture='investigators/empty_circle.png', scale=0.3, x=10 + stars * 38, y=158 + ((stars % 2) * 42)))
-        self.clue_button = ActionButton(17, 400, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'clue'})
-        self.monster_button = ActionButton(17, 375, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'monsters'})
-        self.misc_button = ActionButton(17, 350, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'misc'})
+        self.clue_button = ActionButton(19, 400, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'clue'})
+        self.monster_button = ActionButton(19, 375, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'monsters'})
+        self.misc_button = ActionButton(19, 350, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'misc'})
         self.red_gates = ActionButton(87, 400, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'redgate'})
         self.blue_gates = ActionButton(87, 375, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'bluegate'})
         self.green_gates = ActionButton(87, 350, 70, 25, font='Poster Bodoni', style={'font_color': arcade.color.BLACK}, text='0', text_position=(13,-2), action_args={'key': 'greengate'})
@@ -139,7 +139,7 @@ class HubScreen(arcade.View):
             ui_layout.add(count_button)
             self.finder_buttons.append(count_button)
         self.lead_button = arcade.gui.UITextureButton(x=10, y=158, scale=0.55, texture=arcade.load_texture(IMAGE_PATH_ROOT + '/gui/lead_investigator.png'))
-        self.action_number = arcade.gui.UITextureButton(x=952, y=148, width=20, height=25, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'blank.png'), text='0', font='Poster Bodoni', style={'font_color': arcade.color.WHITE, 'font_size':18})
+        self.action_number = ActionButton(x=928, y=148, width=72, height=72, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'blank.png'), text='0', font='Poster Bodoni', style={'font_color': arcade.color.WHITE, 'font_size':18}, action=self.skip_turn, text_position=(0,-21))
         ui_layout.add(self.lead_button)
         ui_layout.add(self.action_number)
 
@@ -267,11 +267,8 @@ class HubScreen(arcade.View):
                     self.info_manager.trigger_render()
             elif getattr(self.click_pane, 'no_loc_click', False):
                 self.click_pane.no_loc_click()
-            buttons = list(self.ui_manager.get_widgets_at((x,y))) + list(self.info_manager.get_widgets_at((x,y)))
-            if len(buttons) > 0:
-                menu_button = next((button for button in buttons if type(button) == ActionButton and button.enabled), False)
-                if menu_button:
-                    menu_button.click_action()
+            for action in [button for button in list(self.ui_manager.get_widgets_at((x,y))) + list(self.info_manager.get_widgets_at((x,y))) if type(button) == ActionButton]:
+                action.click_action()
         else:
             ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y))) + list(self.choice_manager.get_widgets_at((x,y)))
             if len(ui_buttons) > 0:
@@ -359,6 +356,7 @@ class HubScreen(arcade.View):
             self.info_manager.add(self.info_pane.layout)
             self.info_pane.on_show()
             self.select_ui_button(['investigator', 'possessions', 'reserve', 'location', 'ancient_one'].index(key))
+            self.info_panes['location'].selected = self.investigator.location
 
     def show_encounter_pane(self):
         self.info_manager.children = {0:[]}
@@ -560,6 +558,7 @@ class HubScreen(arcade.View):
                                 case 'encounter':
                                     self.show_encounter_pane()
                                     self.encounter_pane.encounter_phase()
+                                    self.encounter_pane.encounter_type.append('encounter')
                                 case 'reckoning':
                                     self.encounter_pane.reckoning(first=True)
                                 case 'mythos':
@@ -722,6 +721,14 @@ class HubScreen(arcade.View):
                         self.ancient_one.mystery_tracker += payload['value']
                         mystery = self.ancient_one.mysteries[self.ancient_one.current_mystery]
                         self.info_panes['ancient_one'].mystery_counter.text = human_readable(self.ancient_one.current_mystery) + '\n\n' + human_readable(mystery['kind']) + ': ' + str(self.ancient_one.mystery_tracker) + ' / ' + str(self.ancient_one.mystery_required)
+                        if self.ancient_one.mystery_tracker >= self.ancient_one.mystery_required:
+                            triggers = mystery.get('triggers', [])
+                            for trigger in triggers:
+                                self.triggers[trigger['kind']] = [trig for trig in self.triggers[trigger['kind']] if trig != trigger]
+                            if mystery.get('mystery_token', False):
+                                self.map.remove_tokens('mystery', mystery['mystery_token'])
+                                self.location_manager.locations[mystery['mystery_token']]['mystery'] = False
+                                self.misc_button.text = str(int(self.misc_button.text) - 1)
                 if len(self.waiting_panes) > 0 and self.waiting_panes[-1].wait_step != None:
                     if self.waiting_panes[-1].last_value == None or self.waiting_panes[-1].last_value == payload.get('message', None):
                         pane = self.waiting_panes[-1]
@@ -869,7 +876,7 @@ class HubScreen(arcade.View):
                 reroll_triggers += [reroll for reroll in self.triggers.get(kind + '_test', []) if reroll.get('mod_die', False) and (not reroll.get('used', False) or not reroll.get('single_use', False))]
             if len(reroll_triggers) > 0:
                 for trigger in reroll_triggers:
-                    trigger_button = ActionButton(width=100, height=33, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action, 'force_select': True}, texture=trigger.get('texture', 'buttons/rectangle.png'), text=human_readable(trigger.get('name', '')), name=trigger.get('name', trigger.get('id', '')), scale=0.3 if trigger.get('texture', False) else 1)
+                    trigger_button = ActionButton(width=100, height=33, action=small_card.setup, action_args={'encounters': [trigger['action']], 'parent': pane, 'finish_action': finish_action, 'force_select': True}, texture=trigger.get('texture', 'buttons/rectangle.png'), name=trigger.get('name', trigger.get('id', '')), scale=0.3 if trigger.get('texture', False) else 1)
                     if trigger.get('used', False) and trigger.get('single_use', False):
                         trigger_button.disable()
                     options.append(trigger_button)
@@ -1140,6 +1147,9 @@ class HubScreen(arcade.View):
     
     def highlight_locations(self, key):
         locs = self.location_manager.get_finder_locs(key)
+        self.create_markers(locs, key)
+
+    def create_markers(self, locs, key = 'Default'):
         for loc in locs:
             marker = arcade.Sprite(texture=self.highlight_texture, scale=0.4 if 'space_' not in loc else 0.3 if key in self.location_manager.all_investigators else 0.2)
             marker.center_x = self.location_manager.locations[loc]['x']
@@ -1157,3 +1167,10 @@ class HubScreen(arcade.View):
             self.clue_button.text = str(len(self.location_manager.get_finder_locs('clue')))
         elif key in ['eldritch', 'rumor', 'mystery']:
             self.misc_button.text = str(len(self.location_manager.get_finder_locs('misc')))
+
+    def skip_turn(self):
+        def do_end():
+            self.networker.publish_payload({'message': 'turn_finished', 'value': None}, self.investigator.name)
+        self.choice_layout = (create_choices(title='End your turn?', options=[ActionButton(texture='buttons/rectangle.png', text='Yes', width=100, height=50, action=do_end, font='Garamond Eldritch', text_position=(0,-2)), ActionButton(texture='buttons/rectangle.png', text='No', width=100, height=50, action=self.clear_overlay, font='Garamond Eldritch', text_position=(0,-2))]))
+        self.choice_layout.add(self.base_overlay)
+        self.show_overlay()

@@ -71,11 +71,12 @@ class LocationPane():
 
         self.toggle_rumor = ActionButton(1140, y=380, width=140, height=35, text='Rumors', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK}, action=self.toggle_details, action_args={'flag': False}, bold=True)
         self.toggle_info = ActionButton(1000, y=380, width=140, height=35, text='-= Details =-', font='Garamond Eldritch', text_position=(0,-2), style={'font_color': arcade.color.BLACK}, action=self.toggle_details, action_args={'flag': True}, bold=True)
-        self.rumor_details = arcade.gui.UITextureButton(x=1000, y=0, height=390, width=280, texture=self.blank, font='Typical Writer', style={'font_color': arcade.color.BLACK})
+        self.rumor_details = arcade.gui.UITextureButton(x=1000, y=0, height=390, width=280, texture=self.blank, font='Typical Writer', style={'font_color': arcade.color.BLACK, 'font_size': 13})
         self.rumor = None
         self.possession_screen = TradePane(self.hub.investigator, self.hub)
         self.possession_screen.close_button.action = self.on_show
         self.is_trading = False
+        self.rumor_eldritch = ActionButton(x=1246, y=456, texture='icons/eldritch.png', style={'font_size': 12, 'font_color': arcade.color.PURPLE}, text_position=(0,-7), scale=0.7)
         
     def toggle_details(self, flag):
         if flag:
@@ -135,8 +136,8 @@ class LocationPane():
         for icon in has_not:
             self.token_layout.add(self.tokens[icon])
         if self.rumor != None:
-            self.tokens['rumor'].text = str(self.location_manager.rumors[self.rumor].get('eldritch', ''))
-            self.tokens['rumor'].style['font_color'] = arcade.color.PURPLE
+            self.rumor_eldritch.text = str(self.location_manager.rumors[self.rumor].get('eldritch', ''))
+            self.token_layout.add(self.rumor_eldritch)
 
     def update_list(self, kind):
         y_offset = 0

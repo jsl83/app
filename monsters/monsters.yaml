@@ -366,7 +366,7 @@
       action:
         - monster_reckoning_move
       aargs:
-        - skip: True
+        - text: Resolve
           distance: 2
           encounter: False
       keys:

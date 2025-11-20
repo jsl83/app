@@ -144,4 +144,9 @@
                 kind: eldritch
                 skip: True
             action_text: "You attempt to find information about Azathoth's true name.\n\nYou may spend 2 Clues to place this Eldritch token on the active Mystery."
-
+  cthulhu:
+    - doom: 15
+  shub-niggurath:
+    - doom: 15
+  yog-sothoth:
+    - doom: 15

@@ -267,7 +267,7 @@ class HubScreen(arcade.View):
                     self.info_manager.trigger_render()
             elif getattr(self.click_pane, 'no_loc_click', False):
                 self.click_pane.no_loc_click()
-            for action in [button for button in list(self.ui_manager.get_widgets_at((x,y))) + list(self.info_manager.get_widgets_at((x,y))) if type(button) == ActionButton]:
+            for action in [button for button in list(set(list(self.ui_manager.get_widgets_at((x,y))) + list(self.info_manager.get_widgets_at((x,y))))) if type(button) == ActionButton]:
                 action.click_action()
         else:
             ui_buttons = list(self.info_manager.get_widgets_at((x,y))) + list(self.ui_manager.get_widgets_at((x,y))) + list(self.choice_manager.get_widgets_at((x,y)))
@@ -590,7 +590,7 @@ class HubScreen(arcade.View):
                     case 'monster_damaged':
                         monster_id = int(payload['value'])
                         damage = int(payload['damage'])
-                        def damage_monster(monster, damage):
+                        def got_damaged(monster, damage):
                             dead = monster.on_damage(damage)
                             if dead:
                                 if hasattr(monster, 'death'):
@@ -607,10 +607,10 @@ class HubScreen(arcade.View):
                                 self.map.token_manager.trigger_render()
                         if monster_id < 0:
                             for monster in self.location_manager.all_monsters:
-                                damage_monster(monster, damage)
+                                got_damaged(monster, damage)
                         else:
                             monster = next((monster for monster in self.location_manager.all_monsters if monster.monster_id == int(payload['value'])))
-                            damage_monster(monster, damage)
+                            got_damaged(monster, damage)
                     case 'rumor_solved':
                         rumor = self.location_manager.rumors[payload['value']]
                         if rumor['location'] != 'no_spawn':

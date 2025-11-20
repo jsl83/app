@@ -11,90 +11,102 @@ class SelectionScreen(arcade.View):
 
     def __init__(self, path, networker, respawn=False):
         super().__init__()
-        self.background = None
         self.selected = None
-        self.front = True
         self.path = path
-        self.holding = False
         self.click_time = 0
-        self.y_position = 0
-        self.initial_y = 0
         self.selection_options = []
         self.networker = networker
         self.respawn = respawn
         self.ancient_one = None
-
-        self.load_options()
-
+        self.textures = {}
         self.manager = arcade.gui.UIManager()
         self.manager.enable()
-        self.max_height = 800 if len(self.selection_options) * 3 < 18 else 650 + (math.ceil(len(self.selection_options) * 5 / 6) - 3) * 200
-        self.selection_list = arcade.gui.UILayout(width=1280, height=self.max_height)
-        self.detail_list = arcade.gui.UILayout(width=1280, height=800)
+        self.empty_texture = arcade.load_texture(IMAGE_PATH_ROOT + 'investigators/empty_circle.png')
+        self.blank_texture = arcade.load_texture(IMAGE_PATH_ROOT + 'blank.png')
+        self.selection_icons = arcade.gui.UILayout()
         self.detail_card = None
-
+        self.select_bg = None
+        self.detail_bg = None
+        self.back_card = None
+        self.selector = None
+        self.load_options()
         self.setup()
 
     def load_options(self):
         try:
             with open(self.path + '/' + self.path + '.yaml') as stream:
-                self.selection_options = yaml.safe_load(stream)
+                self.selection_options = list(yaml.safe_load(stream).keys())
         except:
             self.selection_options = []
 
-    def setup(self):
-        row = 0
-        column = 0
-        count = 0
-        for name in self.selection_options:
-            texture = arcade.load_texture(IMAGE_PATH_ROOT + self.path + '\\' + name + '_portrait.png')
-            scale = 125 / texture.width
-            x = 150 + column * 171
-            y = 515 - row * 200
-            select_button = arcade.gui.UITextureButton(x, y, height=300, texture=texture, scale=scale)
-            select_button.name = name
-            select_button.enabled = True
-            self.selection_list.add(select_button)
-            column += 1
-            count += 1
-            if column == 6:
-                row += 1
-                column = 0
-        self.manager.add(self.selection_list, index=1)
+    def select(self, name, x, y):
+        self.selected = name
+        self.detail_card.texture = self.textures[name]['front']
+        self.back_card.texture = self.textures[name]['back']
+        self.manager.remove(self.detail_bg)
+        self.manager.add(self.detail_bg)
+        self.selector.move(x-45-self.selector.x, y-38-self.selector.y)
+        self.confirm_button.text = ('Challenge ' + human_readable(name)) if self.path == 'ancient_ones' else 'Embark'
 
-        detail_buttons = ['Select', 'Flip', 'Back']
-        for i in range(0, 3):
-            button = arcade.gui.UITextureButton(1050, 300 + i * 100, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons\\rectangle.png'))
-            button.text = detail_buttons[i]
-            self.detail_list.add(button)
-        ###
-        self.selected = 'akachi_onyele' if self.path == 'investigators' else 'azathoth'
-        self.networker.publish_payload({'message': self.path + '_selected', 'value': self.selected}, 'login')
-        if self.path == 'investigators':
-            self.networker.set_subscriber_topic(self.selected + '_server')
-            self.networker.set_subscriber_topic(self.selected + '_player')
-            self.networker.investigator = self.selected
-            if self.respawn:
-                self.networker.game_screen.respawn_name = self.selected
-            self.networker.window.pop_handlers()
-            loading_screen = ServerLoadingScreen(self.networker)
-            for name in [button.name for button in self.selection_list.children if not button.enabled]:
-                loading_screen.investigator_selected(name)
-            if self.ancient_one:
-                loading_screen.select_ao(self.ancient_one)
-                loading_screen.investigator_selected(self.selected)
-            self.networker.select_screen = loading_screen
-            self.networker.window.show_view(loading_screen)
-            self.networker.publish_payload({'message': 'start_game'}, 'login')
+    def setup(self):
+        is_ao = self.path == 'ancient_ones'
+        for option in self.selection_options:
+            self.textures[option] = {'front': arcade.load_texture(IMAGE_PATH_ROOT + self.path + '/' + option + '_front.png'),
+                                        'back': self.blank_texture if self.path == 'ancient_ones' else arcade.load_texture(IMAGE_PATH_ROOT + self.path + '/' + option + '_back.png'),
+                                        'portrait': arcade.load_texture(IMAGE_PATH_ROOT + self.path + '/' + option + '_portrait.png')}
+        if is_ao:
+            self.select_bg = arcade.gui.UITextureButton(width=640, height=800, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui' + '/' + self.path + '_select.png'))
+            self.detail_bg = arcade.gui.UITextureButton(width=640, height=800, x=640, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui' + '/' + self.path + '_details.png'))
+            self.detail_card = arcade.gui.UITextureButton(width=640, height=800, x=640, texture=self.blank_texture)
+            self.back_card = arcade.gui.UITextureButton(width=640, height=800, x=640, texture=self.blank_texture)
+            self.selector = arcade.gui.UITextureButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui/ao_selection.png'), scale=0.9)
+            self.confirm_button = arcade.gui.UITextureButton(texture=self.blank_texture, width=640, height=90, font='UglyQua', style={'font_size': 24})
+            self.confirm_button.name = 'confirm'
+            positions = [(88,596), (270,593), (452,595), (90,392), (270,395), (457,393), (90,195), (270,191), (450,195)]
+            for x in range(8):
+                icon = arcade.gui.UITextureButton(positions[x][0], positions[x][1], 100, 100, self.empty_texture)
+                self.selection_icons.add(icon)
+            self.switch_page(0, 8)
         else:
-            self.selection_list.clear()
-            self.ancient_one = self.selected
-            self.selected = None
-            self.path = 'investigators'
-            self.load_options()
-            self.setup()
-            self.networker.publish_payload({'message': 'get_investigators'}, 'login')
-        ###
+            self.select_bg = arcade.gui.UITextureButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui' + '/' + self.path + '_details.png'))
+            self.detail_bg = arcade.gui.UITextureButton(y=300, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui' + '/' + self.path + '_select.png'))
+            #self.detail_bg = arcade.gui.UITextureButton(y=300, texture=self.blank_texture)
+            self.detail_card = arcade.gui.UITextureButton(x=150, y=305, width=619, height=496, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'blank.png'))
+            self.back_card = arcade.gui.UITextureButton(x=731, y=264, width=681, height=540, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'blank.png'))
+            self.selector = arcade.gui.UITextureButton(texture=self.blank_texture)
+            self.confirm_button = arcade.gui.UITextureButton(texture=arcade.load_texture(IMAGE_PATH_ROOT + 'blank.png'), x=1053, y=0, width=190, height=100, font='UglyQua', style={'font_size': 18, 'font_color': arcade.color.RED})
+            self.confirm_button.name = 'confirm'
+            positions = [(69,13), (296,19), (521,13), (747,26)]
+            for x in range(4):
+                icon = arcade.gui.UITextureButton(positions[x][0], positions[x][1], 158, 221, self.empty_texture)
+                self.selection_icons.add(icon)
+            self.switch_page(0, 4)
+            page_positions = [(1021, 188), (1100, 197), (1188, 208)]
+            for x in range(3):
+                page_button = arcade.gui.UITextureButton(page_positions[x][0], page_positions[x][1], 75, 50, self.blank_texture)
+                page_button.name = str(x)
+                self.selection_icons.add(page_button)
+            self.page_selector = arcade.gui.UITextureButton(1021, 155, texture=arcade.load_texture(IMAGE_PATH_ROOT + 'gui/page.png'))
+        self.select(self.selection_options[0], self.selection_icons.children[0].x, self.selection_icons.children[0].y)
+        self.manager.add(self.detail_card)
+        self.manager.add(self.back_card)
+        self.manager.add(self.detail_bg)
+        self.manager.add(self.select_bg)
+        self.manager.add(self.selection_icons)
+        self.manager.add(self.selector)
+        self.manager.add(self.confirm_button)
+        if not is_ao:
+            self.manager.add(self.page_selector)
+
+    def switch_page(self, page, number):
+        for x in range(number):
+            if (page*number) + x < len(self.selection_options):
+                name = self.selection_options[(page*number) + x]
+                self.selection_icons.children[x].texture = self.textures[name]['portrait']
+                self.selection_icons.children[x].name = name
+            else:
+                self.selection_icons.children[x].texture = self.empty_texture
+                self.selection_icons.children[x].name = ''
 
     def on_draw(self):
         self.clear()        
@@ -102,98 +114,65 @@ class SelectionScreen(arcade.View):
         self.click_time += 1
 
     def on_mouse_release(self, x, y, button, modifiers):
-        self.holding = False
-        if (self.click_time <= 5 or abs(self.y_position - self.initial_y) < 5):
-            buttons = list(self.manager.get_widgets_at((x,y)))
-            if len(buttons) > 0 and type(buttons[0]) is arcade.gui.UITextureButton:
-                if self.selected:
-                    text = buttons[0].text
-                    if text == 'Select':
-                        payload = {'message': self.path + '_selected', 'value': self.selected}
-                        def send_login(encounter):
-                            self.networker.publish_payload(payload, 'login')
-                            if self.path == 'investigators':
-                                self.networker.set_subscriber_topic(self.selected + '_server')
-                                self.networker.set_subscriber_topic(self.selected + '_player')
-                                self.networker.investigator = self.selected
-                                if self.respawn:
-                                    self.networker.game_screen.respawn_name = self.selected
-                                self.networker.window.pop_handlers()
-                                loading_screen = ServerLoadingScreen(self.networker)
-                                for name in [button.name for button in self.selection_list.children if not button.enabled]:
-                                    loading_screen.investigator_selected(name)
-                                if self.ancient_one:
-                                    loading_screen.select_ao(self.ancient_one)
-                                    loading_screen.investigator_selected(self.selected)
-                                self.networker.select_screen = loading_screen
-                                self.networker.window.show_view(loading_screen)
-                            else:
-                                self.selection_list.clear()
-                                self.ancient_one = self.selected
-                                self.selected = None
-                                self.path = 'investigators'
-                                self.load_options()
-                                self.setup()
-                                self.networker.publish_payload({'message': 'get_investigators'}, 'login')
-                        if self.respawn:
+        if (self.click_time <= 5):
+            buttons = [button for button in list(self.manager.get_widgets_at((x,y))) if button in self.selection_icons.children + [self.confirm_button] and getattr(button, 'enabled', True)]
+            if len(buttons) > 0:
+                action = getattr(buttons[0], 'name')
+                if action == 'random':
+                    pass
+                elif action == 'confirm':
+                    payload = {'message': self.path + '_selected', 'value': self.selected}
+                    def send_login(encounter):
+                        self.networker.publish_payload(payload, 'login')
+                        if self.path == 'investigators':
+                            self.networker.set_subscriber_topic(self.selected + '_server')
+                            self.networker.set_subscriber_topic(self.selected + '_player')
+                            self.networker.investigator = self.selected
+                            if self.respawn:
+                                self.networker.game_screen.respawn_name = self.selected
                             self.networker.window.pop_handlers()
-                            self.networker.window.show_view(self.networker.game_screen)
-                            payload['replace'] = self.networker.investigator
+                            loading_screen = ServerLoadingScreen(self.networker)
+                            for name in [button.name for button in self.selection_icons.children if not getattr(button, 'enabled', True)]:
+                                loading_screen.investigator_selected(name)
+                            if self.ancient_one:
+                                loading_screen.select_ao(self.ancient_one)
+                                loading_screen.investigator_selected(self.selected)
+                            self.networker.select_screen = loading_screen
+                            self.networker.window.show_view(loading_screen)
                         else:
-                            self.manager.children = {0:[]}
-                            self.manager.add(arcade.gui.UITextureButton(width=1280, y=700, text='Waiting for other players', texture=arcade.load_texture(IMAGE_PATH_ROOT + 'buttons/rectangle.png')))
-                        if self.selected == 'lola_hayes' and self.respawn:
-                            self.networker.game_screen.small_card_pane.set_return_gui(self.info_pane)
-                            self.networker.game_screen.small_card_pane.improve_skill('01234')
-                            self.networker.game_screen.small_card_pane.finish_action = send_login
-                        else:
-                            send_login('')
-                    elif text == 'Back':
-                        self.selected = None
-                    elif text == 'Flip':
-                        side = '_front.png' if not self.front else '_back.png'
-                        self.detail_list.children[-1].texture = arcade.load_texture(IMAGE_PATH_ROOT + self.path + '\\' + self.selected + side)
-                        self.front = not self.front
-                    if not self.selected:
-                        self.manager.children = {0:[]}
-                        self.manager.add(self.selection_list)
-                        self.detail_list.remove(self.detail_list.children[-1])
-                elif buttons[0].enabled:
-                    if self.detail_card and self.detail_card in self.detail_list:
-                        self.detail_list.children.remove(self.detail_card)
-                    name = buttons[0].name
-                    texture = arcade.load_texture(IMAGE_PATH_ROOT + self.path + '\\' + name + '_front.png')
-                    scale = 700 / texture.height
-                    x = (760 - texture.width * scale) / 2
-                    self.detail_card = arcade.gui.UITextureButton(x + 150, 50, scale=scale, texture=texture)
-                    self.detail_list.add(self.detail_card)
-                    self.selected = name
-                    self.manager.children = {0:[]}
-                    self.manager.add(self.detail_list)
+                            self.selection_icons.clear()
+                            self.manager.clear()
+                            self.ancient_one = self.selected
+                            self.selected = None
+                            self.path = 'investigators'
+                            self.load_options()
+                            self.setup()
+                            self.networker.publish_payload({'message': 'get_investigators'}, 'login')
+                            self.manager.trigger_render()
+                    if self.respawn:
+                        self.networker.window.pop_handlers()
+                        self.networker.window.show_view(self.networker.game_screen)
+                        payload['replace'] = self.networker.investigator
+                    if self.selected == 'lola_hayes' and self.respawn:
+                        self.networker.game_screen.small_card_pane.set_return_gui(self.info_pane)
+                        self.networker.game_screen.small_card_pane.improve_skill('01234')
+                        self.networker.game_screen.small_card_pane.finish_action = send_login
+                    else:
+                        send_login('')
+                elif action in ['0','1','2']:
+                    self.switch_page(int(action), 4)
+                    self.page_selector.move(buttons[0].x - self.page_selector.x, buttons[0].y - self.page_selector.y - 33)
+                elif action != '':
+                    self.select(action, buttons[0].x, buttons[0].y)
 
     def on_mouse_press(self, x, y, button, modifiers):
-        self.holding = True
         self.click_time = 0
-        self.initial_y = self.y_position
-
-    def on_mouse_motion(self, x, y, dx, dy):
-        if self.holding and self.max_height > 800:
-            self.y_position += dy
-            if self.y_position < 0:
-                dy = dy - (self.y_position)
-                self.y_position = 0
-            if self.y_position > self.max_height - 725:
-                dy = dy + (self.max_height - self.y_position - 725)
-                self.y_position = self.max_height - 725
-            for button in self.selection_list.children:
-                button.move(0, dy)
 
     def investigator_selected(self, name):
-        for i in self.selection_list.children:
+        for i in self.selection_icons.children:
             if i.name == name:
                 i.enabled = False
                 i.text = "SELECTED"
-                i.text_position = (0,15)
 
     def select_ao(self, name):
         self.ancient_one = name

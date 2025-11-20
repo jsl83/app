@@ -647,7 +647,7 @@ class EncounterPane():
             for monster in monsters:
                 choices.append(ActionButton(
                     width=100, height=100, texture='monsters/' + monster.name + '.png', action=select, action_args={'monster': monster}))
-                options.append(ActionButton(texture='buttons/small_circle.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness)))
+                options.append(ActionButton(texture='buttons/small_circle.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness), text_position=(2,-3)))
             self.clear_overlay()
             self.choice_layout = create_choices(title='Select Monster', choices=choices, options=options)
             self.choice_layout.add(self.hub.base_overlay)
@@ -778,7 +778,7 @@ class EncounterPane():
                         for monster in monsters:
                             choices.append(ActionButton(
                                 width=100, height=100, texture='monsters/' + monster.name + '.png', action=select if single else lambda *args: None, action_args={'monster': monster}))
-                            health_button = ActionButton(texture='buttons/small_circle.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness))
+                            health_button = ActionButton(texture='buttons/small_circle.png', text=str(monster.toughness - monster.damage) + '/' + str(monster.toughness), text_position=(2,-3))
                             options.append(health_button)
                             health_buttons.append(health_button)
                         self.clear_overlay()
